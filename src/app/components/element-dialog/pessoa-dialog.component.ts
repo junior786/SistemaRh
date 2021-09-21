@@ -23,5 +23,11 @@ export class PessoaDialog implements OnInit {
   onCancel(): void {
     this.dialogRef.close();
   }
-
+  valid(): boolean{
+      if(this.data.nome != "" && this.data.sexo!= ""){
+          return false;
+      }else{
+        return true;
+      }
+  }
 }

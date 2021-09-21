@@ -12,10 +12,10 @@ export class Apiresource {
   }
 
   public getApi(): Observable<any> {
-    return this.http.get(`http://localhost:8081/v1/pessoas`);
+    return this.http.get(`http://localhost:8081/v1/pessoa`);
   }
 
-  public putPessoa(id: string, data: Pessoa) {
+  public putPessoa(id: string, data: Pessoa){
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
     this.http.put(this.URL, new PessoaEdit(data.nome, data.sexo))
       .subscribe(resultado => {
@@ -24,10 +24,12 @@ export class Apiresource {
   }
 
   public deletePessoa(id: any) {
+    console.log(id)
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
     this.http.delete(this.URL).subscribe(resultado => {
-      console.log(resultado)
+      console.log('OPA: ' + resultado)
+    }, error =>{
+      console.log(error)
     })
   }
-
 }

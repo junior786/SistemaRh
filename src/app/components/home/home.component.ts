@@ -15,7 +15,7 @@ export class HomeComponent implements OnInit {
   @ViewChild(MatTable)
   table!: MatTable<any>
 
-  displayedColumns: string[] = ['nome', 'sexo', 'action'];
+  displayedColumns: string[] = ['nome', 'sexo', 'acoes'];
   dataSource: any;
 
   constructor(private api: Apiresource, public dialog: MatDialog) {
@@ -48,14 +48,13 @@ export class HomeComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result !== undefined) {
         this.api.putPessoa(result.id, result)
-
       }
     });
 
   }
 
   removePessoa(pessoa: Pessoa): void {
+    console.log(pessoa)
     this.api.deletePessoa(pessoa.id)
-    this.getPessoas()
   }
 }

@@ -3,14 +3,14 @@
 
   <mat-form-field appearance="fill">
     <mat-label>Nome</mat-label>
-    <input matInput [(ngModel)]="data.nome">
+    <input matInput [(ngModel)]="data.nome" required>
   </mat-form-field>
   <mat-form-field appearance="fill">
     <mat-label>Sexo</mat-label>
-    <input matInput [(ngModel)]="data.sexo">
+    <input matInput [(ngModel)]="data.sexo" required>
   </mat-form-field>
 </div>
 <div mat-dialog-actions>
   <button mat-button (click)="onCancel()">Cancelar</button>
-  <button mat-button [mat-dialog-close]="data" cdkFocusInitial>Atualizar</button>
+  <button mat-button [mat-dialog-close]="data" cdkFocusInitial [disabled]="valid()">Atualizar</button>
 </div>
