@@ -17,6 +17,10 @@ import { PessoaDialog } from './components/element-dialog/pessoa-dialog.componen
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {FormsModule} from "@angular/forms";
+import { AdicionaComponent } from './page/adiciona/adiciona.component';
+import { IndexComponent } from './page/index/index.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { FormularioComponent } from './components/formulario/formulario.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +28,10 @@ import {FormsModule} from "@angular/forms";
     NavComponent,
     FooterComponent,
     HomeComponent,
-    PessoaDialog
+    PessoaDialog,
+    AdicionaComponent,
+    IndexComponent,
+    FormularioComponent
   ],
   imports: [
     BrowserModule,
@@ -38,6 +45,7 @@ import {FormsModule} from "@angular/forms";
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
+    ReactiveFormsModule,
     FormsModule,
   ],
   providers: [HttpClient],

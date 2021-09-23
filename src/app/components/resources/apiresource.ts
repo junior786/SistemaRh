@@ -1,10 +1,11 @@
-import {HttpClient} from "@angular/common/http";
-import {Observable} from "rxjs";
-import {Injectable} from "@angular/core";
-import {Pessoa} from "../model/pessoa";
-import {PessoaEdit} from "../model/pessoaedit";
+import { HttpClient } from "@angular/common/http";
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { Pessoa } from "../model/pessoa";
+import { PessoaEdit } from "../model/pessoaedit";
+import { PessoaPost } from './../model/pessoaPost';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class Apiresource {
   URL!: string
 
@@ -12,10 +13,10 @@ export class Apiresource {
   }
 
   public getApi(): Observable<any> {
-    return this.http.get(`http://localhost:8081/v1/pessoa`);
+    return this.http.get(`http://localhost:8081/v1/pessoas`);
   }
 
-  public putPessoa(id: string, data: Pessoa){
+  public putPessoa(id: string, data: Pessoa) {
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
     this.http.put(this.URL, new PessoaEdit(data.nome, data.sexo))
       .subscribe(resultado => {
@@ -24,12 +25,15 @@ export class Apiresource {
   }
 
   public deletePessoa(id: any) {
-    console.log(id)
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
     this.http.delete(this.URL).subscribe(resultado => {
       console.log('OPA: ' + resultado)
-    }, error =>{
+    }, error => {
       console.log(error)
     })
+  }
+  public postPessoa(pessoa: PessoaPost): Observable<any> {
+    this.URL = 'http://localhost:8081/v1/pessoa'
+    return this.http.post(this.URL, pessoa)
   }
 }
