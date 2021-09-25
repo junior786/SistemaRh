@@ -21,6 +21,7 @@ import { AdicionaComponent } from './page/adiciona/adiciona.component';
 import { IndexComponent } from './page/index/index.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormularioComponent } from './components/formulario/formulario.component';
+import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
 
 @NgModule({
   declarations: [
@@ -31,7 +32,8 @@ import { FormularioComponent } from './components/formulario/formulario.componen
     PessoaDialog,
     AdicionaComponent,
     IndexComponent,
-    FormularioComponent
+    FormularioComponent,
+    PessoaDetailsComponent
   ],
   imports: [
     BrowserModule,

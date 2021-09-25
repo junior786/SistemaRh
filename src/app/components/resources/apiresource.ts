@@ -36,4 +36,9 @@ export class Apiresource {
     this.URL = 'http://localhost:8081/v1/pessoa'
     return this.http.post(this.URL, pessoa)
   }
+  public getById(id: number): Observable<Pessoa> {
+    this.URL = 'http://localhost:8081/v1/pessoa/'
+
+    return this.http.get<Pessoa>(this.URL + id)
+  }
 }
