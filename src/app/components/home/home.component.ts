@@ -1,9 +1,10 @@
-import { Component, Injectable, OnInit, ViewChild } from '@angular/core';
-import { Apiresource } from "../resources/apiresource";
-import { Pessoa } from "../model/pessoa";
-import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
+import { Observable } from 'rxjs';
+import { Subscription } from 'rxjs';
+import { Component, Injectable, Input, OnChanges, OnDestroy } from '@angular/core';
 import { MatDialog } from "@angular/material/dialog";
-import { MatTable } from "@angular/material/table";
+import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
+import { Pessoa } from "../model/pessoa";
+import { Apiresource } from "../resources/apiresource";
 
 @Component({
   selector: 'app-home',
@@ -11,26 +12,22 @@ import { MatTable } from "@angular/material/table";
   styleUrls: ['./home.component.css']
 })
 @Injectable({ providedIn: 'root' })
-export class HomeComponent implements OnInit {
-  @ViewChild(MatTable)
-  table!: MatTable<any>
+export class HomeComponent implements OnDestroy {
+
   displayedColumns: string[] = ['nome', 'sexo', 'acoes'];
-  dataSource: any;
+
+  pessoas$?: Observable<Pessoa[]>
+
+  sub?: Subscription
 
   constructor(private api: Apiresource, public dialog: MatDialog) {
-  }
-
-  ngOnInit(): void {
     this.getPessoas()
   }
 
-  getPessoas(): any {
-    this.api.getApi().subscribe(data => {
-      this.dataSource = data;
-    }, error => {
-      this.dataSource = error;
-    })
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
   }
+
 
   openDialog(pessoa: Pessoa): void {
     const dialogRef = this.dialog.open(PessoaDialog, {
@@ -42,15 +39,17 @@ export class HomeComponent implements OnInit {
     }
     );
 
-    dialogRef.afterClosed().subscribe(result => {
+    this.sub = dialogRef.afterClosed().subscribe(result => {
       if (result !== undefined) {
         this.api.putPessoa(result.id, result)
-        console.log(result)
       }
     });
   }
 
   removePessoa(pessoa: Pessoa): void {
     this.api.deletePessoa(pessoa.id)
+  }
+  getPessoas() {
+   this.pessoas$ =  this.api.getApi();
   }
 }

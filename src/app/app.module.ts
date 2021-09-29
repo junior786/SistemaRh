@@ -1,28 +1,26 @@
+import { AuthInterceptorService } from './components/resources/auth-interceptor.service';
+import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http";
 import { NgModule } from '@angular/core';
+import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatTableModule } from '@angular/material/table';
+import { MatToolbarModule } from "@angular/material/toolbar";
 import { BrowserModule } from '@angular/platform-browser';
-
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { NavComponent } from './components/nav/nav.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import {MatToolbarModule} from "@angular/material/toolbar";
-import { FooterComponent } from './components/footer/footer.component';
-import {MatTableModule} from '@angular/material/table';
-import { HomeComponent } from './components/home/home.component';
-import {HttpClient, HttpClientModule} from "@angular/common/http";
-import {MatButtonModule} from "@angular/material/button";
-import {MatIconModule} from "@angular/material/icon";
-import {MatDialogModule} from '@angular/material/dialog';
 import { PessoaDialog } from './components/element-dialog/pessoa-dialog.component';
-import {MatFormFieldModule} from "@angular/material/form-field";
-import {MatInputModule} from "@angular/material/input";
-import {FormsModule} from "@angular/forms";
-import { AdicionaComponent } from './page/adiciona/adiciona.component';
+import { FooterComponent } from './components/footer/footer.component';
+import { HomeComponent } from './components/home/home.component';
+import { NavComponent } from './components/nav/nav.component';
 import { IndexComponent } from './page/index/index.component';
-import { ReactiveFormsModule } from '@angular/forms';
-import { FormularioComponent } from './components/formulario/formulario.component';
 import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
-
+import { NotfoundComponent } from './components/notfound/notfound.component';
+import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolver';
 @NgModule({
   declarations: [
     AppComponent,
@@ -30,10 +28,9 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
     FooterComponent,
     HomeComponent,
     PessoaDialog,
-    AdicionaComponent,
     IndexComponent,
-    FormularioComponent,
-    PessoaDetailsComponent
+    PessoaDetailsComponent,
+    NotfoundComponent
   ],
   imports: [
     BrowserModule,
@@ -45,12 +42,23 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
+    FormsModule,
     MatFormFieldModule,
     MatInputModule,
-    ReactiveFormsModule,
-    FormsModule,
   ],
-  providers: [HttpClient],
-  bootstrap: [AppComponent]
+  exports: [
+    MatButtonModule,
+
+  ],
+  providers: [
+    HttpClient,
+     {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptorService,
+      multi: true
+     },
+     PessoaDetailsResolver
+  ], // ficam declarados os serviços para os componentes do modulo
+  bootstrap: [AppComponent] // componente que deve ser instaciado quando iniciar a aplicação
 })
 export class AppModule { }

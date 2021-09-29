@@ -4,7 +4,7 @@ import { Observable } from "rxjs";
 import { Pessoa } from "../model/pessoa";
 import { PessoaEdit } from "../model/pessoaedit";
 import { PessoaPost } from './../model/pessoaPost';
-
+import {delay} from 'rxjs/operators'
 @Injectable({ providedIn: 'root' })
 export class Apiresource {
   URL!: string
@@ -13,7 +13,7 @@ export class Apiresource {
   }
 
   public getApi(): Observable<any> {
-    return this.http.get(`http://localhost:8081/v1/pessoas`);
+    return this.http.get(`http://localhost:8081/v1/pessoas`).pipe(delay(2000));
   }
 
   public putPessoa(id: string, data: Pessoa) {

@@ -1,37 +1,31 @@
-import { Pessoa } from './../../components/model/pessoa';
-import { Apiresource } from './../../components/resources/apiresource';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { Pessoa } from './../../components/model/pessoa';
 
 @Component({
   selector: 'app-pessoa-details',
   templateUrl: './pessoa-details.component.html',
   styleUrls: ['./pessoa-details.component.css']
 })
-export class PessoaDetailsComponent implements OnInit {
+export class PessoaDetailsComponent implements OnInit, OnDestroy {
   id?: number;
+
   pessoa?: Pessoa;
 
-  constructor(private rout: ActivatedRoute, private api: Apiresource) { }
+  sub?: Subscription;
+
+  constructor(private rout: ActivatedRoute) { }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe()
+  }
 
   ngOnInit(): void {
-    this.getId();
-    this.getPessoa();
-
-  }
-
-  private getId(){
-    this.rout?.params.subscribe(params =>{
-      this.id = params['id'];
+   this.sub = this.rout.data.subscribe(data =>{
+        this.pessoa = data.pessoa;
     })
   }
-  private getPessoa(){
-    if(!!this.id){
-      this.api.getById(this.id).subscribe(data =>{
-        this.pessoa = data;
-      }, error =>{
-        console.log(error)
-      })
-    }
-  }
+
 }
+
