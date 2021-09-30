@@ -1,3 +1,5 @@
+import { EffectsModule } from '@ngrx/effects';
+import { StoreModule } from '@ngrx/store';
 import { AuthInterceptorService } from './components/resources/auth-interceptor.service';
 import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http";
 import { NgModule } from '@angular/core';
@@ -21,6 +23,8 @@ import { IndexComponent } from './page/index/index.component';
 import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
 import { NotfoundComponent } from './components/notfound/notfound.component';
 import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolver';
+import { appReducer } from './components/store/pessoa.state';
+import { PessoaEffectService } from './components/store/pessoa.effect.service';
 @NgModule({
   declarations: [
     AppComponent,
@@ -45,6 +49,8 @@ import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolv
     FormsModule,
     MatFormFieldModule,
     MatInputModule,
+    StoreModule.forRoot({app: appReducer}),
+    EffectsModule.forRoot([PessoaEffectService])
   ],
   exports: [
     MatButtonModule,

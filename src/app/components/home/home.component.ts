@@ -1,10 +1,13 @@
+import { map } from 'rxjs/operators';
+import { IPessoaState, loadPessoas, } from './../store/pessoa.state';
 import { Observable } from 'rxjs';
 import { Subscription } from 'rxjs';
-import { Component, Injectable, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Component, Injectable, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from "@angular/material/dialog";
 import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
 import { Pessoa } from "../model/pessoa";
 import { Apiresource } from "../resources/apiresource";
+import { Store, select } from '@ngrx/store';
 
 @Component({
   selector: 'app-home',
@@ -12,16 +15,20 @@ import { Apiresource } from "../resources/apiresource";
   styleUrls: ['./home.component.css']
 })
 @Injectable({ providedIn: 'root' })
-export class HomeComponent implements OnDestroy {
+export class HomeComponent implements OnDestroy, OnInit {
 
-  displayedColumns: string[] = ['nome', 'sexo', 'acoes'];
-
-  pessoas$?: Observable<Pessoa[]>
 
   sub?: Subscription
 
-  constructor(private api: Apiresource, public dialog: MatDialog) {
-    this.getPessoas()
+  pessoas$? = this.store.select('app').pipe(
+    map(app => app.pessoa)
+  )
+
+  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{ app: IPessoaState }>) {
+
+  }
+  ngOnInit(): void {
+    this.store.dispatch(loadPessoas())
   }
 
   ngOnDestroy(): void {
@@ -48,8 +55,5 @@ export class HomeComponent implements OnDestroy {
 
   removePessoa(pessoa: Pessoa): void {
     this.api.deletePessoa(pessoa.id)
-  }
-  getPessoas() {
-   this.pessoas$ =  this.api.getApi();
   }
 }
