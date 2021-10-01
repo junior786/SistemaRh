@@ -53,9 +53,7 @@ import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolv
   providers: [
     HttpClient,
      {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptorService,
-      multi: true
+      provide: HTTP_INTERCEPTORS, useClass: AuthInterceptorService, multi: true
      },
      PessoaDetailsResolver
   ], // ficam declarados os serviços para os componentes do modulo

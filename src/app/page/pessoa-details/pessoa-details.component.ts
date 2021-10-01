@@ -9,7 +9,6 @@ import { Pessoa } from './../../components/model/pessoa';
   styleUrls: ['./pessoa-details.component.css']
 })
 export class PessoaDetailsComponent implements OnInit, OnDestroy {
-  id?: number;
 
   pessoa?: Pessoa;
 

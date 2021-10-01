@@ -7,20 +7,14 @@ import { Observable } from 'rxjs';
 })
 export class AuthInterceptorService implements HttpInterceptor {
 
-  constructor() { }
-
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 
-    let currentUser = 'junior:123'
-        request = request.clone({
-            setHeaders: {
-                Authorization: `Basic ${currentUser}`
-            }
-        });
+    request = request.clone({
+      setHeaders: {
+        Authorization: `Basic junior:123`
+      }
+    });
 
     return next.handle(request);
   }
 }
-
-
-

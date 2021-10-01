@@ -13,7 +13,8 @@ export class Apiresource {
   }
 
   public getApi(): Observable<any> {
-    return this.http.get(`http://localhost:8081/v1/pessoas`).pipe(delay(2000));
+    // {withCredentials: true}
+    return this.http.get(`http://localhost:8081/v1/pessoas`).pipe(delay(1000));
   }
 
   public putPessoa(id: string, data: Pessoa) {
