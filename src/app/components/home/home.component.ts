@@ -14,7 +14,6 @@ import { Apiresource } from "../resources/apiresource";
 @Injectable({ providedIn: 'root' })
 export class HomeComponent implements OnDestroy {
 
-
   pessoas$?: Observable<Pessoa[]>
 
   sub?: Subscription

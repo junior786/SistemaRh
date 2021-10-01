@@ -12,9 +12,9 @@ export class Apiresource {
   constructor(private http: HttpClient) {
   }
 
-  public getApi(): Observable<any> {
+  public getApi(): Observable<Pessoa[]> {
     // {withCredentials: true}
-    return this.http.get(`http://localhost:8081/v1/pessoas`).pipe(delay(1000));
+    return this.http.get<Pessoa[]>(`http://localhost:8081/v1/pessoas`).pipe(delay(1000));
   }
 
   public putPessoa(id: string, data: Pessoa) {
