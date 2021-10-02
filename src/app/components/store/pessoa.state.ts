@@ -1,18 +1,26 @@
-import { createAction, createReducer, props } from '@ngrx/store';
-import { Pessoa } from './../model/pessoa';
+import {createAction, createReducer, on, props} from '@ngrx/store';
+import {Pessoa} from '../model/pessoa';
 
-export interface IPessoaState{
-  pessoa: Pessoa[];
+export interface IPessoaState {
+  pessoas: Pessoa[];
 }
 
 export const pessoaInitializeState: IPessoaState = {
-  pessoa: []
+  pessoas: []
 }
 
-export const loadPessoas = createAction('[app] Carrega pessoas')
-export const sucessoCarregarPessoas = createAction('[app] [Sucesso] Sucesso em carregar pessoas')
-export const setPessoa = createAction('[app] define pessoa', props<{payload: Pessoa[]}>())
+export const loadPessoas = createAction('[pessoa] Carrega pessoas')
+export const setPessoa = createAction('[pessoa] define pessoa', props<{ payload: Pessoa }>())
+export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas')
+
 
 export const appReducer = createReducer(
-  pessoaInitializeState
+  pessoaInitializeState,
+  on(setPessoa, (state, action) => {
+    return {
+      ... state,
+      pessoa: action.payload
+    }
+    })
+
 )

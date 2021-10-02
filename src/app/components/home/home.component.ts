@@ -1,13 +1,12 @@
-import { map } from 'rxjs/operators';
-import { IPessoaState, loadPessoas, } from './../store/pessoa.state';
-import { Observable } from 'rxjs';
-import { Subscription } from 'rxjs';
-import { Component, Injectable, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
-import { MatDialog } from "@angular/material/dialog";
-import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
-import { Pessoa } from "../model/pessoa";
-import { Apiresource } from "../resources/apiresource";
-import { Store, select } from '@ngrx/store';
+import {IPessoaState, loadPessoas,} from '../store/pessoa.state';
+import {Observable, Subscription} from 'rxjs';
+import {Component, Injectable, OnDestroy, OnInit} from '@angular/core';
+import {MatDialog} from "@angular/material/dialog";
+import {PessoaDialog} from "../element-dialog/pessoa-dialog.component";
+import {Pessoa} from "../model/pessoa";
+import {Apiresource} from "../resources/apiresource";
+import {select, Store} from '@ngrx/store';
+import {map} from "rxjs/operators";
 
 @Component({
   selector: 'app-home',
@@ -17,16 +16,14 @@ import { Store, select } from '@ngrx/store';
 @Injectable({ providedIn: 'root' })
 export class HomeComponent implements OnDestroy, OnInit {
 
-
   sub?: Subscription
 
-  pessoas$? = this.store.select('app').pipe(
-    map(app => app.pessoa)
-  )
+  pessoas$ = this.store.select('app').pipe(map(x => x.pessoas))
 
-  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{ app: IPessoaState }>) {
 
+  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{app: IPessoaState}>) {
   }
+
   ngOnInit(): void {
     this.store.dispatch(loadPessoas())
   }
