@@ -6,7 +6,7 @@ import { map } from 'rxjs/operators';
 import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
 import { Pessoa } from "../model/pessoa";
 import { Apiresource } from "../resources/apiresource";
-import { loadPessoas } from '../store/pessoa.state';
+import { deletePessoaLoad, loadPessoas } from '../store/pessoa.state';
 import { IPessoaState } from './../store/pessoa.state';
 
 @Component({
@@ -19,15 +19,14 @@ export class HomeComponent implements OnDestroy, OnInit {
 
   sub?: Subscription
 
-  pessoas$ = this.store.select('app').pipe(map(pessoa => pessoa.pessoas))
+  pessoas$ = this.store.select(state => state.app.pessoas)
 
-
-  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{app: IPessoaState}>) {
-    this.pessoas$.subscribe(data => console.log('teste', data))
+  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{ app: IPessoaState }>) {
+    this.store.dispatch(loadPessoas())
   }
 
   ngOnInit(): void {
-    this.store.dispatch(loadPessoas())
+
   }
 
   ngOnDestroy(): void {
@@ -52,7 +51,9 @@ export class HomeComponent implements OnDestroy, OnInit {
     });
   }
 
-  removePessoa(pessoa: Pessoa): void {
-    this.api.deletePessoa(pessoa.id)
+  removePessoa(id: number): void {
+    if (!!id) {
+      this.store.dispatch(deletePessoaLoad({ id }))
+    }
   }
 }

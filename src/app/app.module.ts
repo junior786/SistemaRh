@@ -68,13 +68,6 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
       useClass: AuthInterceptorService,
       multi: true
      },
-    PessoaEffectService,
-    {
-      provide: USER_PROVIDED_EFFECTS,
-      multi: true,
-      useValue: [PessoaEffectService],
-    },
-     PessoaDetailsResolver
   ], // ficam declarados os serviços para os componentes do modulo
   bootstrap: [AppComponent] // componente que deve ser instaciado quando iniciar a aplicação
 })

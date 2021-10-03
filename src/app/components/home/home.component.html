@@ -9,13 +9,13 @@
       <th>acoes</th>
     </tr>
     <tr *ngFor="let pessoa of person" class="columns">
-      <td [routerLink]="['/pessoa', pessoa.id]">{{ pessoa.nome }}</td>
+      <td [routerLink]="['/pessoa', pessoa.id]">{{ pessoa.nome}}</td>
       <td>{{ pessoa.sexo }}</td>
       <td>
         <button mat-icon-button color="primary" (click)="openDialog(pessoa)">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button color="primary" (click)="removePessoa(pessoa)">
+        <button mat-icon-button color="primary" (click)="removePessoa(pessoa.id)">
           <mat-icon>delete</mat-icon>
         </button>
       </td>

@@ -4,7 +4,7 @@ import { Observable } from "rxjs";
 import { Pessoa } from "../model/pessoa";
 import { PessoaEdit } from "../model/pessoaedit";
 import { PessoaPost } from './../model/pessoaPost';
-import {delay} from 'rxjs/operators'
+import { delay } from 'rxjs/operators'
 @Injectable({ providedIn: 'root' })
 export class Apiresource {
   URL!: string
@@ -13,7 +13,7 @@ export class Apiresource {
   }
 
   public getApi(): Observable<any> {
-    return this.http.get(`http://localhost:8081/v1/pessoas`).pipe(delay(2000));
+    return this.http.get(`http://localhost:8081/v1/pessoas`);
   }
 
   public putPessoa(id: string, data: Pessoa) {
@@ -24,13 +24,9 @@ export class Apiresource {
       })
   }
 
-  public deletePessoa(id: any) {
+  public deletePessoa(id: number): Observable<any> {
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
-    this.http.delete(this.URL).subscribe(resultado => {
-      console.log('OPA: ' + resultado)
-    }, error => {
-      console.log(error)
-    })
+    return this.http.delete(this.URL);
   }
   public postPessoa(pessoa: PessoaPost): Observable<any> {
     this.URL = 'http://localhost:8081/v1/pessoa'

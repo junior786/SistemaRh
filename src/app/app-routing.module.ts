@@ -7,10 +7,10 @@ import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolv
 
 
 const routes: Routes = [
-  {path:'adicionar', loadChildren: () => import('./forms-pessoa/forms-pessoa.module').then(m => m.FormsPessoaModule) },
-  { path: 'pessoa/:id', component: PessoaDetailsComponent, resolve: {pessoa: PessoaDetailsResolver } },
+  { path: 'adicionar', loadChildren: () => import('./forms-pessoa/forms-pessoa.module').then(m => m.FormsPessoaModule) },
+  { path: 'pessoa/:id', component: PessoaDetailsComponent, resolve: { pessoa: PessoaDetailsResolver } },
   { path: '', component: IndexComponent },
-  {path: '**', component: NotfoundComponent}
+  { path: '**', component: NotfoundComponent }
 ];
 
 @NgModule({
