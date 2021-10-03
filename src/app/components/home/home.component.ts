@@ -1,12 +1,13 @@
-import {IPessoaState, loadPessoas,} from '../store/pessoa.state';
-import {Observable, Subscription} from 'rxjs';
-import {Component, Injectable, OnDestroy, OnInit} from '@angular/core';
-import {MatDialog} from "@angular/material/dialog";
-import {PessoaDialog} from "../element-dialog/pessoa-dialog.component";
-import {Pessoa} from "../model/pessoa";
-import {Apiresource} from "../resources/apiresource";
-import {select, Store} from '@ngrx/store';
-import {map} from "rxjs/operators";
+import { Component, Injectable, OnDestroy, OnInit } from '@angular/core';
+import { MatDialog } from "@angular/material/dialog";
+import { Store } from '@ngrx/store';
+import { Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
+import { Pessoa } from "../model/pessoa";
+import { Apiresource } from "../resources/apiresource";
+import { loadPessoas } from '../store/pessoa.state';
+import { IPessoaState } from './../store/pessoa.state';
 
 @Component({
   selector: 'app-home',
@@ -18,10 +19,11 @@ export class HomeComponent implements OnDestroy, OnInit {
 
   sub?: Subscription
 
-  pessoas$ = this.store.select('app').pipe(map(x => x.pessoas))
+  pessoas$ = this.store.select('app').pipe(map(pessoa => pessoa.pessoas))
 
 
   constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{app: IPessoaState}>) {
+    this.pessoas$.subscribe(data => console.log('teste', data))
   }
 
   ngOnInit(): void {
