@@ -47,13 +47,10 @@ export class FormularioComponent implements OnInit, OnDestroy {
       ])
     })
   }
-
-
   onSubmit() {
-    console.log(this.formPessoa)
     this.pessoa = this.formPessoa.value
     console.log('Submit: ', this.pessoa)
-  this.sub = this.api.postPessoa(this.pessoa).subscribe(() => {
+    this.sub = this.api.postPessoa(this.pessoa).subscribe(() => {
       this.formPessoa.reset()
       this.router.navigate([''])
     }, error => {

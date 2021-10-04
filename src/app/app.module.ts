@@ -1,7 +1,7 @@
 
 import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http";
 import { NgModule } from '@angular/core';
-import { FormsModule } from "@angular/forms";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -17,7 +17,6 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { environment } from '../environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { PessoaDialog } from './components/element-dialog/pessoa-dialog.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolver';
 import { HomeComponent } from './components/home/home.component';
@@ -28,6 +27,7 @@ import { PessoaEffectService } from './components/store/pessoa.effect.service';
 import { appReducer } from "./components/store/pessoa.state";
 import { IndexComponent } from './page/index/index.component';
 import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
+import { EditPersonComponent } from './page/edit-person/edit-person.component';
 
 @NgModule({
   declarations: [
@@ -35,10 +35,10 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
     NavComponent,
     FooterComponent,
     HomeComponent,
-    PessoaDialog,
     IndexComponent,
     PessoaDetailsComponent,
-    NotfoundComponent
+    NotfoundComponent,
+    EditPersonComponent
   ],
   imports: [
     BrowserModule,
@@ -50,7 +50,7 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
-    FormsModule,
+    ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     StoreModule.forRoot({ app: appReducer}),

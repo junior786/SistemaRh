@@ -12,7 +12,7 @@
       <td [routerLink]="['/pessoa', pessoa.id]">{{ pessoa.nome}}</td>
       <td>{{ pessoa.sexo }}</td>
       <td>
-        <button mat-icon-button color="primary" (click)="openDialog(pessoa)">
+        <button mat-icon-button color="primary" [routerLink]="['/pessoa/update', pessoa.id]">
           <mat-icon>edit</mat-icon>
         </button>
         <button mat-icon-button color="primary" (click)="removePessoa(pessoa.id)">

@@ -1,0 +1,23 @@
+<form [formGroup]="formPessoa" (ngSubmit)="onSubmit()">
+    <div class="mat-elevation-z8 box">
+      <div class="form-group" >
+        <label for="nome">Nome</label>
+        <input type="text" class="form-control " name="nome" id="nome" formControlName="nome" required/>
+        <div *ngIf="formPessoa.get('nome')?.invalid && (formPessoa.get('nome')?.touched || formPessoa.get('nome')?.dirty)" class="alert">
+          <small *ngIf="formPessoa.get('nome')?.errors?.required"> Nome não pode ficar em branco</small>
+          <small *ngIf="formPessoa.get('nome')?.errors?.minlength"> Nome tem que ter no minimo 4 letras</small>
+      </div>
+      </div>
+      <div class="form-group">
+        <label for="sexo">Sexo</label>
+        <input type="text" class="form-control" name="sexo" id="sexo" formControlName="sexo" required/>
+        <div *ngIf="formPessoa.get('sexo')?.invalid && (formPessoa.get('sexo')?.touched || formPessoa.get('sexo')?.dirty)" class="alert">
+            <small *ngIf="formPessoa.get('sexo')?.errors?.required"> Sexo não pode ficar em branco</small>
+            <small *ngIf="formPessoa.get('sexo')?.errors?.minlength"> Sexo tem que ter no minimo 4 letras</small>
+        </div>
+      </div>
+        <div class="form-group">
+            <button type="submit" mat-button color="primary" [disabled]="!formPessoa.valid"> Salvar</button>
+           </div>
+        </div>
+</form>
