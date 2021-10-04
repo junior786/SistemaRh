@@ -3,7 +3,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
 import { Apiresource } from "../resources/apiresource";
-import { deletePessoaLoad, loadPessoas, putPessoa } from '../store/pessoa.state';
+import { deletePessoaLoad, loadPessoas } from '../store/pessoa.state';
 import { IPessoaState } from './../store/pessoa.state';
 
 @Component({

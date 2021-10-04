@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Actions, createEffect, ofType, act } from '@ngrx/effects';
-import { Store } from '@ngrx/store';
-import { map, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { map, mergeMap, switchMap } from 'rxjs/operators';
 import { Apiresource } from '../resources/apiresource';
-import { deletePessoaLoad, IPessoaState, loadPessoas, putPessoa, setPessoa, SucessoPessoas } from './pessoa.state';
+import { deletePessoaLoad, loadPessoas, setPessoa } from './pessoa.state';
 
 @Injectable({
   providedIn: 'root'
@@ -30,18 +29,4 @@ export class PessoaEffectService {
       ))
     )
   );
-
-  updatePessoa = createEffect(() =>
-    this.actions$.pipe(
-      ofType(putPessoa),
-      mergeMap(action => {
-        console.log('teste ', action.pessoa)
-        return this.http.putPessoa(action.pessoa.id, action.pessoa).pipe(map(
-          () => {
-            return putPessoa({ pessoa: action.pessoa })
-          }
-        ))
-      })
-    )
-  )
 }
