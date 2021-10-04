@@ -1,7 +1,6 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
 import { Pessoa } from 'src/app/components/model/pessoa';
 import { Apiresource } from 'src/app/components/resources/apiresource';
@@ -16,17 +15,18 @@ export class EditPersonComponent implements OnInit, OnDestroy {
   sub?: Subscription;
   formPessoa!: FormGroup
 
-  constructor(private rout: ActivatedRoute, private api: Apiresource, private route: Router) { 
+  constructor(private rout: ActivatedRoute, private api: Apiresource, private route: Router) {
   }
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
   }
 
   ngOnInit(): void {
-    this.sub = this.rout.data.subscribe(data =>{
+    this.sub = this.rout.data.subscribe(data => {
       this.pessoa = data.pessoa;
-  })
-  this.createForm();
+    });
+    
+    this.createForm();
   }
 
   createForm(): void {
@@ -45,9 +45,9 @@ export class EditPersonComponent implements OnInit, OnDestroy {
   onSubmit(): void {
     let id = this.pessoa?.id;
     this.pessoa = this.formPessoa?.value
-    if(!!this.pessoa){
-     this.sub = this.api.putPessoa(id,this.pessoa).subscribe();
-     this.route.navigate([''])
+    if (!!this.pessoa) {
+      this.sub = this.api.putPessoa(id, this.pessoa).subscribe();
+      this.route.navigate([''])
     }
   }
 
