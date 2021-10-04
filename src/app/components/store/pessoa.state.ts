@@ -17,7 +17,9 @@ export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas'
 
 export const deletePessoa = createAction('[pessoa] [delete] sucesso em deletar pessoa')
 export const deletePessoaLoad = createAction('[pessoa] [delete] deletar pessoa', props<{id: number}>())
-export const SucessodeletePessoa = createAction('[pessoa] [delete] sucesso em deletar pessoa')
+
+export const putPessoa = createAction('[pessoa] [edit] editar pessoa', props<{pessoa: Pessoa}>())
+
 
 export const appReducer = createReducer(
   pessoaInitializeState,
@@ -34,6 +36,15 @@ export const appReducer = createReducer(
       return {
         ... state,
         pessoas: pessoaUpdate
+      }
+    }),
+
+    on(putPessoa, (state, action) => {
+      const updatePessoa = state.pessoas.map(pessoa => pessoa)
+
+      return {
+        ... state,
+        pessoas: updatePessoa
       }
     })
 )

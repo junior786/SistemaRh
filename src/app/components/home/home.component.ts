@@ -2,11 +2,10 @@ import { Component, Injectable, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from "@angular/material/dialog";
 import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { PessoaDialog } from "../element-dialog/pessoa-dialog.component";
 import { Pessoa } from "../model/pessoa";
 import { Apiresource } from "../resources/apiresource";
-import { deletePessoaLoad, loadPessoas } from '../store/pessoa.state';
+import { deletePessoaLoad, loadPessoas, putPessoa } from '../store/pessoa.state';
 import { IPessoaState } from './../store/pessoa.state';
 
 @Component({
@@ -33,7 +32,6 @@ export class HomeComponent implements OnDestroy, OnInit {
     this.sub?.unsubscribe();
   }
 
-
   openDialog(pessoa: Pessoa): void {
     const dialogRef = this.dialog.open(PessoaDialog, {
       width: '250px',
@@ -45,15 +43,13 @@ export class HomeComponent implements OnDestroy, OnInit {
     );
 
     this.sub = dialogRef.afterClosed().subscribe(result => {
-      if (result !== undefined) {
-        this.api.putPessoa(result.id, result)
+      if(result !== undefined){
+        this.store.dispatch(putPessoa(result))
       }
     });
   }
 
   removePessoa(id: number): void {
-    if (!!id) {
       this.store.dispatch(deletePessoaLoad({ id }))
-    }
   }
 }

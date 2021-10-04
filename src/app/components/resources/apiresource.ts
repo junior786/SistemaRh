@@ -16,12 +16,9 @@ export class Apiresource {
     return this.http.get(`http://localhost:8081/v1/pessoas`);
   }
 
-  public putPessoa(id: string, data: Pessoa) {
+  public putPessoa(id: any, data: Pessoa): Observable<any> {
     this.URL = 'http://localhost:8081/v1/pessoa/' + id
-    this.http.put(this.URL, new PessoaEdit(data.nome, data.sexo))
-      .subscribe(resultado => {
-        console.log(resultado)
-      })
+    return this.http.put(this.URL, new PessoaEdit(data.nome, data.sexo))
   }
 
   public deletePessoa(id: number): Observable<any> {

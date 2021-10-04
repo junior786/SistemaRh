@@ -16,7 +16,6 @@ export class PessoaDialog implements OnInit {
     public dialogRef: MatDialogRef<PessoaDialog>,
   ) {}
 
-
   ngOnInit(): void {
   }
 
