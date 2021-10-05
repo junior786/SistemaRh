@@ -23,7 +23,6 @@ export class HomeComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-
   }
 
   ngOnDestroy(): void {
@@ -32,6 +31,6 @@ export class HomeComponent implements OnDestroy, OnInit {
 
 
   removePessoa(id: number): void {
-      this.store.dispatch(deletePessoaLoad({ id }))
+      this.store.dispatch(deletePessoaLoad({id}))
   }
 }

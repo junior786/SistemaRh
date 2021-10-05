@@ -1,8 +1,8 @@
-<div class="container">
+<div class="container" *ngIf="pessoas$ | async  as person">
   <button [routerLink]="['/adicionar']" mat-button color="primary">
     Adicionar<mat-icon class="mat-18">add</mat-icon>
   </button>
-  <table class="mat-elevation-z8" *ngIf="pessoas$ | async as person; else notFound">
+  <table class="mat-elevation-z8" >
     <tr>
       <th>nome</th>
       <th>sexo</th>
@@ -21,8 +21,12 @@
       </td>
     </tr>
   </table>
+  <div *ngIf="person.length == 0">
+     <h1>Parece vazio...</h1>
+  </div>
+  </div>
   <ng-template #notFound>
     <br>
     <div class="spinner"></div>
   </ng-template>
-</div>
+

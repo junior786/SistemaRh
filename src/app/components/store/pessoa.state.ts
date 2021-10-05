@@ -1,5 +1,3 @@
-
-import { act } from '@ngrx/effects';
 import { createAction, createReducer, on, props } from '@ngrx/store';
 import { Pessoa } from '../model/pessoa';
 
@@ -11,12 +9,12 @@ export const pessoaInitializeState: IPessoaState = {
   pessoas: []
 }
 
-export const loadPessoas = createAction('[pessoa] Carrega pessoas')
-export const setPessoa = createAction('[pessoa] define pessoa', props<{ payload: Pessoa[] }>())
+export const loadPessoas = createAction('[pessoa] [carrega] Carrega pessoas')
+export const setPessoa = createAction('[pessoa] [define] define pessoa', props<{ payload: Pessoa[] }>())
 export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas')
 
-export const deletePessoa = createAction('[pessoa] [delete] sucesso em deletar pessoa')
-export const deletePessoaLoad = createAction('[pessoa] [delete] deletar pessoa', props<{ id: number }>())
+export const deletePessoa = createAction(' [delete] [sucesso] sucesso em deletar pessoa')
+export const deletePessoaLoad = createAction(' [delete] deletar pessoa', props<{ id: number }>())
 
 
 
