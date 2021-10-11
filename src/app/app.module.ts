@@ -1,7 +1,7 @@
 
 import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http";
 import { NgModule } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -11,23 +11,22 @@ import { MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { EffectsModule, USER_PROVIDED_EFFECTS } from '@ngrx/effects';
+import { EffectsModule } from '@ngrx/effects';
 import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { environment } from '../environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { PessoaDetailsResolver } from './components/guards/pessoa-details.resolver';
 import { HomeComponent } from './components/home/home.component';
 import { NavComponent } from './components/nav/nav.component';
 import { NotfoundComponent } from './components/notfound/notfound.component';
 import { AuthInterceptorService } from './components/resources/auth-interceptor.service';
 import { PessoaEffectService } from './components/store/pessoa.effect.service';
 import { appReducer } from "./components/store/pessoa.state";
+import { EditPersonComponent } from './page/edit-person/edit-person.component';
 import { IndexComponent } from './page/index/index.component';
 import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
-import { EditPersonComponent } from './page/edit-person/edit-person.component';
 
 @NgModule({
   declarations: [
@@ -38,7 +37,8 @@ import { EditPersonComponent } from './page/edit-person/edit-person.component';
     IndexComponent,
     PessoaDetailsComponent,
     NotfoundComponent,
-    EditPersonComponent
+    EditPersonComponent,
+    
   ],
   imports: [
     BrowserModule,

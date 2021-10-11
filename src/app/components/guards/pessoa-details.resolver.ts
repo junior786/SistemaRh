@@ -16,12 +16,12 @@ export class PessoaDetailsResolver implements Resolve<Pessoa> {
     route: ActivatedRouteSnapshot,
   ): Observable<Pessoa> | Promise<Pessoa> | Pessoa {
     let id = route.params['id']
-   return this.api.getById(id).pipe(
-      catchError(() => {
-        this.router.navigate([''])
-        return EMPTY
-      })
-    )
+    try {
+      return this.api.getById(id)
+    } catch (e) {
+      console.log(e)
+      return EMPTY
+    }
   }
-  
+
 }

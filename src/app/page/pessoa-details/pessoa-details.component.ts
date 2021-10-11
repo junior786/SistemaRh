@@ -18,11 +18,13 @@ export class PessoaDetailsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe()
-  }
+  } 
 
   ngOnInit(): void {
    this.sub = this.rout.data.subscribe(data =>{
         this.pessoa = data.pessoa;
+    }, error =>{
+      console.log('teste', error)
     })
   }
 

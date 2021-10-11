@@ -3,7 +3,9 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PessoaPost } from '../components/model/pessoaPost';
+import { ApiCep } from '../components/resources/apicep';
 import { Apiresource } from '../components/resources/apiresource';
+import { ValidatorsCep } from '../components/resources/validcep';
 
 @Component({
   selector: 'app-formulario',
@@ -17,7 +19,7 @@ export class FormularioComponent implements OnInit, OnDestroy {
 
   sub?: Subscription;
 
-  constructor(private api: Apiresource, private router: Router) {
+  constructor(private api: Apiresource, private router: Router, private cep: ValidatorsCep) {
   }
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
@@ -39,7 +41,9 @@ export class FormularioComponent implements OnInit, OnDestroy {
       ]),
       cep: new FormControl(null, [
         Validators.required,
-        Validators.minLength(4)
+        Validators.minLength(8),
+        Validators.maxLength(8),
+        this.cep.validCep(),
       ]),
       numero: new FormControl(null, [
         Validators.required,
@@ -49,7 +53,6 @@ export class FormularioComponent implements OnInit, OnDestroy {
   }
   onSubmit() {
     this.pessoa = this.formPessoa.value
-    console.log('Submit: ', this.pessoa)
     this.sub = this.api.postPessoa(this.pessoa).subscribe(() => {
       this.formPessoa.reset()
       this.router.navigate([''])
