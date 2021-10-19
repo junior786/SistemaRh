@@ -1,6 +1,9 @@
 table {
   width: 100%;
 }
+.person-table{
+  background-color: #fefae0
+}
 .container{
   padding:  50px 80px;
 }
@@ -12,6 +15,7 @@ table {
 table th{
   font-size: 18px;
 }
+
 
 .spinner {
   margin-left: 50%;

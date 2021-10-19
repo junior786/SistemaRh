@@ -17,14 +17,12 @@ export class AuthInterceptorService implements HttpInterceptor {
         if (error.error instanceof Error) {
           console.error('An error occurred:', error.error.message);
         } else {
-       //   this.router.navigate([''])
+          this.router.navigate(['usernotfound'])
         }
         return EMPTY;
       })
     )
   }
 }
-
-
 
 

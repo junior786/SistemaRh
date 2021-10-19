@@ -19,9 +19,13 @@
     margin-top: 15px;
     margin-left: 15px;
     margin-right: 15px;
+    background-color: #fefae0;
   }
   .alert{
     color: red;
+  }
+  input{
+    background-color: #fefae0;
   }
   
   

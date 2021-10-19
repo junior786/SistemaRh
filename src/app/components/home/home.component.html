@@ -1,8 +1,8 @@
 <div class="container" *ngIf="pessoas$ | async  as person">
-  <button [routerLink]="['/adicionar']" mat-button color="primary">
+  <button [routerLink]="['/adicionar']" mat-button color="primary" class="redirect-form">
     Adicionar<mat-icon class="mat-18">add</mat-icon>
   </button>
-  <table class="mat-elevation-z8" >
+  <table class="mat-elevation-z8 person-table">
     <tr>
       <th>nome</th>
       <th>sexo</th>

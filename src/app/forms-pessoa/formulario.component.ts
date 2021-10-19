@@ -29,7 +29,7 @@ export class FormularioComponent implements OnInit, OnDestroy {
     this.createForm()
   }
 
-  createForm() {
+  createForm(): void {
     this.formPessoa = new FormGroup({
       nome: new FormControl(null, [
         Validators.required,
@@ -43,7 +43,6 @@ export class FormularioComponent implements OnInit, OnDestroy {
         Validators.required,
         Validators.minLength(8),
         Validators.maxLength(8),
-        //  this.cep.validCep(),
       ]),
       numero: new FormControl(null, [
         Validators.required,
@@ -66,7 +65,7 @@ export class FormularioComponent implements OnInit, OnDestroy {
     })
     return true
   }
-
+//selector
   async validCep(cep: string): Promise<boolean> {
 
     let cepAtual: Cep = new Cep;

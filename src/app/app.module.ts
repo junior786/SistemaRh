@@ -27,6 +27,7 @@ import { appReducer } from "./components/store/pessoa.state";
 import { EditPersonComponent } from './page/edit-person/edit-person.component';
 import { IndexComponent } from './page/index/index.component';
 import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.component';
+import { UserNotFoundComponent } from './components/user-not-found/user-not-found.component';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,7 @@ import { PessoaDetailsComponent } from './page/pessoa-details/pessoa-details.com
     PessoaDetailsComponent,
     NotfoundComponent,
     EditPersonComponent,
+    UserNotFoundComponent,
     
   ],
   imports: [
