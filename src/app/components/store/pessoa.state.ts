@@ -13,16 +13,19 @@ export const loadPessoas = createAction('[pessoa] [carrega] Carrega pessoas')
 export const setPessoa = createAction('[pessoa] [define] define pessoa', props<{ payload: Pessoa[] }>())
 export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas')
 
-
 export const deletePessoa = createAction(' [delete] [sucesso] sucesso em deletar pessoa')
 export const deletePessoaLoad = createAction(' [delete] deletar pessoa', props<{ id: number }>())
 
+export const selectFeature = (state: IPessoaState) => state
 
-
+console.log(selectFeature, 'test')
 
 export const selectPessoas = createSelector(
-    (state: IPessoaState) => state.pessoas,
-    (state: Pessoa[]) => state
+  selectFeature,
+  (state: IPessoaState) => {
+    console.log(state, 'TESTE')
+    return state.pessoas;
+  }
 );
 
 export const appReducer = createReducer(
@@ -42,6 +45,4 @@ export const appReducer = createReducer(
       pessoas: pessoaUpdate
     }
   }),
-
-
 )

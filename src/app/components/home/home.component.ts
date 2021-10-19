@@ -1,9 +1,9 @@
 import { Component, Injectable, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from "@angular/material/dialog";
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
 import { Apiresource } from "../resources/apiresource";
-import { deletePessoaLoad, loadPessoas } from '../store/pessoa.state';
+import { deletePessoaLoad, loadPessoas, selectPessoas } from '../store/pessoa.state';
 import { IPessoaState } from './../store/pessoa.state';
 
 @Component({
@@ -16,9 +16,9 @@ export class HomeComponent implements OnDestroy, OnInit {
 
   sub?: Subscription
 
-  pessoas$ = this.store.select(state => state.app.pessoas)
+  pessoas$ = this.store.pipe(select(selectPessoas))
 
-  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<{ app: IPessoaState }>) {
+  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<IPessoaState>) {
     this.store.dispatch(loadPessoas())
   }
 
