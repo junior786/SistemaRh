@@ -16,16 +16,11 @@ export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas'
 export const deletePessoa = createAction(' [delete] [sucesso] sucesso em deletar pessoa')
 export const deletePessoaLoad = createAction(' [delete] deletar pessoa', props<{ id: number }>())
 
-export const selectFeature = (state: IPessoaState) => state
+export const selectPessoas = (state: IPessoaState) => state.pessoas;
 
-console.log(selectFeature, 'test')
-
-export const selectPessoas = createSelector(
-  selectFeature,
-  (state: IPessoaState) => {
-    console.log(state, 'TESTE')
-    return state.pessoas;
-  }
+export const selectPessoasAll = createSelector(
+  selectPessoas,
+  (state: Pessoa[]) => state
 );
 
 export const appReducer = createReducer(

@@ -23,6 +23,7 @@ export class HomeComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
+    console.log(this.store.pipe(select(selectPessoas)));
   }
 
   ngOnDestroy(): void {
