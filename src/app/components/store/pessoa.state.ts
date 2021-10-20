@@ -1,4 +1,4 @@
-import { createAction, createReducer, createSelector, on, props } from '@ngrx/store';
+import { createAction, createReducer, createSelector, on, props, createFeatureSelector } from '@ngrx/store';
 import { Pessoa } from '../model/pessoa';
 
 export interface IPessoaState {
@@ -10,17 +10,19 @@ export const pessoaInitializeState: IPessoaState = {
 }
 
 export const loadPessoas = createAction('[pessoa] [carrega] Carrega pessoas')
-export const setPessoa = createAction('[pessoa] [define] define pessoa', props<{ payload: Pessoa[] }>())
+export const setPessoa = createAction('[pessoa] [define] define pessoa', (pessoa: Pessoa[]) => ({pessoa}))
 export const SucessoPessoas = createAction('[pessoa] Sucesso em Carrega pessoas')
 
-export const deletePessoa = createAction(' [delete] [sucesso] sucesso em deletar pessoa')
-export const deletePessoaLoad = createAction(' [delete] deletar pessoa', props<{ id: number }>())
+export const deletePessoa = createAction('[delete] [sucesso] sucesso em deletar pessoa')
+export const deletePessoaLoad = createAction('[delete] deletar pessoa', props<{ id: number }>())
 
-export const selectPessoas = (state: IPessoaState) => state.pessoas;
+export const selectPessoa = createFeatureSelector<IPessoaState>('app');
 
 export const selectPessoasAll = createSelector(
-  selectPessoas,
-  (state: Pessoa[]) => state
+  selectPessoa,
+  (pessoas: IPessoaState) => {
+    return pessoas.pessoas;
+  }
 );
 
 export const appReducer = createReducer(
@@ -28,7 +30,7 @@ export const appReducer = createReducer(
   on(setPessoa, (state, action) => {
     return {
       ...state,
-      pessoas: action.payload
+      pessoas: action.pessoa
     }
   }),
   on(deletePessoaLoad, (state, { id }) => {
@@ -40,4 +42,4 @@ export const appReducer = createReducer(
       pessoas: pessoaUpdate
     }
   }),
-)
+);

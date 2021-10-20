@@ -1,9 +1,9 @@
 import { Component, Injectable, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from "@angular/material/dialog";
 import { select, Store } from '@ngrx/store';
-import { Subscription } from 'rxjs';
-import { Apiresource } from "../resources/apiresource";
-import { deletePessoaLoad, loadPessoas, selectPessoas } from '../store/pessoa.state';
+import { Observable, Subscription } from 'rxjs';
+import { Pessoa } from '../model/pessoa';
+import { deletePessoaLoad, loadPessoas, selectPessoasAll } from '../store/pessoa.state';
 import { IPessoaState } from './../store/pessoa.state';
 
 @Component({
@@ -16,14 +16,16 @@ export class HomeComponent implements OnDestroy, OnInit {
 
   sub?: Subscription
 
-  pessoas$ = this.store.pipe(select(selectPessoas))
+  pessoas$?: Observable<Pessoa[]>
 
-  constructor(private api: Apiresource, public dialog: MatDialog, private store: Store<IPessoaState>) {
+  constructor(public dialog: MatDialog, private store: Store<IPessoaState>) {
     this.store.dispatch(loadPessoas())
   }
 
   ngOnInit(): void {
-    console.log(this.store.pipe(select(selectPessoas)));
+    this.pessoas$ = this.store.pipe(select(selectPessoasAll));
+
+    console.log(this.store.pipe(select(selectPessoasAll)))
   }
 
   ngOnDestroy(): void {
@@ -32,6 +34,6 @@ export class HomeComponent implements OnDestroy, OnInit {
 
 
   removePessoa(id: number): void {
-      this.store.dispatch(deletePessoaLoad({id}))
+    this.store.dispatch(deletePessoaLoad({ id }))
   }
 }

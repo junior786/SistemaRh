@@ -17,7 +17,7 @@ export class PessoaEffectService {
       mergeMap(() => {
         return this.http.getApi()
       }),
-      map(pessoa => setPessoa({ payload: pessoa }))
+      map(pessoa => setPessoa(pessoa))
     )
   );
 
@@ -27,6 +27,6 @@ export class PessoaEffectService {
       mergeMap(action => this.http.deletePessoa(action.id).pipe(
         map(() => deletePessoaLoad({ id: action.id }))
       ))
-    ), {dispatch: false}
+    ), { dispatch: false }
   );
 }
