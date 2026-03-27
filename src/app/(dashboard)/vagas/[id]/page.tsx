@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MapPin, Briefcase, DollarSign, Users, ArrowRight } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Users, ArrowRight, Pencil } from "lucide-react";
 
 interface Requisito {
   id: string;
@@ -48,8 +48,11 @@ interface Vaga {
   id: string;
   titulo: string;
   area: string;
+  jobType: string;
   regime: string;
+  modalidade: string;
   localizacao: string;
+  cep: string | null;
   salarioMin: number | null;
   salarioMax: number | null;
   descricao: string;
@@ -69,6 +72,12 @@ const regimeMap: Record<string, string> = {
   PJ: "PJ",
   ESTAGIO: "Estágio",
   FREELANCER: "Freelancer",
+};
+
+const modalidadeMap: Record<string, string> = {
+  PRESENCIAL: "Presencial",
+  REMOTO: "Remoto",
+  HIBRIDO: "Híbrido",
 };
 
 export default function DetalheVagaPage() {
@@ -117,14 +126,20 @@ export default function DetalheVagaPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-semibold">{vaga.titulo}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">{vaga.titulo}</h2>
+            <Badge variant="outline" className="text-xs">{vaga.jobType}</Badge>
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" /> {vaga.localizacao}
             </span>
             <span className="flex items-center gap-1">
-              <Briefcase className="h-3.5 w-3.5" /> {vaga.area} · {regimeMap[vaga.regime] ?? vaga.regime}
+              <Briefcase className="h-3.5 w-3.5" /> {vaga.area} · {regimeMap[vaga.regime] ?? vaga.regime} · {modalidadeMap[vaga.modalidade] ?? vaga.modalidade}
             </span>
+            {vaga.cep && (
+              <span className="text-xs">CEP: {vaga.cep}</span>
+            )}
             {faixa && (
               <span className="flex items-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" /> {faixa}
@@ -143,6 +158,10 @@ export default function DetalheVagaPage() {
               <SelectItem value="FECHADA">Fechada</SelectItem>
             </SelectContent>
           </Select>
+          <Link href={`/vagas/${vagaId}/editar`} className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}>
+            <Pencil className="h-4 w-4" />
+            Editar
+          </Link>
           <Link href={`/vagas/${vagaId}/triagem`} className={cn(buttonVariants(), "gap-1.5")}>
             <Users className="h-4 w-4" />
             Triagem

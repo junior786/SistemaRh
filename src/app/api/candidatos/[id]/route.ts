@@ -36,7 +36,7 @@ export async function PUT(
   const { id } = await params;
   const body = await request.json();
   const {
-    nome, email, telefone, cidade, resumo, pretensaoSalarial,
+    nome, email, telefone, cidade, cep, resumo, jobType, pretensaoSalarial,
     skills, experiencias, formacoes,
   } = body;
 
@@ -47,7 +47,9 @@ export async function PUT(
       ...(email && { email }),
       ...(telefone !== undefined && { telefone: telefone || null }),
       ...(cidade !== undefined && { cidade: cidade || null }),
+      ...(cep !== undefined && { cep: cep || null }),
       ...(resumo !== undefined && { resumo: resumo || null }),
+      ...(jobType !== undefined && { jobType }),
       ...(pretensaoSalarial !== undefined && {
         pretensaoSalarial: pretensaoSalarial ? parseFloat(pretensaoSalarial) : null,
       }),

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
-    nome, email, telefone, cidade, resumo, pretensaoSalarial,
+    nome, email, telefone, cidade, cep, resumo, jobType, pretensaoSalarial,
     skills, experiencias, formacoes,
   } = body;
 
@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
       email,
       telefone: telefone || null,
       cidade: cidade || null,
+      cep: cep || null,
       resumo: resumo || null,
+      jobType,
       pretensaoSalarial: pretensaoSalarial ? parseFloat(pretensaoSalarial) : null,
       skills: {
         create: (skills || []).map((s: string) => ({ nome: s })),

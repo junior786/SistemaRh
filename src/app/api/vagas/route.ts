@@ -33,30 +33,42 @@ export async function GET(request: NextRequest) {
 // POST /api/vagas — criar vaga com requisitos
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { titulo, area, regime, localizacao, salarioMin, salarioMax, descricao, requisitos } = body;
+  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, requisitos } = body;
 
-  if (!titulo || !area || !regime || !localizacao || !descricao) {
+  if (!titulo || !area || !regime || !modalidade || !localizacao || !descricao) {
     return Response.json({ error: "Campos obrigatórios faltando" }, { status: 400 });
   }
 
-  const vaga = await prisma.vaga.create({
-    data: {
-      titulo,
-      area,
-      regime,
-      localizacao,
-      salarioMin: salarioMin ? parseFloat(salarioMin) : null,
-      salarioMax: salarioMax ? parseFloat(salarioMax) : null,
-      descricao,
-      requisitos: {
-        create: (requisitos || []).map((r: { descricao: string; tipo: string }) => ({
-          descricao: r.descricao,
-          tipo: r.tipo,
-        })),
-      },
-    },
-    include: { requisitos: true },
-  });
+  if ((modalidade === "PRESENCIAL" || modalidade === "HIBRIDO") && !cep) {
+    return Response.json({ error: "CEP é obrigatório para vagas presenciais ou híbridas" }, { status: 400 });
+  }
 
-  return Response.json(vaga, { status: 201 });
+  try {
+    const vaga = await prisma.vaga.create({
+      data: {
+        titulo,
+        area,
+        jobType,
+        regime,
+        modalidade,
+        localizacao,
+        cep: cep || null,
+        salarioMin: salarioMin ? parseFloat(salarioMin) : null,
+        salarioMax: salarioMax ? parseFloat(salarioMax) : null,
+        descricao,
+        requisitos: {
+          create: (requisitos || []).map((r: { descricao: string; tipo: string }) => ({
+            descricao: r.descricao,
+            tipo: r.tipo,
+          })),
+        },
+      },
+      include: { requisitos: true },
+    });
+
+    return Response.json(vaga, { status: 201 });
+  } catch (err) {
+    console.error("Erro ao criar vaga:", err);
+    return Response.json({ error: "Erro interno ao criar vaga", details: String(err) }, { status: 500 });
+  }
 }

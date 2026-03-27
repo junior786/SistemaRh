@@ -55,7 +55,9 @@ interface Candidato {
   email: string;
   telefone: string | null;
   cidade: string | null;
+  cep: string | null;
   resumo: string | null;
+  jobType: string;
   pretensaoSalarial: number | null;
   skills: Skill[];
   experiencias: Experiencia[];
@@ -110,7 +112,10 @@ export default function PerfilCandidatoPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-semibold">{candidato.nome}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">{candidato.nome}</h2>
+            <Badge variant="outline" className="text-xs">{candidato.jobType}</Badge>
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Mail className="h-3.5 w-3.5" /> {candidato.email}
@@ -125,6 +130,9 @@ export default function PerfilCandidatoPage() {
                 <MapPin className="h-3.5 w-3.5" /> {candidato.cidade}
               </span>
             )}
+            {candidato.cep && (
+              <span className="text-xs">CEP: {candidato.cep}</span>
+            )}
             {candidato.pretensaoSalarial && (
               <span className="flex items-center gap-1">
                 <DollarSign className="h-3.5 w-3.5" /> R${" "}
@@ -133,7 +141,7 @@ export default function PerfilCandidatoPage() {
             )}
           </div>
         </div>
-        <Link href={`/candidatos/${candidatoId}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+        <Link href={`/candidatos/${candidatoId}/editar`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           Editar
         </Link>
       </div>

@@ -46,6 +46,7 @@ async function processarAnalise(
     vaga: {
       titulo: string;
       area: string;
+      jobType: string;
       regime: string;
       descricao: string;
       requisitos: { descricao: string; tipo: string }[];
@@ -53,6 +54,7 @@ async function processarAnalise(
     candidato: {
       nome: string;
       resumo: string | null;
+      jobType: string;
       skills: { nome: string }[];
       experiencias: {
         empresa: string;
@@ -74,6 +76,7 @@ async function processarAnalise(
       {
         titulo: triagem.vaga.titulo,
         area: triagem.vaga.area,
+        jobType: triagem.vaga.jobType,
         regime: triagem.vaga.regime,
         descricao: triagem.vaga.descricao,
         requisitos: triagem.vaga.requisitos.map((r) => ({
@@ -84,6 +87,7 @@ async function processarAnalise(
       {
         nome: triagem.candidato.nome,
         resumo: triagem.candidato.resumo,
+        jobType: triagem.candidato.jobType,
         skills: triagem.candidato.skills.map((s) => s.nome),
         experiencias: triagem.candidato.experiencias.map((e) => ({
           empresa: e.empresa,

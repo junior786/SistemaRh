@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,20 +24,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   UserPlus,
   RotateCw,
   Calendar,
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  MapPin,
+  DollarSign,
+  Zap,
+  Search,
+  Loader2,
+  Users,
+  X,
+  Briefcase,
+  Filter,
 } from "lucide-react";
+
+// ── Tipos ────────────────────────────────────────────
 
 interface Triagem {
   id: string;
@@ -54,10 +59,35 @@ interface Triagem {
   };
 }
 
-interface Candidato {
+interface CandidatoCompleto {
   id: string;
   nome: string;
   email: string;
+  cidade: string | null;
+  cep: string | null;
+  jobType: string;
+  pretensaoSalarial: number | null;
+  skills: { nome: string }[];
+  _count: { triagens: number };
+}
+
+interface Requisito {
+  id: string;
+  descricao: string;
+  tipo: "OBRIGATORIO" | "DESEJAVEL";
+}
+
+interface VagaDetalhe {
+  id: string;
+  titulo: string;
+  area: string;
+  jobType: string;
+  modalidade: string;
+  localizacao: string;
+  cep: string | null;
+  salarioMin: number | null;
+  salarioMax: number | null;
+  requisitos: Requisito[];
 }
 
 interface ChecklistItem {
@@ -67,18 +97,128 @@ interface ChecklistItem {
   observacao: string;
 }
 
+interface CandidatoSugerido extends CandidatoCompleto {
+  compatibilidade: number;
+  skillsMatch: string[];
+  salarioOk: boolean | null;
+  localOk: boolean | null;
+}
+
+// ── Lógica de compatibilidade básica ─────────────────
+
+function normalize(str: string) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function tokenize(str: string): string[] {
+  return normalize(str)
+    .split(/[\s,;/\-+()]+/)
+    .filter((t) => t.length >= 2);
+}
+
+function matchRequisito(skillsNorm: string[], skillTokens: string[][], reqDescricao: string): boolean {
+  const reqNorm = normalize(reqDescricao);
+  const reqTokens = tokenize(reqDescricao);
+
+  for (const s of skillsNorm) {
+    if (reqNorm.includes(s) || s.includes(reqNorm)) return true;
+  }
+
+  for (const rt of reqTokens) {
+    if (rt.length < 3) continue;
+    for (const st of skillTokens) {
+      if (st.some((t) => t === rt || (t.length >= 4 && rt.length >= 4 && (t.includes(rt) || rt.includes(t))))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function calcularCompatibilidade(
+  candidato: CandidatoCompleto,
+  vaga: VagaDetalhe,
+): CandidatoSugerido {
+  const skillsNorm = candidato.skills.map((s) => normalize(s.nome));
+  const skillTokens = candidato.skills.map((s) => tokenize(s.nome));
+
+  if (candidato.skills.length === 0) {
+    return { ...candidato, compatibilidade: 0, skillsMatch: [], salarioOk: null, localOk: null };
+  }
+
+  const skillsMatch: string[] = [];
+  let reqObrigMatch = 0, reqObrigTotal = 0, reqDesejMatch = 0, reqDesejTotal = 0;
+
+  for (const req of vaga.requisitos) {
+    const match = matchRequisito(skillsNorm, skillTokens, req.descricao);
+    if (req.tipo === "OBRIGATORIO") {
+      reqObrigTotal++;
+      if (match) { reqObrigMatch++; skillsMatch.push(req.descricao); }
+    } else {
+      reqDesejTotal++;
+      if (match) { reqDesejMatch++; skillsMatch.push(req.descricao); }
+    }
+  }
+
+  const totalReqs = reqObrigTotal + reqDesejTotal;
+  if (totalReqs > 0 && skillsMatch.length === 0) {
+    return { ...candidato, compatibilidade: 0, skillsMatch: [], salarioOk: null, localOk: null };
+  }
+
+  const pesoObrig = reqObrigTotal > 0 ? (reqObrigMatch / reqObrigTotal) * 70 : 0;
+  const pesoDesej = reqDesejTotal > 0 ? (reqDesejMatch / reqDesejTotal) * 30 : 0;
+  let score = pesoObrig + pesoDesej;
+
+  let salarioOk: boolean | null = null;
+  if (candidato.pretensaoSalarial && vaga.salarioMax) {
+    salarioOk = candidato.pretensaoSalarial <= vaga.salarioMax * 1.1;
+    if (salarioOk) score = Math.min(100, score + 10);
+  }
+
+  let localOk: boolean | null = null;
+  if (candidato.cep && vaga.cep) {
+    const prefixoCand = candidato.cep.replace(/\D/g, "").slice(0, 3);
+    const prefixoVaga = vaga.cep.replace(/\D/g, "").slice(0, 3);
+    localOk = prefixoCand === prefixoVaga;
+    if (localOk) score = Math.min(100, score + 10);
+  } else if (vaga.modalidade === "REMOTO") {
+    localOk = true;
+    score = Math.min(100, score + 10);
+  }
+
+  return { ...candidato, compatibilidade: Math.round(score), skillsMatch, salarioOk, localOk };
+}
+
+// ── Componente ───────────────────────────────────────
+
 export default function TriagemPage() {
   const params = useParams();
   const vagaId = params.id as string;
+
   const [triagens, setTriagens] = useState<Triagem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [scoreMinimo, setScoreMinimo] = useState("");
 
-  // Dialog de vincular candidato
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [candidatosDisponiveis, setCandidatosDisponiveis] = useState<Candidato[]>([]);
-  const [candidatoSelecionado, setCandidatoSelecionado] = useState("");
+  // Painel de sugeridos
+  const [vaga, setVaga] = useState<VagaDetalhe | null>(null);
+  const [todosCandidatos, setTodosCandidatos] = useState<CandidatoCompleto[]>([]);
+  const [loadingSugeridos, setLoadingSugeridos] = useState(true);
+  const [buscaSugerido, setBuscaSugerido] = useState("");
+  const [vinculando, setVinculando] = useState<string | null>(null);
+
+  // Modal de adicionar candidato
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalBusca, setModalBusca] = useState("");
+  const [modalFiltroTipo, setModalFiltroTipo] = useState("");
+  const [modalFiltroCidade, setModalFiltroCidade] = useState("");
+
+  // ── Data fetching ──
 
   const carregarTriagens = useCallback(() => {
     fetch(`/api/triagens?vagaId=${vagaId}`)
@@ -92,36 +232,114 @@ export default function TriagemPage() {
     carregarTriagens();
   }, [carregarTriagens]);
 
-  async function carregarCandidatos() {
-    const res = await fetch("/api/candidatos");
-    const todos: Candidato[] = await res.json();
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
+      fetch("/api/candidatos").then((r) => r.json()),
+    ])
+      .then(([vagaData, candidatosData]) => {
+        setVaga(vagaData);
+        setTodosCandidatos(candidatosData);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingSugeridos(false));
+  }, [vagaId]);
+
+  // ── Candidatos sugeridos ──
+
+  const sugeridos = useMemo(() => {
+    if (!vaga || todosCandidatos.length === 0) return [];
+
     const idsVinculados = new Set(triagens.map((t) => t.candidato.id));
-    setCandidatosDisponiveis(todos.filter((c) => !idsVinculados.has(c.id)));
-  }
+    const disponiveis = todosCandidatos.filter((c) => !idsVinculados.has(c.id));
 
-  async function vincularCandidato() {
-    if (!candidatoSelecionado) return;
+    const filtradosPorTipo = vaga.jobType
+      ? disponiveis.filter(
+          (c) => c.jobType && normalize(c.jobType) === normalize(vaga.jobType!),
+        )
+      : disponiveis;
 
-    const res = await fetch("/api/triagens", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ vagaId, candidatoId: candidatoSelecionado }),
-    });
+    const comScore = filtradosPorTipo
+      .map((c) => calcularCompatibilidade(c, vaga))
+      .filter((c) => vaga.jobType ? true : c.compatibilidade >= 50)
+      .sort((a, b) => b.compatibilidade - a.compatibilidade);
 
-    if (res.ok) {
-      setDialogOpen(false);
-      setCandidatoSelecionado("");
-      carregarTriagens();
+    if (buscaSugerido.trim()) {
+      const termo = normalize(buscaSugerido);
+      return comScore.filter(
+        (c) =>
+          normalize(c.nome).includes(termo) ||
+          normalize(c.email).includes(termo) ||
+          c.skills.some((s) => normalize(s.nome).includes(termo)),
+      );
+    }
+
+    return comScore;
+  }, [vaga, todosCandidatos, triagens, buscaSugerido]);
+
+  // ── Modal: todos os candidatos disponíveis com filtros ──
+
+  const candidatosModal = useMemo(() => {
+    const idsVinculados = new Set(triagens.map((t) => t.candidato.id));
+    let lista = todosCandidatos.filter((c) => !idsVinculados.has(c.id));
+
+    if (modalBusca.trim()) {
+      const termo = normalize(modalBusca);
+      lista = lista.filter(
+        (c) =>
+          normalize(c.nome).includes(termo) ||
+          normalize(c.email).includes(termo) ||
+          c.skills.some((s) => normalize(s.nome).includes(termo)),
+      );
+    }
+
+    if (modalFiltroTipo) {
+      const tipo = normalize(modalFiltroTipo);
+      lista = lista.filter((c) => c.jobType && normalize(c.jobType).includes(tipo));
+    }
+
+    if (modalFiltroCidade) {
+      const cidade = normalize(modalFiltroCidade);
+      lista = lista.filter((c) => c.cidade && normalize(c.cidade).includes(cidade));
+    }
+
+    return lista;
+  }, [todosCandidatos, triagens, modalBusca, modalFiltroTipo, modalFiltroCidade]);
+
+  // Valores únicos para chips de filtro
+  const tiposUnicos = useMemo(() => {
+    const set = new Set<string>();
+    todosCandidatos.forEach((c) => { if (c.jobType) set.add(c.jobType); });
+    return Array.from(set).sort();
+  }, [todosCandidatos]);
+
+  const cidadesUnicas = useMemo(() => {
+    const set = new Set<string>();
+    todosCandidatos.forEach((c) => { if (c.cidade) set.add(c.cidade); });
+    return Array.from(set).sort();
+  }, [todosCandidatos]);
+
+  // ── Ações ──
+
+  async function vincularCandidato(candidatoId: string) {
+    setVinculando(candidatoId);
+    try {
+      const res = await fetch("/api/triagens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vagaId, candidatoId }),
+      });
+      if (res.ok) carregarTriagens();
+    } finally {
+      setVinculando(null);
     }
   }
 
   async function analisar(triagemId: string) {
     await fetch(`/api/triagens/${triagemId}/analisar`, { method: "POST" });
-    // Atualiza status localmente
     setTriagens((prev) =>
       prev.map((t) => (t.id === triagemId ? { ...t, status: "PROCESSANDO" } : t)),
     );
-    // Poll para atualizar quando concluir
     const interval = setInterval(async () => {
       const res = await fetch(`/api/triagens?vagaId=${vagaId}`);
       const data: Triagem[] = await res.json();
@@ -133,6 +351,8 @@ export default function TriagemPage() {
     }, 3000);
   }
 
+  // ── Filtro triagens ──
+
   const triagensFiltradas = triagens.filter((t) => {
     if (scoreMinimo && t.score != null) {
       return t.score >= parseFloat(scoreMinimo);
@@ -140,14 +360,24 @@ export default function TriagemPage() {
     return true;
   });
 
+  const activeModalFilters = [
+    modalFiltroTipo && `Tipo: ${modalFiltroTipo}`,
+    modalFiltroCidade && `Cidade: ${modalFiltroCidade}`,
+  ].filter(Boolean).length;
+
+  // ── Render ──
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Triagem de candidatos</h2>
           <p className="text-sm text-muted-foreground">
-            {triagens.length} candidato(s) vinculado(s)
+            {vaga?.titulo && (
+              <span className="font-medium text-foreground">{vaga.titulo}</span>
+            )}
+            {" · "}{triagens.length} candidato(s) vinculado(s)
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -158,42 +388,209 @@ export default function TriagemPage() {
             value={scoreMinimo}
             onChange={(e) => setScoreMinimo(e.target.value)}
           />
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
+          {/* Botão para abrir modal de adicionar */}
+          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger
               className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
-              onClick={carregarCandidatos}
             >
-              <UserPlus className="h-4 w-4" />
-              Vincular Candidato
+              <Users className="h-4 w-4" />
+              Adicionar Candidato
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
               <DialogHeader>
-                <DialogTitle>Vincular candidato à vaga</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Adicionar candidato à triagem
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <Select
-                  value={candidatoSelecionado}
-                  onValueChange={(v) => setCandidatoSelecionado(v ?? "")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um candidato" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {candidatosDisponiveis.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nome} ({c.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={vincularCandidato} disabled={!candidatoSelecionado}>
-                    Vincular e Analisar
-                  </Button>
+
+              {/* Barra de busca + filtros */}
+              <div className="space-y-3 pt-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome, email ou skill..."
+                    className="pl-9"
+                    value={modalBusca}
+                    onChange={(e) => setModalBusca(e.target.value)}
+                    autoFocus
+                  />
                 </div>
+
+                {/* Filtros em chips */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+
+                  {/* Tipo de trabalho */}
+                  {tiposUnicos.map((tipo) => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() =>
+                        setModalFiltroTipo(modalFiltroTipo === tipo ? "" : tipo)
+                      }
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                        modalFiltroTipo === tipo
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <Briefcase className="h-3 w-3" />
+                      {tipo}
+                    </button>
+                  ))}
+
+                  <span className="h-4 w-px bg-border" />
+
+                  {/* Cidades */}
+                  {cidadesUnicas.slice(0, 5).map((cidade) => (
+                    <button
+                      key={cidade}
+                      type="button"
+                      onClick={() =>
+                        setModalFiltroCidade(modalFiltroCidade === cidade ? "" : cidade)
+                      }
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                        modalFiltroCidade === cidade
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      {cidade}
+                    </button>
+                  ))}
+
+                  {/* Limpar filtros */}
+                  {activeModalFilters > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalFiltroTipo("");
+                        setModalFiltroCidade("");
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                      Limpar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Contagem */}
+              <div className="flex items-center justify-between border-b pb-2 pt-1">
+                <p className="text-xs text-muted-foreground">
+                  {candidatosModal.length} candidato{candidatosModal.length !== 1 ? "s" : ""} disponível{candidatosModal.length !== 1 ? "is" : ""}
+                </p>
+                {activeModalFilters > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {activeModalFilters} filtro{activeModalFilters > 1 ? "s" : ""} ativo{activeModalFilters > 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Lista de candidatos */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 space-y-1.5">
+                {candidatosModal.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Search className="mb-2 h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum candidato encontrado
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">
+                      Tente ajustar os filtros ou a busca
+                    </p>
+                  </div>
+                ) : (
+                  candidatosModal.map((c) => {
+                    const isVinc = vinculando === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className="group flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                      >
+                        {/* Avatar placeholder */}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                          {c.nome.charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">
+                              {c.nome}
+                            </p>
+                            {c.jobType && (
+                              <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0">
+                                {c.jobType}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {c.email}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 overflow-hidden">
+                            {/* Skills */}
+                            <div className="flex flex-wrap gap-1">
+                              {c.skills.slice(0, 3).map((s) => (
+                                <Badge
+                                  key={s.nome}
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 whitespace-nowrap"
+                                >
+                                  {s.nome}
+                                </Badge>
+                              ))}
+                              {c.skills.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  +{c.skills.length - 3}
+                                </span>
+                              )}
+                            </div>
+                            {c.cidade && (
+                              <>
+                                <span className="h-3 w-px bg-border shrink-0" />
+                                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground whitespace-nowrap">
+                                  <MapPin className="h-2.5 w-2.5 shrink-0" />
+                                  {c.cidade}
+                                </span>
+                              </>
+                            )}
+                            {c.pretensaoSalarial && (
+                              <>
+                                <span className="h-3 w-px bg-border shrink-0" />
+                                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground whitespace-nowrap">
+                                  <DollarSign className="h-2.5 w-2.5 shrink-0" />
+                                  R$ {c.pretensaoSalarial.toLocaleString("pt-BR")}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Ação */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={isVinc}
+                          onClick={() => vincularCandidato(c.id)}
+                        >
+                          {isVinc ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserPlus className="h-3.5 w-3.5" />
+                          )}
+                          {isVinc ? "..." : "Vincular"}
+                        </Button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </DialogContent>
           </Dialog>
@@ -226,7 +623,7 @@ export default function TriagemPage() {
                     colSpan={5}
                     className="py-8 text-center text-muted-foreground"
                   >
-                    Nenhum candidato encontrado.
+                    Nenhum candidato vinculado ainda. Veja as sugestões abaixo.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -234,9 +631,7 @@ export default function TriagemPage() {
                   const isExpanded = expandedId === t.id;
                   let checklist: ChecklistItem[] = [];
                   if (t.checklist) {
-                    try {
-                      checklist = JSON.parse(t.checklist);
-                    } catch { /* ignore */ }
+                    try { checklist = JSON.parse(t.checklist); } catch { /* ignore */ }
                   }
 
                   return (
@@ -248,18 +643,12 @@ export default function TriagemPage() {
                       >
                         <TableCell>
                           <p className="font-medium">{t.candidato.nome}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {t.candidato.email}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{t.candidato.email}</p>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {t.candidato.skills.slice(0, 4).map((s) => (
-                              <Badge
-                                key={s.nome}
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0"
-                              >
+                              <Badge key={s.nome} variant="outline" className="text-[10px] px-1.5 py-0">
                                 {s.nome}
                               </Badge>
                             ))}
@@ -267,20 +656,10 @@ export default function TriagemPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           {t.score != null ? (
-                            <span
-                              className={`text-lg font-bold ${
-                                t.score >= 70
-                                  ? "text-success"
-                                  : t.score >= 40
-                                    ? "text-warning"
-                                    : "text-destructive"
-                              }`}
-                            >
+                            <span className={`text-lg font-bold ${t.score >= 70 ? "text-success" : t.score >= 40 ? "text-warning" : "text-destructive"}`}>
                               {t.score}%
                             </span>
-                          ) : (
-                            "—"
-                          )}
+                          ) : "—"}
                           {t.desatualizado && (
                             <div className="flex items-center justify-center gap-1 text-[10px] text-warning">
                               <AlertTriangle className="h-3 w-3" />
@@ -289,37 +668,16 @@ export default function TriagemPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              t.status === "CONCLUIDO"
-                                ? "default"
-                                : t.status === "ERRO"
-                                  ? "destructive"
-                                  : "secondary"
-                            }
-                          >
-                            {t.status === "CONCLUIDO"
-                              ? "Concluído"
-                              : t.status === "PROCESSANDO"
-                                ? "Analisando..."
-                                : t.status === "ERRO"
-                                  ? "Erro"
-                                  : "Pendente"}
+                          <Badge variant={t.status === "CONCLUIDO" ? "default" : t.status === "ERRO" ? "destructive" : "secondary"}>
+                            {t.status === "CONCLUIDO" ? "Concluído" : t.status === "PROCESSANDO" ? "Analisando..." : t.status === "ERRO" ? "Erro" : "Pendente"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {(t.status === "PENDENTE" ||
-                              t.status === "ERRO" ||
-                              t.desatualizado) && (
+                            {(t.status === "PENDENTE" || t.status === "ERRO" || t.desatualizado) && (
                               <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  analisar(t.id);
-                                }}
+                                size="sm" variant="outline" className="gap-1 text-xs"
+                                onClick={(e) => { e.stopPropagation(); analisar(t.id); }}
                               >
                                 <RotateCw className="h-3 w-3" />
                                 {t.desatualizado ? "Reanalisar" : "Analisar"}
@@ -335,11 +693,7 @@ export default function TriagemPage() {
                                 Entrevistas
                               </Link>
                             )}
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
+                            {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -347,53 +701,25 @@ export default function TriagemPage() {
                         <TableRow key={`${t.id}-detail`}>
                           <TableCell colSpan={5} className="bg-muted/30 p-4">
                             <div className="space-y-3">
-                              {/* Análise */}
                               <div>
-                                <h4 className="text-sm font-semibold mb-1">
-                                  Análise
-                                </h4>
-                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                  {t.analise}
-                                </p>
+                                <h4 className="text-sm font-semibold mb-1">Análise</h4>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{t.analise}</p>
                               </div>
-                              {/* Checklist */}
                               {checklist.length > 0 && (
                                 <div>
-                                  <h4 className="text-sm font-semibold mb-2">
-                                    Checklist de Requisitos
-                                  </h4>
+                                  <h4 className="text-sm font-semibold mb-2">Checklist de Requisitos</h4>
                                   <div className="space-y-1.5">
                                     {checklist.map((item, i) => (
-                                      <div
-                                        key={i}
-                                        className="flex items-start gap-2 text-sm"
-                                      >
-                                        <span
-                                          className={
-                                            item.atende
-                                              ? "text-success"
-                                              : "text-destructive"
-                                          }
-                                        >
+                                      <div key={i} className="flex items-start gap-2 text-sm">
+                                        <span className={item.atende ? "text-success" : "text-destructive"}>
                                           {item.atende ? "✓" : "✗"}
                                         </span>
                                         <div>
-                                          <span className="font-medium">
-                                            {item.requisito}
-                                          </span>
-                                          <Badge
-                                            variant="outline"
-                                            className="ml-2 text-[10px] px-1 py-0"
-                                          >
-                                            {item.tipo === "OBRIGATORIO"
-                                              ? "Obrigatório"
-                                              : "Desejável"}
+                                          <span className="font-medium">{item.requisito}</span>
+                                          <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0">
+                                            {item.tipo === "OBRIGATORIO" ? "Obrigatório" : "Desejável"}
                                           </Badge>
-                                          {item.observacao && (
-                                            <p className="text-muted-foreground mt-0.5">
-                                              {item.observacao}
-                                            </p>
-                                          )}
+                                          {item.observacao && <p className="text-muted-foreground mt-0.5">{item.observacao}</p>}
                                         </div>
                                       </div>
                                     ))}
@@ -412,6 +738,160 @@ export default function TriagemPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── Candidatos Sugeridos ── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold">Candidatos Sugeridos</h3>
+              <p className="text-xs text-muted-foreground">
+                {vaga?.jobType
+                  ? `Filtrados por tipo: ${vaga.jobType}`
+                  : "Filtro básico por skills, salário e localização"}
+              </p>
+            </div>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar candidato ou skill..."
+              className="w-[250px] pl-8"
+              value={buscaSugerido}
+              onChange={(e) => setBuscaSugerido(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {loadingSugeridos ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-44 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+        ) : sugeridos.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <UserPlus className="mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-muted-foreground">
+                Nenhum candidato compatível encontrado
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Candidatos precisam ter skills que correspondam aos requisitos da vaga
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sugeridos.map((c) => {
+              const isVinculando = vinculando === c.id;
+
+              return (
+                <Card
+                  key={c.id}
+                  className={cn(
+                    "group relative overflow-hidden transition-all hover:shadow-md",
+                    c.compatibilidade >= 50 && "ring-1 ring-primary/20",
+                  )}
+                >
+                  <div className="h-1 w-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full transition-all",
+                        c.compatibilidade >= 70 ? "bg-success" : c.compatibilidade >= 40 ? "bg-warning" : "bg-muted-foreground/30",
+                      )}
+                      style={{ width: `${c.compatibilidade}%` }}
+                    />
+                  </div>
+
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/candidatos/${c.id}`} className="text-sm font-semibold hover:text-primary truncate block">
+                          {c.nome}
+                        </Link>
+                        <p className="text-xs text-muted-foreground truncate">{c.email}</p>
+                        {c.jobType && (
+                          <Badge variant="outline" className="mt-1 text-[10px] px-1.5 py-0">{c.jobType}</Badge>
+                        )}
+                      </div>
+                      <div className={cn(
+                        "ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                        c.compatibilidade >= 70 ? "bg-success/10 text-success" : c.compatibilidade >= 40 ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground",
+                      )}>
+                        {c.compatibilidade}%
+                      </div>
+                    </div>
+
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                      {c.skillsMatch.length > 0 && (
+                        <div className="flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 text-[11px] text-primary">
+                          <Zap className="h-3 w-3" />
+                          {c.skillsMatch.length} requisito{c.skillsMatch.length > 1 ? "s" : ""}
+                        </div>
+                      )}
+                      {c.salarioOk !== null && (
+                        <div className={cn("flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px]", c.salarioOk ? "bg-success/5 text-success" : "bg-destructive/5 text-destructive")}>
+                          <DollarSign className="h-3 w-3" />
+                          {c.salarioOk ? "Compatível" : "Acima"}
+                        </div>
+                      )}
+                      {c.localOk !== null && (
+                        <div className={cn("flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px]", c.localOk ? "bg-success/5 text-success" : "bg-muted text-muted-foreground")}>
+                          <MapPin className="h-3 w-3" />
+                          {c.localOk ? "Região" : "Distante"}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-3 flex flex-wrap gap-1">
+                      {c.skills.slice(0, 5).map((s) => {
+                        const isMatch = c.skillsMatch.some(
+                          (m) => normalize(m).includes(normalize(s.nome)) || normalize(s.nome).includes(normalize(m)),
+                        );
+                        return (
+                          <Badge key={s.nome} variant={isMatch ? "default" : "outline"} className={cn("text-[10px] px-1.5 py-0", isMatch && "bg-primary/90")}>
+                            {s.nome}
+                          </Badge>
+                        );
+                      })}
+                      {c.skills.length > 5 && (
+                        <span className="text-[10px] text-muted-foreground self-center">+{c.skills.length - 5}</span>
+                      )}
+                    </div>
+
+                    <div className="mb-3 flex items-center gap-3 text-xs text-muted-foreground">
+                      {c.cidade && (
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3 shrink-0" /> {c.cidade}
+                        </span>
+                      )}
+                      {c.pretensaoSalarial && (
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 shrink-0" />
+                          R$ {c.pretensaoSalarial.toLocaleString("pt-BR")}
+                        </span>
+                      )}
+                    </div>
+
+                    <Button
+                      size="sm" className="w-full gap-1.5"
+                      disabled={isVinculando}
+                      onClick={() => vincularCandidato(c.id)}
+                    >
+                      {isVinculando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                      {isVinculando ? "Vinculando..." : "Vincular à Vaga"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

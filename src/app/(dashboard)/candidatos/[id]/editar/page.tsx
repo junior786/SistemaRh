@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Upload, Loader2 } from "lucide-react";
+import { Plus, X, Save, Loader2 } from "lucide-react";
 
 interface Experiencia {
   empresa: string;
@@ -46,10 +46,18 @@ const niveisFormacao = [
   { value: "CURSO_LIVRE", label: "Curso Livre" },
 ];
 
-export default function NovoCandidatoPage() {
+function formatDateForInput(d: string | null): string {
+  if (!d) return "";
+  return new Date(d).toISOString().split("T")[0];
+}
+
+export default function EditarCandidatoPage() {
+  const params = useParams();
   const router = useRouter();
+  const candidatoId = params.id as string;
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [importando, setImportando] = useState(false);
 
   // Dados pessoais
   const [nome, setNome] = useState("");
@@ -71,6 +79,63 @@ export default function NovoCandidatoPage() {
   // Formações
   const [formacoes, setFormacoes] = useState<Formacao[]>([]);
 
+  // Carregar dados existentes
+  useEffect(() => {
+    fetch(`/api/candidatos/${candidatoId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setNome(data.nome || "");
+        setEmail(data.email || "");
+        setTelefone(data.telefone || "");
+        setCidade(data.cidade || "");
+        setCep(data.cep || "");
+        setResumo(data.resumo || "");
+        setJobType(data.jobType || "");
+        setPretensaoSalarial(data.pretensaoSalarial?.toString() || "");
+        setSkills((data.skills || []).map((s: { nome: string }) => s.nome));
+        setExperiencias(
+          (data.experiencias || []).map(
+            (e: {
+              empresa: string;
+              cargo: string;
+              descricao: string | null;
+              dataInicio: string;
+              dataFim: string | null;
+              atual: boolean;
+            }) => ({
+              empresa: e.empresa,
+              cargo: e.cargo,
+              descricao: e.descricao || "",
+              dataInicio: formatDateForInput(e.dataInicio),
+              dataFim: formatDateForInput(e.dataFim),
+              atual: e.atual,
+            }),
+          ),
+        );
+        setFormacoes(
+          (data.formacoes || []).map(
+            (f: {
+              instituicao: string;
+              curso: string;
+              nivel: string;
+              dataInicio: string;
+              dataFim: string | null;
+              atual: boolean;
+            }) => ({
+              instituicao: f.instituicao,
+              curso: f.curso,
+              nivel: f.nivel,
+              dataInicio: formatDateForInput(f.dataInicio),
+              dataFim: formatDateForInput(f.dataFim),
+              atual: f.atual,
+            }),
+          ),
+        );
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [candidatoId]);
+
   function addSkill() {
     const s = novaSkill.trim();
     if (!s || skills.includes(s)) return;
@@ -88,9 +153,7 @@ export default function NovoCandidatoPage() {
   function updateExperiencia(index: number, field: keyof Experiencia, value: string | boolean) {
     const updated = [...experiencias];
     (updated[index] as unknown as Record<string, string | boolean>)[field] = value;
-    if (field === "atual" && value === true) {
-      updated[index].dataFim = "";
-    }
+    if (field === "atual" && value === true) updated[index].dataFim = "";
     setExperiencias(updated);
   }
 
@@ -108,9 +171,7 @@ export default function NovoCandidatoPage() {
   function updateFormacao(index: number, field: keyof Formacao, value: string | boolean) {
     const updated = [...formacoes];
     (updated[index] as unknown as Record<string, string | boolean>)[field] = value;
-    if (field === "atual" && value === true) {
-      updated[index].dataFim = "";
-    }
+    if (field === "atual" && value === true) updated[index].dataFim = "";
     setFormacoes(updated);
   }
 
@@ -118,79 +179,13 @@ export default function NovoCandidatoPage() {
     setFormacoes(formacoes.filter((_, i) => i !== index));
   }
 
-  // RF-02 / RN-02: Importação de PDF
-  async function handleImportPDF(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImportando(true);
-    try {
-      const formData = new FormData();
-      formData.append("pdf", file);
-
-      const res = await fetch("/api/candidatos/importar-pdf", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || "Erro ao importar PDF");
-        return;
-      }
-
-      const { dados } = await res.json();
-
-      // Preenche o formulário para revisão humana (RN-02: nunca salva automaticamente)
-      setNome(dados.nome || "");
-      setEmail(dados.email || "");
-      setTelefone(dados.telefone || "");
-      setCidade(dados.cidade || "");
-      setCep(dados.cep || "");
-      setResumo(dados.resumo || "");
-      setJobType(dados.jobType || "");
-      setPretensaoSalarial(dados.pretensaoSalarial?.toString() || "");
-      setSkills(dados.skills || []);
-
-      if (dados.experiencias?.length) {
-        setExperiencias(
-          dados.experiencias.map((exp: Experiencia) => ({
-            empresa: exp.empresa || "",
-            cargo: exp.cargo || "",
-            descricao: exp.descricao || "",
-            dataInicio: exp.dataInicio || "",
-            dataFim: exp.dataFim || "",
-            atual: exp.atual || false,
-          })),
-        );
-      }
-
-      if (dados.formacoes?.length) {
-        setFormacoes(
-          dados.formacoes.map((f: Formacao) => ({
-            instituicao: f.instituicao || "",
-            curso: f.curso || "",
-            nivel: f.nivel || "GRADUACAO",
-            dataInicio: f.dataInicio || "",
-            dataFim: f.dataFim || "",
-            atual: f.atual || false,
-          })),
-        );
-      }
-    } catch {
-      alert("Erro ao processar PDF");
-    } finally {
-      setImportando(false);
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
 
     try {
-      const res = await fetch("/api/candidatos", {
-        method: "POST",
+      const res = await fetch(`/api/candidatos/${candidatoId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nome,
@@ -213,8 +208,7 @@ export default function NovoCandidatoPage() {
         return;
       }
 
-      const candidato = await res.json();
-      router.push(`/candidatos/${candidato.id}`);
+      router.push(`/candidatos/${candidatoId}`);
     } catch {
       alert("Erro ao salvar candidato");
     } finally {
@@ -222,36 +216,21 @@ export default function NovoCandidatoPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Novo Candidato</h2>
-          <p className="text-sm text-muted-foreground">
-            Preencha manualmente ou importe um PDF de currículo.
-          </p>
-        </div>
-        <div>
-          <Label
-            htmlFor="pdf-upload"
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
-          >
-            {importando ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-            {importando ? "Extraindo..." : "Importar PDF"}
-          </Label>
-          <input
-            id="pdf-upload"
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={handleImportPDF}
-            disabled={importando}
-          />
-        </div>
+      <div>
+        <h2 className="text-xl font-semibold">Editar Candidato</h2>
+        <p className="text-sm text-muted-foreground">
+          Atualize os dados de {nome || "candidato"}.
+        </p>
       </div>
 
       {/* 1. Dados Pessoais */}
@@ -579,7 +558,7 @@ export default function NovoCandidatoPage() {
         </Button>
         <Button type="submit" disabled={saving} className="gap-1.5">
           <Save className="h-4 w-4" />
-          {saving ? "Salvando..." : "Salvar Candidato"}
+          {saving ? "Salvando..." : "Salvar Alterações"}
         </Button>
       </div>
     </form>

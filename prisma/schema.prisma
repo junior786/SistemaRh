@@ -16,17 +16,20 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model Vaga {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   titulo      String
   area        String
+  jobType     String      // tipo de trabalho: Desenvolvedor, Motorista, Doméstica etc.
   regime      Regime
+  modalidade  Modalidade
   localizacao String
+  cep         String?     // obrigatório se presencial ou híbrido
   salarioMin  Float?
   salarioMax  Float?
   descricao   String
-  status      VagaStatus @default(ABERTA)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  status      VagaStatus  @default(ABERTA)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   requisitos Requisito[]
   triagens   Triagem[]
@@ -37,6 +40,12 @@ enum Regime {
   PJ
   ESTAGIO
   FREELANCER
+}
+
+enum Modalidade {
+  PRESENCIAL
+  REMOTO
+  HIBRIDO
 }
 
 enum VagaStatus {
@@ -73,7 +82,9 @@ model Candidato {
   email             String   @unique
   telefone          String?
   cidade            String?
+  cep               String?
   resumo            String?
+  jobType           String      // tipo de trabalho pretendido
   pretensaoSalarial Float?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

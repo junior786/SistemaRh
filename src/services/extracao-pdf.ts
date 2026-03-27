@@ -10,6 +10,7 @@ export interface DadosExtraidosPDF {
   telefone: string | null;
   cidade: string | null;
   resumo: string | null;
+  jobType: string | null;
   pretensaoSalarial: number | null;
   skills: string[];
   experiencias: {
@@ -38,6 +39,7 @@ const SYSTEM_PROMPT = `Você é um extrator de dados de currículos. Analise o t
   "telefone": "string ou null",
   "cidade": "string ou null",
   "resumo": "string ou null (resumo profissional breve)",
+  "jobType": "string ou null (tipo/categoria de trabalho pretendido, ex: Desenvolvedor, Motorista, Doméstica, Enfermeiro)",
   "pretensaoSalarial": "number ou null",
   "skills": ["string"],
   "experiencias": [

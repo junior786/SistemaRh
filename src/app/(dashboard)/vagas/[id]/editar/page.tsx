@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,15 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save } from "lucide-react";
+import { Plus, X, Save, Loader2 } from "lucide-react";
 
 interface Requisito {
   descricao: string;
   tipo: "OBRIGATORIO" | "DESEJAVEL";
 }
 
-export default function NovaVagaPage() {
+export default function EditarVagaPage() {
+  const params = useParams();
   const router = useRouter();
+  const vagaId = params.id as string;
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [titulo, setTitulo] = useState("");
@@ -44,6 +48,32 @@ export default function NovaVagaPage() {
   const [novoReqDesc, setNovoReqDesc] = useState("");
   const [novoReqTipo, setNovoReqTipo] = useState<"OBRIGATORIO" | "DESEJAVEL">("OBRIGATORIO");
 
+  // Carregar dados existentes
+  useEffect(() => {
+    fetch(`/api/vagas/${vagaId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setTitulo(data.titulo || "");
+        setArea(data.area || "");
+        setJobType(data.jobType || "");
+        setRegime(data.regime || "");
+        setModalidade(data.modalidade || "");
+        setLocalizacao(data.localizacao || "");
+        setCep(data.cep || "");
+        setSalarioMin(data.salarioMin?.toString() || "");
+        setSalarioMax(data.salarioMax?.toString() || "");
+        setDescricao(data.descricao || "");
+        setRequisitos(
+          (data.requisitos || []).map((r: { descricao: string; tipo: string }) => ({
+            descricao: r.descricao,
+            tipo: r.tipo as "OBRIGATORIO" | "DESEJAVEL",
+          })),
+        );
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [vagaId]);
+
   function addRequisito() {
     if (!novoReqDesc.trim()) return;
     setRequisitos([...requisitos, { descricao: novoReqDesc.trim(), tipo: novoReqTipo }]);
@@ -59,8 +89,8 @@ export default function NovaVagaPage() {
     setSaving(true);
 
     try {
-      const res = await fetch("/api/vagas", {
-        method: "POST",
+      const res = await fetch(`/api/vagas/${vagaId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           titulo,
@@ -83,8 +113,7 @@ export default function NovaVagaPage() {
         return;
       }
 
-      const vaga = await res.json();
-      router.push(`/vagas/${vaga.id}`);
+      router.push(`/vagas/${vagaId}`);
     } catch {
       alert("Erro ao salvar vaga");
     } finally {
@@ -92,12 +121,20 @@ export default function NovaVagaPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Criar Nova Vaga</h2>
+        <h2 className="text-xl font-semibold">Editar Vaga</h2>
         <p className="text-sm text-muted-foreground">
-          Preencha os dados abaixo para criar uma nova vaga e começar a receber candidatos.
+          Atualize os dados de {titulo || "vaga"}.
         </p>
       </div>
 
@@ -143,7 +180,7 @@ export default function NovaVagaPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="regime">Regime *</Label>
-              <Select value={regime} onValueChange={(v) => setRegime(v ?? "")} required>
+              <Select value={regime} onValueChange={(v) => setRegime(v ?? "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o regime" />
                 </SelectTrigger>
@@ -155,12 +192,9 @@ export default function NovaVagaPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="modalidade">Modalidade *</Label>
-              <Select value={modalidade} onValueChange={(v) => setModalidade(v ?? "")} required>
+              <Select value={modalidade} onValueChange={(v) => setModalidade(v ?? "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a modalidade" />
                 </SelectTrigger>
@@ -171,19 +205,20 @@ export default function NovaVagaPage() {
                 </SelectContent>
               </Select>
             </div>
-            {exigeCep && (
-              <div className="space-y-2">
-                <Label htmlFor="cep">CEP da Vaga *</Label>
-                <Input
-                  id="cep"
-                  placeholder="ex: 01001-000"
-                  value={cep}
-                  onChange={(e) => setCep(e.target.value)}
-                  required={exigeCep}
-                />
-              </div>
-            )}
           </div>
+
+          {exigeCep && (
+            <div className="space-y-2">
+              <Label htmlFor="cep">CEP da Vaga *</Label>
+              <Input
+                id="cep"
+                placeholder="ex: 01001-000"
+                value={cep}
+                onChange={(e) => setCep(e.target.value)}
+                required={exigeCep}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="localizacao">Localização *</Label>
@@ -233,17 +268,16 @@ export default function NovaVagaPage() {
         </CardContent>
       </Card>
 
-      {/* 2. Requisitos Obrigatórios */}
+      {/* 2. Requisitos */}
       <Card>
         <CardContent className="space-y-4 p-6">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold">2. Requisitos</h3>
             <span className="text-xs text-destructive font-medium">
-              Obrigatórios afetam o score de compatibilidade
+              Alterar requisitos marca triagens como desatualizadas
             </span>
           </div>
 
-          {/* Lista de requisitos adicionados */}
           {requisitos.length > 0 && (
             <div className="space-y-2">
               {requisitos.map((req, i) => (
@@ -270,7 +304,6 @@ export default function NovaVagaPage() {
             </div>
           )}
 
-          {/* Adicionar novo requisito */}
           <div className="flex items-end gap-2">
             <div className="flex-1 space-y-2">
               <Label>Descrição do requisito</Label>
@@ -308,19 +341,15 @@ export default function NovaVagaPage() {
       {/* Ações */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {requisitos.length} requisito(s) adicionado(s)
+          {requisitos.length} requisito(s)
         </p>
         <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-          >
+          <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancelar
           </Button>
           <Button type="submit" disabled={saving} className="gap-1.5">
             <Save className="h-4 w-4" />
-            {saving ? "Salvando..." : "Salvar Vaga"}
+            {saving ? "Salvando..." : "Salvar Alterações"}
           </Button>
         </div>
       </div>

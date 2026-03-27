@@ -20,6 +20,7 @@ export interface ResultadoAnalise {
 interface DadosVaga {
   titulo: string;
   area: string;
+  jobType: string;
   regime: string;
   descricao: string;
   requisitos: { descricao: string; tipo: "OBRIGATORIO" | "DESEJAVEL" }[];
@@ -28,6 +29,7 @@ interface DadosVaga {
 interface DadosCandidato {
   nome: string;
   resumo: string | null;
+  jobType: string;
   skills: string[];
   experiencias: {
     empresa: string;
@@ -45,6 +47,7 @@ interface DadosCandidato {
 const SYSTEM_PROMPT = `Você é um analista de RH especializado em triagem de candidatos. Analise a compatibilidade entre o candidato e a vaga.
 
 REGRAS DE SCORING (RN-01):
+- REGRA PRINCIPAL: Se o Tipo de Trabalho da vaga e do candidato são INCOMPATÍVEIS (ex: vaga de Doméstica e candidato Desenvolvedor, ou vaga de Motorista e candidato Enfermeiro), o score MÁXIMO é 10%. Perfis de áreas completamente diferentes NÃO são compatíveis, independente de skills ou experiência.
 - Requisitos OBRIGATÓRIOS têm peso eliminatório. Se o candidato NÃO atende QUALQUER requisito obrigatório, o score MÁXIMO é 50%.
 - Requisitos DESEJÁVEIS distribuem pontos proporcionalmente no restante.
 - Use as experiências profissionais com tempo calculado como fator principal.
@@ -92,6 +95,7 @@ export async function analisarCompatibilidade(
   const prompt = `## VAGA
 Título: ${vaga.titulo}
 Área: ${vaga.area}
+Tipo de Trabalho: ${vaga.jobType}
 Regime: ${vaga.regime}
 Descrição: ${vaga.descricao}
 
@@ -100,6 +104,7 @@ ${vaga.requisitos.map((r) => `- [${r.tipo}] ${r.descricao}`).join("\n")}
 
 ## CANDIDATO
 Nome: ${candidato.nome}
+Tipo de Trabalho Pretendido: ${candidato.jobType}
 Resumo: ${candidato.resumo || "Não informado"}
 Skills: ${candidato.skills.join(", ") || "Nenhuma informada"}
 
