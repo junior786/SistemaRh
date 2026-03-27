@@ -1,0 +1,135 @@
+// RF-03 / RN-01 — Motor de compatibilidade via OpenRouter
+// Modelo: deepseek/deepseek-chat (MODEL_ANALISE_VAGA)
+// Score de 0-100, justificativa, checklist de requisitos
+
+import { chatCompletion, parseAIResponse } from "@/lib/openrouter";
+
+export interface ChecklistItem {
+  requisito: string;
+  tipo: "OBRIGATORIO" | "DESEJAVEL";
+  atende: boolean;
+  observacao: string;
+}
+
+export interface ResultadoAnalise {
+  score: number;
+  analise: string;
+  checklist: ChecklistItem[];
+}
+
+interface DadosVaga {
+  titulo: string;
+  area: string;
+  regime: string;
+  descricao: string;
+  requisitos: { descricao: string; tipo: "OBRIGATORIO" | "DESEJAVEL" }[];
+}
+
+interface DadosCandidato {
+  nome: string;
+  resumo: string | null;
+  skills: string[];
+  experiencias: {
+    empresa: string;
+    cargo: string;
+    descricao: string | null;
+    tempoFormatado: string;
+  }[];
+  formacoes: {
+    instituicao: string;
+    curso: string;
+    nivel: string;
+  }[];
+}
+
+const SYSTEM_PROMPT = `Você é um analista de RH especializado em triagem de candidatos. Analise a compatibilidade entre o candidato e a vaga.
+
+REGRAS DE SCORING (RN-01):
+- Requisitos OBRIGATÓRIOS têm peso eliminatório. Se o candidato NÃO atende QUALQUER requisito obrigatório, o score MÁXIMO é 50%.
+- Requisitos DESEJÁVEIS distribuem pontos proporcionalmente no restante.
+- Use as experiências profissionais com tempo calculado como fator principal.
+- Score final: 0 a 100 (inteiro).
+
+Retorne APENAS um JSON válido (sem markdown, sem blocos de código):
+
+{
+  "score": 0-100,
+  "analise": "Texto com pontos fortes e pontos de atenção do candidato para esta vaga",
+  "checklist": [
+    {
+      "requisito": "descrição do requisito",
+      "tipo": "OBRIGATORIO ou DESEJAVEL",
+      "atende": true/false,
+      "observacao": "justificativa breve"
+    }
+  ]
+}`;
+
+function formatarTempoExperiencia(dataInicio: string, dataFim: string | null): string {
+  const inicio = new Date(dataInicio);
+  const fim = dataFim ? new Date(dataFim) : new Date();
+  const meses = (fim.getFullYear() - inicio.getFullYear()) * 12 + (fim.getMonth() - inicio.getMonth());
+  const anos = Math.floor(meses / 12);
+  const mesesRestantes = meses % 12;
+
+  if (anos === 0) return `${mesesRestantes} meses`;
+  if (mesesRestantes === 0) return `${anos} ano${anos > 1 ? "s" : ""}`;
+  return `${anos} ano${anos > 1 ? "s" : ""} e ${mesesRestantes} meses`;
+}
+
+export async function analisarCompatibilidade(
+  vaga: DadosVaga,
+  candidato: DadosCandidato,
+): Promise<ResultadoAnalise> {
+  const model = process.env.MODEL_ANALISE_VAGA;
+  if (!model) throw new Error("MODEL_ANALISE_VAGA não configurada");
+
+  const experienciasFormatadas = candidato.experiencias.map((e) => ({
+    ...e,
+    tempoFormatado: e.tempoFormatado,
+  }));
+
+  const prompt = `## VAGA
+Título: ${vaga.titulo}
+Área: ${vaga.area}
+Regime: ${vaga.regime}
+Descrição: ${vaga.descricao}
+
+### Requisitos:
+${vaga.requisitos.map((r) => `- [${r.tipo}] ${r.descricao}`).join("\n")}
+
+## CANDIDATO
+Nome: ${candidato.nome}
+Resumo: ${candidato.resumo || "Não informado"}
+Skills: ${candidato.skills.join(", ") || "Nenhuma informada"}
+
+### Experiências profissionais:
+${
+  experienciasFormatadas.length > 0
+    ? experienciasFormatadas
+        .map(
+          (e) =>
+            `- ${e.cargo} na ${e.empresa} (${e.tempoFormatado})${e.descricao ? `: ${e.descricao}` : ""}`,
+        )
+        .join("\n")
+    : "Nenhuma experiência cadastrada"
+}
+
+### Formação acadêmica:
+${
+  candidato.formacoes.length > 0
+    ? candidato.formacoes
+        .map((f) => `- ${f.nivel}: ${f.curso} — ${f.instituicao}`)
+        .join("\n")
+    : "Nenhuma formação cadastrada"
+}`;
+
+  const raw = await chatCompletion(model, [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user", content: prompt },
+  ]);
+
+  return parseAIResponse<ResultadoAnalise>(raw);
+}
+
+export { formatarTempoExperiencia };

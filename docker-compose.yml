@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rh-selector-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rh_selector
+      POSTGRES_PASSWORD: rh_selector_dev
+      POSTGRES_DB: rh_selector
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
