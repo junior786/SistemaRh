@@ -1,0 +1,217 @@
+// RH Selector — Prisma Schema
+// Portável entre PostgreSQL, SQLite e Supabase
+// Regra: zero SQL direto no código — tudo via Prisma Client
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // trocar para "sqlite" se necessário
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// VAGAS
+// ─────────────────────────────────────────────
+
+model Vaga {
+  id          String     @id @default(cuid())
+  titulo      String
+  area        String
+  regime      Regime
+  localizacao String
+  salarioMin  Float?
+  salarioMax  Float?
+  descricao   String
+  status      VagaStatus @default(ABERTA)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  requisitos Requisito[]
+  triagens   Triagem[]
+}
+
+enum Regime {
+  CLT
+  PJ
+  ESTAGIO
+  FREELANCER
+}
+
+enum VagaStatus {
+  ABERTA
+  EM_REVISAO
+  FECHADA
+}
+
+// Requisito pertence a uma vaga
+// OBRIGATORIO = eliminatório (score máx 50% se não atender)
+// DESEJAVEL   = pesa proporcionalmente no score
+model Requisito {
+  id        String        @id @default(cuid())
+  vagaId    String
+  descricao String
+  tipo      RequisitoTipo
+  createdAt DateTime      @default(now())
+
+  vaga Vaga @relation(fields: [vagaId], references: [id], onDelete: Cascade)
+}
+
+enum RequisitoTipo {
+  OBRIGATORIO
+  DESEJAVEL
+}
+
+// ─────────────────────────────────────────────
+// CANDIDATOS
+// ─────────────────────────────────────────────
+
+model Candidato {
+  id                String   @id @default(cuid())
+  nome              String
+  email             String   @unique
+  telefone          String?
+  cidade            String?
+  resumo            String?
+  pretensaoSalarial Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  skills       CandidatoSkill[]
+  experiencias Experiencia[]
+  formacoes    Formacao[]
+  triagens     Triagem[]
+}
+
+// Skills como tabela separada para facilitar buscas e filtros futuros
+model CandidatoSkill {
+  id          String   @id @default(cuid())
+  candidatoId String
+  nome        String
+  createdAt   DateTime @default(now())
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+// Experiência profissional
+// dataFim = null quando atual = true
+model Experiencia {
+  id          String    @id @default(cuid())
+  candidatoId String
+  empresa     String
+  cargo       String
+  descricao   String?
+  dataInicio  DateTime
+  dataFim     DateTime? // null = emprego atual
+  atual       Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+// Formação acadêmica
+// dataFim = null quando atual = true
+model Formacao {
+  id          String        @id @default(cuid())
+  candidatoId String
+  instituicao String
+  curso       String
+  nivel       NivelFormacao
+  dataInicio  DateTime
+  dataFim     DateTime?     // null = cursando atualmente
+  atual       Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+enum NivelFormacao {
+  TECNICO
+  GRADUACAO
+  POS_GRADUACAO
+  MBA
+  MESTRADO
+  DOUTORADO
+  CURSO_LIVRE
+}
+
+// ─────────────────────────────────────────────
+// TRIAGEM (vaga ↔ candidato)
+// ─────────────────────────────────────────────
+
+// Entidade central do sistema
+// Representa a análise de um candidato para uma vaga específica
+model Triagem {
+  id          String        @id @default(cuid())
+  vagaId      String
+  candidatoId String
+  status      TriagemStatus @default(PENDENTE)
+
+  // Score gerado pela IA (0–100)
+  score       Float?
+
+  // Análise textual completa retornada pela IA
+  analise     String?
+
+  // Checklist de requisitos em JSON: [{requisito, atende, observacao}]
+  // Armazenado como string para não depender de tipo JSON nativo do banco
+  checklist   String?
+
+  // Controle de desatualização (RN-03)
+  // true quando perfil ou requisitos mudam após análise
+  desatualizado Boolean   @default(false)
+
+  analisadoEm DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  entrevistas Entrevista[]
+
+  vaga      Vaga      @relation(fields: [vagaId], references: [id], onDelete: Cascade)
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  // Um candidato só pode ter uma triagem por vaga
+  @@unique([vagaId, candidatoId])
+}
+
+enum TriagemStatus {
+  PENDENTE     // aguardando análise da IA
+  PROCESSANDO  // IA analisando no momento
+  CONCLUIDO    // score disponível
+  ERRO         // falha na análise — pode tentar novamente
+}
+
+// ─────────────────────────────────────────────
+// ENTREVISTAS
+// ─────────────────────────────────────────────
+
+// Vinculada ao par candidato + vaga via Triagem
+// Um par pode ter múltiplas entrevistas (técnica, gestor, etc.)
+model Entrevista {
+  id               String             @id @default(cuid())
+  triagemId        String
+  dataHora         DateTime
+  entrevistador    String
+  status           EntrevistaStatus   @default(AGENDADA)
+  observacoes      String?
+  resultado        EntrevistaResultado?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  triagem Triagem @relation(fields: [triagemId], references: [id], onDelete: Cascade)
+}
+
+enum EntrevistaStatus {
+  AGENDADA
+  REALIZADA
+  CANCELADA
+}
+
+enum EntrevistaResultado {
+  APROVADO
+  REPROVADO
+  PROXIMA_FASE
+}
