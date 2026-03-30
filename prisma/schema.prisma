@@ -27,9 +27,11 @@ model Vaga {
   salarioMin  Float?
   salarioMax  Float?
   descricao   String
-  status      VagaStatus  @default(ABERTA)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  status          VagaStatus  @default(ABERTA)
+  preTriagemIds   String?     // JSON: IDs de candidatos selecionados pela pré-triagem IA
+  preTriagemMotivo String?    // motivo/critério usado pela IA
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   requisitos  Requisito[]
   etapas      VagaEtapa[]

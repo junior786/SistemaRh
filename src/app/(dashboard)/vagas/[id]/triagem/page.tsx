@@ -109,6 +109,8 @@ interface VagaDetalhe {
   cep: string | null;
   salarioMin: number | null;
   salarioMax: number | null;
+  preTriagemIds: string | null;
+  preTriagemMotivo: string | null;
   requisitos: Requisito[];
   etapas: {
     id: string;
@@ -249,6 +251,9 @@ export default function TriagemPage() {
   const [vinculando, setVinculando] = useState<string | null>(null);
   const [removendoTriagemId, setRemovendoTriagemId] = useState<string | null>(null);
   const [triagemParaRemover, setTriagemParaRemover] = useState<Triagem | null>(null);
+  const [preTriagemLoading, setPreTriagemLoading] = useState(false);
+  const [preTriagemResult, setPreTriagemResult] = useState<string | null>(null);
+  const [preTriagemIds, setPreTriagemIds] = useState<Set<string>>(new Set());
 
   // Modal de adicionar candidato
   const [modalOpen, setModalOpen] = useState(false);
@@ -283,6 +288,14 @@ export default function TriagemPage() {
       .then(([vagaData, candidatosData]) => {
         setVaga(vagaData);
         setTodosCandidatos(Array.isArray(candidatosData?.items) ? candidatosData.items : []);
+
+        // Carrega IDs da pré-triagem IA salvos no banco
+        if (vagaData.preTriagemIds) {
+          try {
+            const ids: string[] = JSON.parse(vagaData.preTriagemIds);
+            setPreTriagemIds(new Set(ids));
+          } catch { /* ignore */ }
+        }
       })
       .catch(console.error)
       .finally(() => setLoadingSugeridos(false));
@@ -347,15 +360,18 @@ export default function TriagemPage() {
     const idsVinculados = new Set(triagens.map((t) => t.candidato.id));
     const disponiveis = todosCandidatos.filter((c) => !idsVinculados.has(c.id));
 
-    const filtradosPorTipo = vaga.jobType
-      ? disponiveis.filter(
-          (c) => c.jobType && normalize(c.jobType) === normalize(vaga.jobType!),
-        )
-      : disponiveis;
+    // Se a IA já filtrou, mostra apenas os candidatos selecionados por ela
+    const base = preTriagemIds.size > 0
+      ? disponiveis.filter((c) => preTriagemIds.has(c.id))
+      : vaga.jobType
+        ? disponiveis.filter(
+            (c) => c.jobType && normalize(c.jobType) === normalize(vaga.jobType!),
+          )
+        : disponiveis;
 
-    const comScore = filtradosPorTipo
+    const comScore = base
       .map((c) => calcularCompatibilidade(c, vaga))
-      .filter((c) => vaga.jobType ? true : c.compatibilidade >= 50)
+      .filter((c) => preTriagemIds.size > 0 || vaga.jobType ? true : c.compatibilidade >= 50)
       .sort((a, b) => b.compatibilidade - a.compatibilidade);
 
     if (buscaSugerido.trim()) {
@@ -369,7 +385,7 @@ export default function TriagemPage() {
     }
 
     return comScore;
-  }, [vaga, todosCandidatos, triagens, buscaSugerido]);
+  }, [vaga, todosCandidatos, triagens, buscaSugerido, preTriagemIds]);
 
   // ── Modal: todos os candidatos disponíveis com filtros ──
 
@@ -444,6 +460,27 @@ export default function TriagemPage() {
     }
   }
 
+  async function preTriagemIA() {
+    setPreTriagemLoading(true);
+    setPreTriagemResult(null);
+    try {
+      const res = await fetch(`/api/vagas/${vagaId}/pre-triagem`, { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPreTriagemResult(data.error || "Erro ao executar pré-triagem");
+        return;
+      }
+
+      setPreTriagemResult(data.message);
+      setPreTriagemIds(new Set(data.candidatos_ids || []));
+    } catch {
+      setPreTriagemResult("Erro de conexão ao executar pré-triagem");
+    } finally {
+      setPreTriagemLoading(false);
+    }
+  }
+
   // ── Filtro triagens ──
 
   const triagensFiltradas = triagens.filter((t) => {
@@ -481,6 +518,22 @@ export default function TriagemPage() {
             value={scoreMinimo}
             onChange={(e) => setScoreMinimo(e.target.value)}
           />
+
+          {/* Botão Pré-Triagem IA */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            disabled={preTriagemLoading}
+            onClick={preTriagemIA}
+          >
+            {preTriagemLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {preTriagemLoading ? "Buscando..." : "Pré-Triagem IA"}
+          </Button>
 
           {/* Botão para abrir modal de adicionar */}
           <Dialog
@@ -747,6 +800,23 @@ export default function TriagemPage() {
         </div>
       </div>
 
+      {/* Feedback da pré-triagem */}
+      {preTriagemResult && (
+        <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Sparkles className="h-4 w-4 text-primary" />
+            {preTriagemResult}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPreTriagemResult(null)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Tabela de triagem */}
       <Card>
         <CardContent className="p-0">
@@ -946,9 +1016,11 @@ export default function TriagemPage() {
             <div>
               <h3 className="text-base font-semibold">Candidatos Sugeridos</h3>
               <p className="text-xs text-muted-foreground">
-                {vaga?.jobType
-                  ? `Filtrados por tipo: ${vaga.jobType}`
-                  : "Filtro básico por skills, salário e localização"}
+                {preTriagemIds.size > 0
+                  ? `${preTriagemIds.size} candidato(s) selecionado(s) pela IA`
+                  : vaga?.jobType
+                    ? `Filtrados por tipo: ${vaga.jobType}`
+                    : "Filtro básico por skills, salário e localização"}
               </p>
             </div>
           </div>
