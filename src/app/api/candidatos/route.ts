@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     where,
     include: {
       skills: true,
+      restricoes: true,
       _count: { select: { triagens: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -31,8 +32,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
-    nome, email, telefone, cidade, cep, resumo, jobType, pretensaoSalarial,
-    skills, experiencias, formacoes,
+    nome, email, telefone, cidade, cep, genero, resumo, jobType, pretensaoSalarial,
+    observacao, statusEmprego,
+    skills, experiencias, formacoes, restricoes,
   } = body;
 
   if (!nome || !email) {
@@ -52,40 +54,50 @@ export async function POST(request: NextRequest) {
       telefone: telefone || null,
       cidade: cidade || null,
       cep: cep || null,
+      genero: genero || null,
       resumo: resumo || null,
       jobType,
       pretensaoSalarial: pretensaoSalarial ? parseFloat(pretensaoSalarial) : null,
+      observacao: observacao || null,
+      statusEmprego: statusEmprego || "DISPONIVEL",
       skills: {
         create: (skills || []).map((s: string) => ({ nome: s })),
       },
       experiencias: {
-        create: (experiencias || []).map((e: {
-          empresa: string; cargo: string; descricao?: string;
-          dataInicio: string; dataFim?: string; atual?: boolean;
-        }) => ({
-          empresa: e.empresa,
-          cargo: e.cargo,
-          descricao: e.descricao || null,
-          dataInicio: new Date(e.dataInicio),
-          dataFim: e.dataFim ? new Date(e.dataFim) : null,
-          atual: e.atual || false,
-        })),
+        create: (experiencias || [])
+          .filter((e: { dataInicio: string }) => e.dataInicio)
+          .map((e: {
+            empresa: string; cargo: string; descricao?: string;
+            dataInicio: string; dataFim?: string; atual?: boolean;
+          }) => ({
+            empresa: e.empresa,
+            cargo: e.cargo,
+            descricao: e.descricao || null,
+            dataInicio: new Date(e.dataInicio),
+            dataFim: e.dataFim ? new Date(e.dataFim) : null,
+            atual: e.atual || false,
+          })),
       },
       formacoes: {
-        create: (formacoes || []).map((f: {
-          instituicao: string; curso: string; nivel: string;
-          dataInicio: string; dataFim?: string; atual?: boolean;
-        }) => ({
-          instituicao: f.instituicao,
-          curso: f.curso,
-          nivel: f.nivel,
-          dataInicio: new Date(f.dataInicio),
-          dataFim: f.dataFim ? new Date(f.dataFim) : null,
-          atual: f.atual || false,
-        })),
+        create: (formacoes || [])
+          .filter((f: { dataInicio: string }) => f.dataInicio)
+          .map((f: {
+            instituicao: string; curso: string; nivel: string;
+            dataInicio: string; dataFim?: string; atual?: boolean;
+          }) => ({
+            instituicao: f.instituicao,
+            curso: f.curso,
+            nivel: f.nivel,
+            dataInicio: new Date(f.dataInicio),
+            dataFim: f.dataFim ? new Date(f.dataFim) : null,
+            atual: f.atual || false,
+          })),
+      },
+      restricoes: {
+        create: (restricoes || []).map((r: string) => ({ descricao: r })),
       },
     },
-    include: { skills: true, experiencias: true, formacoes: true },
+    include: { skills: true, experiencias: true, formacoes: true, restricoes: true },
   });
 
   return Response.json(candidato, { status: 201 });

@@ -8,6 +8,7 @@ import {
   Briefcase,
   PlusCircle,
   Users,
+  CalendarDays,
 } from "lucide-react";
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
       { label: "Vagas", href: "/vagas", icon: Briefcase },
       { label: "Nova Vaga", href: "/vagas/nova", icon: PlusCircle },
       { label: "Candidatos", href: "/candidatos", icon: Users },
+      { label: "Entrevistas", href: "/entrevistas", icon: CalendarDays },
     ],
   },
 ];

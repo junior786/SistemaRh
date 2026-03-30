@@ -15,11 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Loader2 } from "lucide-react";
+import { Plus, X, Save, Loader2, Clock } from "lucide-react";
 
 interface Requisito {
   descricao: string;
   tipo: "OBRIGATORIO" | "DESEJAVEL";
+  tempoMeses: number | null;
 }
 
 export default function EditarVagaPage() {
@@ -47,6 +48,8 @@ export default function EditarVagaPage() {
   const [requisitos, setRequisitos] = useState<Requisito[]>([]);
   const [novoReqDesc, setNovoReqDesc] = useState("");
   const [novoReqTipo, setNovoReqTipo] = useState<"OBRIGATORIO" | "DESEJAVEL">("OBRIGATORIO");
+  const [novoReqTempoValor, setNovoReqTempoValor] = useState("");
+  const [novoReqTempoUnidade, setNovoReqTempoUnidade] = useState<"meses" | "anos">("anos");
 
   // Carregar dados existentes
   useEffect(() => {
@@ -64,9 +67,10 @@ export default function EditarVagaPage() {
         setSalarioMax(data.salarioMax?.toString() || "");
         setDescricao(data.descricao || "");
         setRequisitos(
-          (data.requisitos || []).map((r: { descricao: string; tipo: string }) => ({
+          (data.requisitos || []).map((r: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
             descricao: r.descricao,
             tipo: r.tipo as "OBRIGATORIO" | "DESEJAVEL",
+            tempoMeses: r.tempoMeses ?? null,
           })),
         );
       })
@@ -74,19 +78,42 @@ export default function EditarVagaPage() {
       .finally(() => setLoading(false));
   }, [vagaId]);
 
+  function calcTempoMeses(): number | null {
+    const v = parseInt(novoReqTempoValor);
+    if (!v || v <= 0) return null;
+    return novoReqTempoUnidade === "anos" ? v * 12 : v;
+  }
+
   function addRequisito() {
     if (!novoReqDesc.trim()) return;
-    setRequisitos([...requisitos, { descricao: novoReqDesc.trim(), tipo: novoReqTipo }]);
+    setRequisitos([...requisitos, { descricao: novoReqDesc.trim(), tipo: novoReqTipo, tempoMeses: calcTempoMeses() }]);
     setNovoReqDesc("");
+    setNovoReqTempoValor("");
   }
 
   function removeRequisito(index: number) {
     setRequisitos(requisitos.filter((_, i) => i !== index));
   }
 
+  function formatTempo(meses: number): string {
+    const anos = Math.floor(meses / 12);
+    const resto = meses % 12;
+    if (anos === 0) return `${resto} ${resto === 1 ? "mês" : "meses"}`;
+    if (resto === 0) return `${anos} ${anos === 1 ? "ano" : "anos"}`;
+    return `${anos} ${anos === 1 ? "ano" : "anos"} e ${resto} ${resto === 1 ? "mês" : "meses"}`;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+
+    // Auto-add pending requisito text before submitting
+    const finalRequisitos = [...requisitos];
+    if (novoReqDesc.trim()) {
+      finalRequisitos.push({ descricao: novoReqDesc.trim(), tipo: novoReqTipo, tempoMeses: calcTempoMeses() });
+      setNovoReqDesc("");
+      setNovoReqTempoValor("");
+    }
 
     try {
       const res = await fetch(`/api/vagas/${vagaId}`, {
@@ -103,7 +130,7 @@ export default function EditarVagaPage() {
           salarioMin: salarioMin || null,
           salarioMax: salarioMax || null,
           descricao,
-          requisitos,
+          requisitos: finalRequisitos,
         }),
       });
 
@@ -292,6 +319,12 @@ export default function EditarVagaPage() {
                     {req.tipo === "OBRIGATORIO" ? "Obrigatório" : "Desejável"}
                   </Badge>
                   <span className="flex-1 text-sm">{req.descricao}</span>
+                  {req.tempoMeses && (
+                    <Badge variant="outline" className="shrink-0 gap-1 text-xs">
+                      <Clock className="h-3 w-3" />
+                      {formatTempo(req.tempoMeses)}
+                    </Badge>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeRequisito(i)}
@@ -304,36 +337,63 @@ export default function EditarVagaPage() {
             </div>
           )}
 
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-2">
-              <Label>Descrição do requisito</Label>
-              <Input
-                placeholder="ex: 3+ anos com React"
-                value={novoReqDesc}
-                onChange={(e) => setNovoReqDesc(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addRequisito();
-                  }
-                }}
-              />
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-2">
+                <Label>Descrição do requisito</Label>
+                <Input
+                  placeholder="ex: Experiência com React"
+                  value={novoReqDesc}
+                  onChange={(e) => setNovoReqDesc(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addRequisito();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-end gap-1">
+                <div className="space-y-2">
+                  <Label className="text-xs">Tempo mín.</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="—"
+                    className="w-[70px]"
+                    value={novoReqTempoValor}
+                    onChange={(e) => setNovoReqTempoValor(e.target.value)}
+                  />
+                </div>
+                <Select
+                  value={novoReqTempoUnidade}
+                  onValueChange={(v) => setNovoReqTempoUnidade((v ?? "anos") as "meses" | "anos")}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="meses">Meses</SelectItem>
+                    <SelectItem value="anos">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Select
+                value={novoReqTipo}
+                onValueChange={(v) => setNovoReqTipo((v ?? "OBRIGATORIO") as "OBRIGATORIO" | "DESEJAVEL")}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OBRIGATORIO">Obrigatório</SelectItem>
+                  <SelectItem value="DESEJAVEL">Desejável</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="icon" onClick={addRequisito}>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Select
-              value={novoReqTipo}
-              onValueChange={(v) => setNovoReqTipo((v ?? "OBRIGATORIO") as "OBRIGATORIO" | "DESEJAVEL")}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="OBRIGATORIO">Obrigatório</SelectItem>
-                <SelectItem value="DESEJAVEL">Desejável</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button type="button" variant="outline" size="icon" onClick={addRequisito}>
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
         </CardContent>
       </Card>

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Loader2 } from "lucide-react";
+import { Plus, X, Save, Loader2, AlertTriangle } from "lucide-react";
 
 interface Experiencia {
   empresa: string;
@@ -65,13 +65,20 @@ export default function EditarCandidatoPage() {
   const [telefone, setTelefone] = useState("");
   const [cidade, setCidade] = useState("");
   const [cep, setCep] = useState("");
+  const [genero, setGenero] = useState("");
   const [resumo, setResumo] = useState("");
   const [jobType, setJobType] = useState("");
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [statusEmprego, setStatusEmprego] = useState("DISPONIVEL");
 
   // Skills
   const [skills, setSkills] = useState<string[]>([]);
   const [novaSkill, setNovaSkill] = useState("");
+
+  // Restrições
+  const [restricoes, setRestricoes] = useState<string[]>([]);
+  const [novaRestricao, setNovaRestricao] = useState("");
 
   // Experiências
   const [experiencias, setExperiencias] = useState<Experiencia[]>([]);
@@ -89,10 +96,14 @@ export default function EditarCandidatoPage() {
         setTelefone(data.telefone || "");
         setCidade(data.cidade || "");
         setCep(data.cep || "");
+        setGenero(data.genero || "");
         setResumo(data.resumo || "");
         setJobType(data.jobType || "");
         setPretensaoSalarial(data.pretensaoSalarial?.toString() || "");
+        setObservacao(data.observacao || "");
+        setStatusEmprego(data.statusEmprego || "DISPONIVEL");
         setSkills((data.skills || []).map((s: { nome: string }) => s.nome));
+        setRestricoes((data.restricoes || []).map((r: { descricao: string }) => r.descricao));
         setExperiencias(
           (data.experiencias || []).map(
             (e: {
@@ -143,6 +154,13 @@ export default function EditarCandidatoPage() {
     setNovaSkill("");
   }
 
+  function addRestricao() {
+    const r = novaRestricao.trim();
+    if (!r) return;
+    setRestricoes([...restricoes, r]);
+    setNovaRestricao("");
+  }
+
   function addExperiencia() {
     setExperiencias([
       ...experiencias,
@@ -183,6 +201,18 @@ export default function EditarCandidatoPage() {
     e.preventDefault();
     setSaving(true);
 
+    // Auto-add pending items before submitting
+    const finalSkills = [...skills];
+    if (novaSkill.trim() && !finalSkills.includes(novaSkill.trim())) {
+      finalSkills.push(novaSkill.trim());
+      setNovaSkill("");
+    }
+    const finalRestricoes = [...restricoes];
+    if (novaRestricao.trim()) {
+      finalRestricoes.push(novaRestricao.trim());
+      setNovaRestricao("");
+    }
+
     try {
       const res = await fetch(`/api/candidatos/${candidatoId}`, {
         method: "PUT",
@@ -193,12 +223,16 @@ export default function EditarCandidatoPage() {
           telefone: telefone || null,
           cidade: cidade || null,
           cep: cep || null,
+          genero: genero || null,
           resumo: resumo || null,
           jobType,
           pretensaoSalarial: pretensaoSalarial || null,
-          skills,
+          observacao: observacao || null,
+          statusEmprego,
+          skills: finalSkills,
           experiencias: experiencias.filter((e) => e.empresa && e.cargo),
           formacoes: formacoes.filter((f) => f.instituicao && f.curso),
+          restricoes: finalRestricoes,
         }),
       });
 
@@ -283,15 +317,26 @@ export default function EditarCandidatoPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="jobType">Tipo de Trabalho *</Label>
-            <Input
-              id="jobType"
-              placeholder="ex: Desenvolvedor, Motorista, Doméstica"
-              value={jobType}
-              onChange={(e) => setJobType(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="jobType">Tipo de Trabalho *</Label>
+              <Input
+                id="jobType"
+                placeholder="ex: Desenvolvedor, Motorista, Doméstica"
+                value={jobType}
+                onChange={(e) => setJobType(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="genero">Gênero</Label>
+              <Input
+                id="genero"
+                placeholder="ex: Masculino, Feminino, Não-binário"
+                value={genero}
+                onChange={(e) => setGenero(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -314,6 +359,20 @@ export default function EditarCandidatoPage() {
                 onChange={(e) => setPretensaoSalarial(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="statusEmprego">Status de Emprego</Label>
+            <Select value={statusEmprego} onValueChange={(v) => setStatusEmprego(v ?? "DISPONIVEL")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="DISPONIVEL">Disponível</SelectItem>
+                <SelectItem value="EMPREGADO">Empregado</SelectItem>
+                <SelectItem value="INATIVO">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -548,6 +607,69 @@ export default function EditarCandidatoPage() {
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* 5. Restrições */}
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <h3 className="text-base font-semibold">5. Restrições / Informações Relevantes</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Informações pessoais que podem influenciar na compatibilidade com vagas (ex: &quot;Tem 2 filhos&quot;, &quot;Não possui CNH&quot;, &quot;Disponível apenas manhã&quot;).
+          </p>
+
+          {restricoes.length > 0 && (
+            <div className="space-y-2">
+              {restricoes.map((r, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <span className="flex-1 text-sm">{r}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRestricoes(restricoes.filter((_, idx) => idx !== i))}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Adicionar restrição e pressione Enter..."
+              value={novaRestricao}
+              onChange={(e) => setNovaRestricao(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addRestricao();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" size="icon" onClick={addRestricao}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 6. Observações */}
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <h3 className="text-base font-semibold">6. Observações</h3>
+          <p className="text-xs text-muted-foreground">
+            Notas internas do RH sobre este candidato.
+          </p>
+          <Textarea
+            rows={3}
+            placeholder="Observações internas sobre o candidato..."
+            value={observacao}
+            onChange={(e) => setObservacao(e.target.value)}
+          />
         </CardContent>
       </Card>
 

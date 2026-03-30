@@ -31,8 +31,9 @@ model Vaga {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  requisitos Requisito[]
-  triagens   Triagem[]
+  requisitos  Requisito[]
+  triagens    Triagem[]
+  empregados  Candidato[] @relation("empregados")
 }
 
 enum Regime {
@@ -58,11 +59,12 @@ enum VagaStatus {
 // OBRIGATORIO = eliminatório (score máx 50% se não atender)
 // DESEJAVEL   = pesa proporcionalmente no score
 model Requisito {
-  id        String        @id @default(cuid())
-  vagaId    String
-  descricao String
-  tipo      RequisitoTipo
-  createdAt DateTime      @default(now())
+  id            String        @id @default(cuid())
+  vagaId        String
+  descricao     String
+  tipo          RequisitoTipo
+  tempoMeses    Int?          // tempo mínimo de experiência em meses (ex: 24 = 2 anos)
+  createdAt     DateTime      @default(now())
 
   vaga Vaga @relation(fields: [vagaId], references: [id], onDelete: Cascade)
 }
@@ -77,22 +79,45 @@ enum RequisitoTipo {
 // ─────────────────────────────────────────────
 
 model Candidato {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   nome              String
-  email             String   @unique
+  email             String          @unique
   telefone          String?
   cidade            String?
   cep               String?
+  genero            String?         // texto livre: Masculino, Feminino, Não-binário, etc.
   resumo            String?
-  jobType           String      // tipo de trabalho pretendido
+  jobType           String          // tipo de trabalho pretendido
   pretensaoSalarial Float?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  observacao        String?         // notas internas editáveis pelo RH
+  statusEmprego     StatusEmprego   @default(DISPONIVEL)
+  vagaEmpregadoId   String?         // vaga em que foi contratado
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   skills       CandidatoSkill[]
   experiencias Experiencia[]
   formacoes    Formacao[]
   triagens     Triagem[]
+  restricoes   Restricao[]
+  vagaEmpregado Vaga?  @relation("empregados", fields: [vagaEmpregadoId], references: [id], onDelete: SetNull)
+}
+
+enum StatusEmprego {
+  DISPONIVEL    // procurando emprego
+  EMPREGADO     // contratado em uma vaga do sistema
+  INATIVO       // não está buscando no momento
+}
+
+// Restrições / informações pessoais relevantes para a triagem
+// Exemplos: "Tem 2 filhos", "Não possui CNH", "Disponível apenas manhã"
+model Restricao {
+  id          String   @id @default(cuid())
+  candidatoId String
+  descricao   String
+  createdAt   DateTime @default(now())
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
 }
 
 // Skills como tabela separada para facilitar buscas e filtros futuros

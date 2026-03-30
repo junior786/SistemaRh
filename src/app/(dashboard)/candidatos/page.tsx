@@ -22,9 +22,17 @@ interface Candidato {
   nome: string;
   email: string;
   cidade: string | null;
+  genero: string | null;
+  statusEmprego: string;
   skills: { nome: string }[];
   _count: { triagens: number };
 }
+
+const statusEmpregoLabel: Record<string, string> = {
+  DISPONIVEL: "Disponível",
+  EMPREGADO: "Empregado",
+  INATIVO: "Inativo",
+};
 
 export default function CandidatosPage() {
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
@@ -68,6 +76,8 @@ export default function CandidatosPage() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Cidade</TableHead>
+                <TableHead>Gênero</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Skills</TableHead>
                 <TableHead className="text-center">Vagas</TableHead>
                 <TableHead className="w-10" />
@@ -77,7 +87,7 @@ export default function CandidatosPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={8}>
                       <div className="h-5 animate-pulse rounded bg-muted" />
                     </TableCell>
                   </TableRow>
@@ -85,7 +95,7 @@ export default function CandidatosPage() {
               ) : candidatos.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={8}
                     className="py-8 text-center text-muted-foreground"
                   >
                     Nenhum candidato encontrado.
@@ -107,6 +117,20 @@ export default function CandidatosPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {c.cidade || "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {c.genero || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          c.statusEmprego === "DISPONIVEL" ? "default" :
+                          c.statusEmprego === "EMPREGADO" ? "secondary" : "destructive"
+                        }
+                        className="text-[10px]"
+                      >
+                        {statusEmpregoLabel[c.statusEmprego] ?? c.statusEmprego}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

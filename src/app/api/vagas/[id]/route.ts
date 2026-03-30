@@ -12,6 +12,9 @@ export async function GET(
     where: { id },
     include: {
       requisitos: true,
+      empregados: {
+        select: { id: true, nome: true, email: true },
+      },
       triagens: {
         include: {
           candidato: {
@@ -64,10 +67,11 @@ export async function PUT(
       await prisma.requisito.deleteMany({ where: { vagaId: id } });
       if (requisitos.length > 0) {
         await prisma.requisito.createMany({
-          data: requisitos.map((r: { descricao: string; tipo: string }) => ({
+          data: requisitos.map((r: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
             vagaId: id,
             descricao: r.descricao,
             tipo: r.tipo,
+            tempoMeses: r.tempoMeses ?? null,
           })),
         });
       }

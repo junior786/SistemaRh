@@ -17,6 +17,7 @@ export async function POST(
       candidato: {
         include: {
           skills: true,
+          restricoes: true,
           experiencias: { orderBy: { dataInicio: "desc" } },
           formacoes: { orderBy: { dataInicio: "desc" } },
         },
@@ -49,13 +50,15 @@ async function processarAnalise(
       jobType: string;
       regime: string;
       descricao: string;
-      requisitos: { descricao: string; tipo: string }[];
+      requisitos: { descricao: string; tipo: string; tempoMeses: number | null }[];
     };
     candidato: {
       nome: string;
       resumo: string | null;
+      genero: string | null;
       jobType: string;
       skills: { nome: string }[];
+      restricoes: { descricao: string }[];
       experiencias: {
         empresa: string;
         cargo: string;
@@ -82,13 +85,16 @@ async function processarAnalise(
         requisitos: triagem.vaga.requisitos.map((r) => ({
           descricao: r.descricao,
           tipo: r.tipo as "OBRIGATORIO" | "DESEJAVEL",
+          tempoMeses: r.tempoMeses,
         })),
       },
       {
         nome: triagem.candidato.nome,
         resumo: triagem.candidato.resumo,
+        genero: triagem.candidato.genero,
         jobType: triagem.candidato.jobType,
         skills: triagem.candidato.skills.map((s) => s.nome),
+        restricoes: triagem.candidato.restricoes.map((r) => r.descricao),
         experiencias: triagem.candidato.experiencias.map((e) => ({
           empresa: e.empresa,
           cargo: e.cargo,

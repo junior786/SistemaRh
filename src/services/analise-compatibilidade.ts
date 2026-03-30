@@ -23,14 +23,16 @@ interface DadosVaga {
   jobType: string;
   regime: string;
   descricao: string;
-  requisitos: { descricao: string; tipo: "OBRIGATORIO" | "DESEJAVEL" }[];
+  requisitos: { descricao: string; tipo: "OBRIGATORIO" | "DESEJAVEL"; tempoMeses?: number | null }[];
 }
 
 interface DadosCandidato {
   nome: string;
   resumo: string | null;
+  genero: string | null;
   jobType: string;
   skills: string[];
+  restricoes: string[];
   experiencias: {
     empresa: string;
     cargo: string;
@@ -51,6 +53,7 @@ REGRAS DE SCORING (RN-01):
 - Requisitos OBRIGATÓRIOS têm peso eliminatório. Se o candidato NÃO atende QUALQUER requisito obrigatório, o score MÁXIMO é 50%.
 - Requisitos DESEJÁVEIS distribuem pontos proporcionalmente no restante.
 - Use as experiências profissionais com tempo calculado como fator principal.
+- RESTRIÇÕES do candidato (ex: filhos, falta de CNH, disponibilidade limitada) devem ser consideradas como contexto para avaliar compatibilidade prática com a vaga.
 - Score final: 0 a 100 (inteiro).
 
 Retorne APENAS um JSON válido (sem markdown, sem blocos de código):
@@ -100,13 +103,24 @@ Regime: ${vaga.regime}
 Descrição: ${vaga.descricao}
 
 ### Requisitos:
-${vaga.requisitos.map((r) => `- [${r.tipo}] ${r.descricao}`).join("\n")}
+${vaga.requisitos.map((r) => {
+    let line = `- [${r.tipo}] ${r.descricao}`;
+    if (r.tempoMeses) {
+      const anos = Math.floor(r.tempoMeses / 12);
+      const meses = r.tempoMeses % 12;
+      const tempo = anos > 0 ? (meses > 0 ? `${anos} ano(s) e ${meses} mês(es)` : `${anos} ano(s)`) : `${meses} mês(es)`;
+      line += ` (mínimo ${tempo} de experiência)`;
+    }
+    return line;
+  }).join("\n")}
 
 ## CANDIDATO
 Nome: ${candidato.nome}
+${candidato.genero ? `Gênero: ${candidato.genero}` : ""}
 Tipo de Trabalho Pretendido: ${candidato.jobType}
 Resumo: ${candidato.resumo || "Não informado"}
 Skills: ${candidato.skills.join(", ") || "Nenhuma informada"}
+${candidato.restricoes.length > 0 ? `\nRestrições / Informações relevantes:\n${candidato.restricoes.map((r) => `- ${r}`).join("\n")}` : ""}
 
 ### Experiências profissionais:
 ${

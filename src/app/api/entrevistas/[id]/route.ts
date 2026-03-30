@@ -19,7 +19,21 @@ export async function PUT(
       ...(observacoes !== undefined && { observacoes }),
       ...(resultado !== undefined && { resultado }),
     },
+    include: {
+      triagem: { select: { candidatoId: true, vagaId: true } },
+    },
   });
+
+  // Quando resultado = APROVADO, marca candidato como EMPREGADO e vincula à vaga
+  if (resultado === "APROVADO" && entrevista.triagem) {
+    await prisma.candidato.update({
+      where: { id: entrevista.triagem.candidatoId },
+      data: {
+        statusEmprego: "EMPREGADO",
+        vagaEmpregadoId: entrevista.triagem.vagaId,
+      },
+    });
+  }
 
   return Response.json(entrevista);
 }

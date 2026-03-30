@@ -57,9 +57,10 @@ export async function POST(request: NextRequest) {
         salarioMax: salarioMax ? parseFloat(salarioMax) : null,
         descricao,
         requisitos: {
-          create: (requisitos || []).map((r: { descricao: string; tipo: string }) => ({
+          create: (requisitos || []).map((r: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
             descricao: r.descricao,
             tipo: r.tipo,
+            tempoMeses: r.tempoMeses ?? null,
           })),
         },
       },

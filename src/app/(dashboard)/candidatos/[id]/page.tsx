@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Mail,
   Phone,
@@ -15,6 +17,11 @@ import {
   Briefcase,
   GraduationCap,
   Calendar,
+  User,
+  AlertTriangle,
+  StickyNote,
+  Save,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Skill {
@@ -49,6 +56,11 @@ interface Triagem {
   vaga: { id: string; titulo: string; area: string };
 }
 
+interface Restricao {
+  id: string;
+  descricao: string;
+}
+
 interface Candidato {
   id: string;
   nome: string;
@@ -56,14 +68,24 @@ interface Candidato {
   telefone: string | null;
   cidade: string | null;
   cep: string | null;
+  genero: string | null;
   resumo: string | null;
   jobType: string;
   pretensaoSalarial: number | null;
+  observacao: string | null;
+  statusEmprego: string;
   skills: Skill[];
   experiencias: Experiencia[];
   formacoes: Formacao[];
   triagens: Triagem[];
+  restricoes: Restricao[];
 }
+
+const statusEmpregoMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+  DISPONIVEL: { label: "Disponível", variant: "default" },
+  EMPREGADO: { label: "Empregado", variant: "secondary" },
+  INATIVO: { label: "Inativo", variant: "destructive" },
+};
 
 const nivelLabels: Record<string, string> = {
   TECNICO: "Técnico",
@@ -95,14 +117,37 @@ export default function PerfilCandidatoPage() {
   const candidatoId = params.id as string;
   const [candidato, setCandidato] = useState<Candidato | null>(null);
   const [loading, setLoading] = useState(true);
+  const [obsEdit, setObsEdit] = useState("");
+  const [obsEditing, setObsEditing] = useState(false);
+  const [obsSaving, setObsSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/candidatos/${candidatoId}`)
       .then((r) => r.json())
-      .then(setCandidato)
+      .then((data) => {
+        setCandidato(data);
+        setObsEdit(data.observacao || "");
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [candidatoId]);
+
+  async function salvarObservacao() {
+    setObsSaving(true);
+    try {
+      await fetch(`/api/candidatos/${candidatoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ observacao: obsEdit || null }),
+      });
+      setCandidato((c) => c ? { ...c, observacao: obsEdit || null } : c);
+      setObsEditing(false);
+    } catch {
+      alert("Erro ao salvar observação");
+    } finally {
+      setObsSaving(false);
+    }
+  }
 
   if (loading) return <div className="h-64 animate-pulse rounded-lg bg-muted" />;
   if (!candidato) return <p className="text-muted-foreground">Candidato não encontrado.</p>;
@@ -115,6 +160,9 @@ export default function PerfilCandidatoPage() {
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold">{candidato.nome}</h2>
             <Badge variant="outline" className="text-xs">{candidato.jobType}</Badge>
+            <Badge variant={statusEmpregoMap[candidato.statusEmprego]?.variant ?? "secondary"} className="text-xs">
+              {statusEmpregoMap[candidato.statusEmprego]?.label ?? candidato.statusEmprego}
+            </Badge>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -132,6 +180,11 @@ export default function PerfilCandidatoPage() {
             )}
             {candidato.cep && (
               <span className="text-xs">CEP: {candidato.cep}</span>
+            )}
+            {candidato.genero && (
+              <span className="flex items-center gap-1">
+                <User className="h-3.5 w-3.5" /> {candidato.genero}
+              </span>
             )}
             {candidato.pretensaoSalarial && (
               <span className="flex items-center gap-1">
@@ -168,6 +221,83 @@ export default function PerfilCandidatoPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Restrições */}
+      {candidato.restricoes.length > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="mb-3 flex items-center gap-2 font-semibold">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Restrições / Informações Relevantes
+            </h3>
+            <div className="space-y-1.5">
+              {candidato.restricoes.map((r) => (
+                <div key={r.id} className="flex items-center gap-2.5 rounded-md bg-warning/5 px-3 py-2">
+                  <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                  <span className="text-sm">{r.descricao}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Observações — editável inline */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <StickyNote className="h-4 w-4 text-primary" />
+              Observações do RH
+            </h3>
+            {!obsEditing ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => setObsEditing(true)}
+              >
+                Editar
+              </Button>
+            ) : (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    setObsEdit(candidato.observacao || "");
+                    setObsEditing(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-1 text-xs"
+                  disabled={obsSaving}
+                  onClick={salvarObservacao}
+                >
+                  <Save className="h-3 w-3" />
+                  {obsSaving ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            )}
+          </div>
+          {obsEditing ? (
+            <Textarea
+              rows={3}
+              placeholder="Notas internas sobre o candidato..."
+              value={obsEdit}
+              onChange={(e) => setObsEdit(e.target.value)}
+            />
+          ) : (
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+              {candidato.observacao || "Nenhuma observação registrada."}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Experiências */}
@@ -233,7 +363,7 @@ export default function PerfilCandidatoPage() {
         </Card>
       </div>
 
-      {/* Triagens / Vagas vinculadas */}
+      {/* Triagens / Vagas vinculadas — mostra se candidato foi contratado */}
       {candidato.triagens.length > 0 && (
         <Card>
           <CardContent className="p-6">
