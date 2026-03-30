@@ -242,6 +242,11 @@ export default function TriagemPage() {
   const [modalBusca, setModalBusca] = useState("");
   const [modalFiltroTipo, setModalFiltroTipo] = useState("");
   const [modalFiltroCidade, setModalFiltroCidade] = useState("");
+  const [modalCandidatos, setModalCandidatos] = useState<CandidatoCompleto[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalPage, setModalPage] = useState(1);
+  const [modalTotal, setModalTotal] = useState(0);
+  const [modalTotalPages, setModalTotalPages] = useState(1);
 
   // ── Data fetching ──
 
@@ -260,15 +265,66 @@ export default function TriagemPage() {
   useEffect(() => {
     Promise.all([
       fetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
-      fetch("/api/candidatos").then((r) => r.json()),
+      fetch("/api/candidatos?page=1&pageSize=100").then((r) => r.json()),
     ])
       .then(([vagaData, candidatosData]) => {
         setVaga(vagaData);
-        setTodosCandidatos(candidatosData);
+        setTodosCandidatos(Array.isArray(candidatosData?.items) ? candidatosData.items : []);
       })
       .catch(console.error)
       .finally(() => setLoadingSugeridos(false));
   }, [vagaId]);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      return;
+    }
+
+    const params = new URLSearchParams({
+      page: String(modalPage),
+      pageSize: "10",
+    });
+
+    if (modalBusca.trim()) {
+      params.set("busca", modalBusca.trim());
+    }
+    if (modalFiltroTipo) {
+      params.set("jobType", modalFiltroTipo);
+    }
+    if (modalFiltroCidade) {
+      params.set("cidade", modalFiltroCidade);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setModalLoading(true);
+
+      fetch(`/api/candidatos?${params}`)
+        .then(async (r) => {
+          const text = await r.text();
+          const data = text ? JSON.parse(text) : null;
+
+          if (!r.ok) {
+            throw new Error(data?.error || "Erro ao carregar candidatos");
+          }
+
+          return data;
+        })
+        .then((data) => {
+          setModalCandidatos(Array.isArray(data?.items) ? data.items : []);
+          setModalTotal(typeof data?.total === "number" ? data.total : 0);
+          setModalTotalPages(typeof data?.totalPages === "number" ? data.totalPages : 1);
+        })
+        .catch((error) => {
+          console.error(error);
+          setModalCandidatos([]);
+          setModalTotal(0);
+          setModalTotalPages(1);
+        })
+        .finally(() => setModalLoading(false));
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [modalOpen, modalBusca, modalFiltroTipo, modalFiltroCidade, modalPage]);
 
   // ── Candidatos sugeridos ──
 
@@ -306,30 +362,8 @@ export default function TriagemPage() {
 
   const candidatosModal = useMemo(() => {
     const idsVinculados = new Set(triagens.map((t) => t.candidato.id));
-    let lista = todosCandidatos.filter((c) => !idsVinculados.has(c.id));
-
-    if (modalBusca.trim()) {
-      const termo = normalize(modalBusca);
-      lista = lista.filter(
-        (c) =>
-          normalize(c.nome).includes(termo) ||
-          normalize(c.email).includes(termo) ||
-          c.skills.some((s) => normalize(s.nome).includes(termo)),
-      );
-    }
-
-    if (modalFiltroTipo) {
-      const tipo = normalize(modalFiltroTipo);
-      lista = lista.filter((c) => c.jobType && normalize(c.jobType).includes(tipo));
-    }
-
-    if (modalFiltroCidade) {
-      const cidade = normalize(modalFiltroCidade);
-      lista = lista.filter((c) => c.cidade && normalize(c.cidade).includes(cidade));
-    }
-
-    return lista;
-  }, [todosCandidatos, triagens, modalBusca, modalFiltroTipo, modalFiltroCidade]);
+    return modalCandidatos.filter((c) => !idsVinculados.has(c.id));
+  }, [modalCandidatos, triagens]);
 
   // Valores únicos para chips de filtro
   const tiposUnicos = useMemo(() => {
@@ -415,7 +449,15 @@ export default function TriagemPage() {
           />
 
           {/* Botão para abrir modal de adicionar */}
-          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <Dialog
+            open={modalOpen}
+            onOpenChange={(open) => {
+              setModalOpen(open);
+              if (open) {
+                setModalPage(1);
+              }
+            }}
+          >
             <DialogTrigger
               className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
             >
@@ -438,7 +480,10 @@ export default function TriagemPage() {
                     placeholder="Buscar por nome, email ou skill..."
                     className="pl-9"
                     value={modalBusca}
-                    onChange={(e) => setModalBusca(e.target.value)}
+                    onChange={(e) => {
+                      setModalBusca(e.target.value);
+                      setModalPage(1);
+                    }}
                     autoFocus
                   />
                 </div>
@@ -452,9 +497,10 @@ export default function TriagemPage() {
                     <button
                       key={tipo}
                       type="button"
-                      onClick={() =>
-                        setModalFiltroTipo(modalFiltroTipo === tipo ? "" : tipo)
-                      }
+                      onClick={() => {
+                        setModalFiltroTipo(modalFiltroTipo === tipo ? "" : tipo);
+                        setModalPage(1);
+                      }}
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                         modalFiltroTipo === tipo
@@ -474,9 +520,10 @@ export default function TriagemPage() {
                     <button
                       key={cidade}
                       type="button"
-                      onClick={() =>
-                        setModalFiltroCidade(modalFiltroCidade === cidade ? "" : cidade)
-                      }
+                      onClick={() => {
+                        setModalFiltroCidade(modalFiltroCidade === cidade ? "" : cidade);
+                        setModalPage(1);
+                      }}
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                         modalFiltroCidade === cidade
@@ -496,6 +543,7 @@ export default function TriagemPage() {
                       onClick={() => {
                         setModalFiltroTipo("");
                         setModalFiltroCidade("");
+                        setModalPage(1);
                       }}
                       className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
                     >
@@ -509,7 +557,7 @@ export default function TriagemPage() {
               {/* Contagem */}
               <div className="flex items-center justify-between border-b pb-2 pt-1">
                 <p className="text-xs text-muted-foreground">
-                  {candidatosModal.length} candidato{candidatosModal.length !== 1 ? "s" : ""} disponível{candidatosModal.length !== 1 ? "is" : ""}
+                  {modalTotal} candidato{modalTotal !== 1 ? "s" : ""} encontrado{modalTotal !== 1 ? "s" : ""}
                 </p>
                 {activeModalFilters > 0 && (
                   <Badge variant="secondary" className="text-[10px]">
@@ -519,7 +567,13 @@ export default function TriagemPage() {
               </div>
 
               {/* Lista de candidatos */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 space-y-1.5">
+              <div className="relative min-h-[360px] flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2">
+                <div
+                  className={cn(
+                    "space-y-1.5 py-1 transition-opacity duration-200",
+                    modalLoading && "opacity-60",
+                  )}
+                >
                 {candidatosModal.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Search className="mb-2 h-8 w-8 text-muted-foreground/30" />
@@ -616,6 +670,43 @@ export default function TriagemPage() {
                     );
                   })
                 )}
+                </div>
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-0 top-0 flex justify-center transition-opacity duration-200",
+                    modalLoading ? "opacity-100" : "opacity-0",
+                  )}
+                >
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Atualizando resultados
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t pt-3">
+                <p className="text-xs text-muted-foreground">
+                  Página {modalPage} de {modalTotalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={modalPage <= 1 || modalLoading}
+                    onClick={() => setModalPage((current) => Math.max(1, current - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={modalPage >= modalTotalPages || modalLoading}
+                    onClick={() => setModalPage((current) => Math.min(modalTotalPages, current + 1))}
+                  >
+                    Próxima
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

@@ -8,6 +8,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -52,11 +60,18 @@ export default function VagasPage() {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const pageSize = 10;
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (busca) params.set("busca", busca);
     if (filtroStatus && filtroStatus !== "todos") params.set("status", filtroStatus);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
 
     const timeoutId = window.setTimeout(() => {
       setLoading(true);
@@ -70,25 +85,37 @@ export default function VagasPage() {
             throw new Error(data?.error || "Erro ao carregar vagas");
           }
 
-          return Array.isArray(data) ? data : [];
+          return data;
         })
-        .then(setVagas)
+        .then((data) => {
+          setVagas(Array.isArray(data?.items) ? data.items : []);
+          setTotal(typeof data?.total === "number" ? data.total : 0);
+          setTotalPages(typeof data?.totalPages === "number" ? data.totalPages : 1);
+        })
         .catch((error) => {
           console.error(error);
           setVagas([]);
+          setTotal(0);
+          setTotalPages(1);
         })
         .finally(() => setLoading(false));
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [busca, filtroStatus]);
+  }, [busca, filtroStatus, page]);
 
   return (
     <div className="space-y-6">
       {/* Filtros */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v ?? "todos")}>
+          <Select
+            value={filtroStatus}
+            onValueChange={(v) => {
+              setFiltroStatus(v ?? "todos");
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -108,7 +135,10 @@ export default function VagasPage() {
               placeholder="Buscar vagas..."
               className="h-9 w-[220px] pl-8"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(e) => {
+                setBusca(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <Link href="/vagas/nova" className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
@@ -187,6 +217,64 @@ export default function VagasPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {total} vaga(s) no total
+        </p>
+
+        <Pagination className="mx-0 w-auto justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                text="Anterior"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page > 1) setPage(page - 1);
+                }}
+                aria-disabled={page <= 1}
+                className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .filter((pageNumber) => {
+                if (totalPages <= 5) return true;
+                return (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  Math.abs(pageNumber - page) <= 1
+                );
+              })
+              .map((pageNumber) => (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    href="#"
+                    isActive={pageNumber === page}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(pageNumber);
+                    }}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                text="Próxima"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page < totalPages) setPage(page + 1);
+                }}
+                aria-disabled={page >= totalPages}
+                className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }

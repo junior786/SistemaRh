@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 
 // GET /api/vagas — listar vagas com contagem de candidatos
@@ -8,6 +9,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status");
   const area = searchParams.get("area");
   const busca = searchParams.get("busca");
+  const page = parsePage(searchParams.get("page"));
+  const pageSize = parsePageSize(searchParams.get("pageSize"));
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
@@ -19,6 +22,9 @@ export async function GET(request: NextRequest) {
     ];
   }
 
+  const total = await prisma.vaga.count({ where });
+  const { totalPages, page: currentPage } = getPaginationMeta(total, page, pageSize);
+
   const vagas = await prisma.vaga.findMany({
     where,
     include: {
@@ -27,9 +33,17 @@ export async function GET(request: NextRequest) {
       etapas: { orderBy: { ordem: "asc" } },
     },
     orderBy: { createdAt: "desc" },
+    skip: (currentPage - 1) * pageSize,
+    take: pageSize,
   });
 
-  return Response.json(vagas);
+  return Response.json({
+    items: vagas,
+    page: currentPage,
+    pageSize,
+    total,
+    totalPages,
+  });
 }
 
 // POST /api/vagas — criar vaga com requisitos

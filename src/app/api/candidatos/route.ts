@@ -1,19 +1,35 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 
 // GET /api/candidatos — listar candidatos
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const busca = searchParams.get("busca");
+  const jobType = searchParams.get("jobType");
+  const cidade = searchParams.get("cidade");
+  const page = parsePage(searchParams.get("page"));
+  const pageSize = parsePageSize(searchParams.get("pageSize"));
 
   const where: Record<string, unknown> = {};
   if (busca) {
     where.OR = [
       { nome: { contains: busca, mode: "insensitive" } },
       { email: { contains: busca, mode: "insensitive" } },
+      { jobType: { contains: busca, mode: "insensitive" } },
       { cidade: { contains: busca, mode: "insensitive" } },
+      { skills: { some: { nome: { contains: busca, mode: "insensitive" } } } },
     ];
   }
+  if (jobType) {
+    where.jobType = { contains: jobType, mode: "insensitive" };
+  }
+  if (cidade) {
+    where.cidade = { contains: cidade, mode: "insensitive" };
+  }
+
+  const total = await prisma.candidato.count({ where });
+  const { totalPages, page: currentPage } = getPaginationMeta(total, page, pageSize);
 
   const candidatos = await prisma.candidato.findMany({
     where,
@@ -23,9 +39,17 @@ export async function GET(request: NextRequest) {
       _count: { select: { triagens: true } },
     },
     orderBy: { createdAt: "desc" },
+    skip: (currentPage - 1) * pageSize,
+    take: pageSize,
   });
 
-  return Response.json(candidatos);
+  return Response.json({
+    items: candidatos,
+    page: currentPage,
+    pageSize,
+    total,
+    totalPages,
+  });
 }
 
 // POST /api/candidatos — criar candidato com skills, experiências, formações

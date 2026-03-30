@@ -8,6 +8,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Table,
   TableBody,
   TableCell,
@@ -38,17 +46,48 @@ export default function CandidatosPage() {
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const pageSize = 10;
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (busca) params.set("busca", busca);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
 
-    fetch(`/api/candidatos?${params}`)
-      .then((r) => r.json())
-      .then(setCandidatos)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [busca]);
+    const timeoutId = window.setTimeout(() => {
+      setLoading(true);
+
+      fetch(`/api/candidatos?${params}`)
+        .then(async (r) => {
+          const text = await r.text();
+          const data = text ? JSON.parse(text) : null;
+
+          if (!r.ok) {
+            throw new Error(data?.error || "Erro ao carregar candidatos");
+          }
+
+          return data;
+        })
+        .then((data) => {
+          setCandidatos(Array.isArray(data?.items) ? data.items : []);
+          setTotal(typeof data?.total === "number" ? data.total : 0);
+          setTotalPages(typeof data?.totalPages === "number" ? data.totalPages : 1);
+        })
+        .catch((error) => {
+          console.error(error);
+          setCandidatos([]);
+          setTotal(0);
+          setTotalPages(1);
+        })
+        .finally(() => setLoading(false));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [busca, page]);
 
   return (
     <div className="space-y-6">
@@ -59,7 +98,10 @@ export default function CandidatosPage() {
             placeholder="Buscar candidatos..."
             className="h-9 w-[260px] pl-8"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => {
+              setBusca(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         <Link href="/candidatos/novo" className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
@@ -165,6 +207,64 @@ export default function CandidatosPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {total} candidato(s) no total
+        </p>
+
+        <Pagination className="mx-0 w-auto justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                text="Anterior"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page > 1) setPage(page - 1);
+                }}
+                aria-disabled={page <= 1}
+                className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .filter((pageNumber) => {
+                if (totalPages <= 5) return true;
+                return (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  Math.abs(pageNumber - page) <= 1
+                );
+              })
+              .map((pageNumber) => (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    href="#"
+                    isActive={pageNumber === page}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(pageNumber);
+                    }}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                text="Próxima"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page < totalPages) setPage(page + 1);
+                }}
+                aria-disabled={page >= totalPages}
+                className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
