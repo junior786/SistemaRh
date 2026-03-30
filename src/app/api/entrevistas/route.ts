@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   if (triagemId) {
     const entrevistas = await prisma.entrevista.findMany({
       where: { triagemId },
+      include: { vagaEtapa: true },
       orderBy: { dataHora: "desc" },
     });
     return Response.json(entrevistas);
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
           vaga: { select: { id: true, titulo: true, area: true } },
         },
       },
+      vagaEtapa: true,
     },
     orderBy: { dataHora: "asc" },
   });
@@ -46,7 +48,7 @@ export async function GET(request: NextRequest) {
 // POST /api/entrevistas — agendar entrevista (RF-06)
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { triagemId, dataHora, entrevistador } = body;
+  const { triagemId, vagaEtapaId, dataHora, entrevistador } = body;
 
   if (!triagemId || !dataHora || !entrevistador) {
     return Response.json({ error: "triagemId, dataHora e entrevistador são obrigatórios" }, { status: 400 });
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
   const entrevista = await prisma.entrevista.create({
     data: {
       triagemId,
+      vagaEtapaId: vagaEtapaId || null,
       dataHora: new Date(dataHora),
       entrevistador,
     },

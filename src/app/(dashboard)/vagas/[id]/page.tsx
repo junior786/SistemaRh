@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,16 @@ interface Triagem {
   score: number | null;
   status: string;
   desatualizado: boolean;
+  etapas: {
+    id: string;
+    status: string;
+    vagaEtapa: {
+      id: string;
+      nome: string;
+      tipo: keyof typeof ETAPA_TIPO_LABEL;
+      ordem: number;
+    };
+  }[];
   candidato: {
     id: string;
     nome: string;
@@ -54,6 +65,14 @@ interface Empregado {
   id: string;
   nome: string;
   email: string;
+}
+
+interface EtapaVaga {
+  id: string;
+  nome: string;
+  tipo: keyof typeof ETAPA_TIPO_LABEL;
+  ordem: number;
+  obrigatoria: boolean;
 }
 
 interface Vaga {
@@ -70,6 +89,7 @@ interface Vaga {
   descricao: string;
   status: string;
   requisitos: Requisito[];
+  etapas: EtapaVaga[];
   triagens: Triagem[];
   empregados: Empregado[];
 }
@@ -111,6 +131,13 @@ function scoreBg(score: number) {
   if (score >= 70) return "bg-success/10";
   if (score >= 40) return "bg-warning/10";
   return "bg-destructive/10";
+}
+
+function getEtapaAtual(triagem: Triagem) {
+  return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
+    ?? triagem.etapas.find((etapa) => etapa.status === "PENDENTE")
+    ?? triagem.etapas[triagem.etapas.length - 1]
+    ?? null;
 }
 
 export default function DetalheVagaPage() {
@@ -390,6 +417,39 @@ export default function DetalheVagaPage() {
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="mb-4 flex items-center gap-2 font-semibold">
+                <ClipboardCheck className="h-4 w-4 text-primary" />
+                Etapas do processo
+                <span className="ml-auto text-xs font-normal text-muted-foreground">
+                  {vaga.etapas.length} total
+                </span>
+              </h3>
+
+              <div className="space-y-3">
+                {vaga.etapas.map((etapa, index) => (
+                  <div key={etapa.id} className="flex items-center gap-3 rounded-lg border px-3 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{etapa.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ETAPA_TIPO_LABEL[etapa.tipo]}
+                      </p>
+                    </div>
+                    {etapa.obrigatoria && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Obrigatória
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column — Empregados + Candidatos */}
@@ -472,6 +532,17 @@ export default function DetalheVagaPage() {
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                         {t.candidato.nome.charAt(0).toUpperCase()}
                       </div>
+
+                      {getEtapaAtual(t) && (
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <Badge variant="secondary" className="w-fit text-[10px]">
+                            {getEtapaAtual(t)?.vagaEtapa.nome}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {ETAPA_STATUS_LABEL[getEtapaAtual(t)?.status ?? "PENDENTE"]}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Info */}
                       <div className="min-w-0 flex-1">

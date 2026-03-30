@@ -58,11 +58,29 @@ export default function VagasPage() {
     if (busca) params.set("busca", busca);
     if (filtroStatus && filtroStatus !== "todos") params.set("status", filtroStatus);
 
-    fetch(`/api/vagas?${params}`)
-      .then((r) => r.json())
-      .then(setVagas)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    const timeoutId = window.setTimeout(() => {
+      setLoading(true);
+
+      fetch(`/api/vagas?${params}`)
+        .then(async (r) => {
+          const text = await r.text();
+          const data = text ? JSON.parse(text) : null;
+
+          if (!r.ok) {
+            throw new Error(data?.error || "Erro ao carregar vagas");
+          }
+
+          return Array.isArray(data) ? data : [];
+        })
+        .then(setVagas)
+        .catch((error) => {
+          console.error(error);
+          setVagas([]);
+        })
+        .finally(() => setLoading(false));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [busca, filtroStatus]);
 
   return (

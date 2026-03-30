@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { concluirEtapaEAvancar, reprovarEtapaTriagem } from "@/lib/triagem-etapas";
 
 // PUT /api/entrevistas/[id] — atualizar entrevista (status, observações, resultado)
 export async function PUT(
@@ -20,9 +21,22 @@ export async function PUT(
       ...(resultado !== undefined && { resultado }),
     },
     include: {
-      triagem: { select: { candidatoId: true, vagaId: true } },
+      triagem: { select: { id: true, candidatoId: true, vagaId: true } },
+      vagaEtapa: true,
     },
   });
+
+  if (entrevista.vagaEtapaId && resultado === "PROXIMA_FASE") {
+    await concluirEtapaEAvancar(entrevista.triagem.id, entrevista.vagaEtapaId);
+  }
+
+  if (entrevista.vagaEtapaId && resultado === "REPROVADO") {
+    await reprovarEtapaTriagem(entrevista.triagem.id, entrevista.vagaEtapaId);
+  }
+
+  if (entrevista.vagaEtapaId && resultado === "APROVADO") {
+    await concluirEtapaEAvancar(entrevista.triagem.id, entrevista.vagaEtapaId);
+  }
 
   // Quando resultado = APROVADO, marca candidato como EMPREGADO e vincula à vaga
   if (resultado === "APROVADO" && entrevista.triagem) {

@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EtapasForm } from "@/components/vagas/etapas-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { getDefaultEtapas, type EtapaFormInput } from "@/lib/vaga-etapas";
 import {
   Select,
   SelectContent,
@@ -37,6 +39,7 @@ export default function NovaVagaPage() {
   const [salarioMin, setSalarioMin] = useState("");
   const [salarioMax, setSalarioMax] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [etapas, setEtapas] = useState<EtapaFormInput[]>(getDefaultEtapas());
 
   const exigeCep = modalidade === "PRESENCIAL" || modalidade === "HIBRIDO";
 
@@ -100,6 +103,7 @@ export default function NovaVagaPage() {
           salarioMax: salarioMax || null,
           descricao,
           requisitos: finalRequisitos,
+          etapas,
         }),
       });
 
@@ -364,10 +368,23 @@ export default function NovaVagaPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold">3. Etapas do processo</h3>
+            <span className="text-xs font-medium text-muted-foreground">
+              {etapas.length} etapa(s)
+            </span>
+          </div>
+
+          <EtapasForm value={etapas} onChange={setEtapas} />
+        </CardContent>
+      </Card>
+
       {/* Ações */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {requisitos.length} requisito(s) adicionado(s)
+          {requisitos.length} requisito(s) e {etapas.length} etapa(s)
         </p>
         <div className="flex gap-3">
           <Button

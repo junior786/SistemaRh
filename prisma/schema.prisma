@@ -32,6 +32,7 @@ model Vaga {
   updatedAt   DateTime    @updatedAt
 
   requisitos  Requisito[]
+  etapas      VagaEtapa[]
   triagens    Triagem[]
   empregados  Candidato[] @relation("empregados")
 }
@@ -72,6 +73,34 @@ model Requisito {
 enum RequisitoTipo {
   OBRIGATORIO
   DESEJAVEL
+}
+
+model VagaEtapa {
+  id          String       @id @default(cuid())
+  vagaId      String
+  nome        String
+  tipo        VagaEtapaTipo
+  ordem       Int
+  obrigatoria Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  vaga        Vaga         @relation(fields: [vagaId], references: [id], onDelete: Cascade)
+  triagens    TriagemEtapa[]
+  entrevistas Entrevista[]
+
+  @@unique([vagaId, ordem])
+}
+
+enum VagaEtapaTipo {
+  TRIAGEM
+  ENTREVISTA
+  TESTE_TECNICO
+  DINAMICA
+  ENTREVISTA_GESTOR
+  OFERTA
+  ADMISSAO
+  OUTRO
 }
 
 // ─────────────────────────────────────────────
@@ -205,6 +234,7 @@ model Triagem {
   updatedAt   DateTime  @updatedAt
 
   entrevistas Entrevista[]
+  etapas      TriagemEtapa[]
 
   vaga      Vaga      @relation(fields: [vagaId], references: [id], onDelete: Cascade)
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
@@ -224,11 +254,37 @@ enum TriagemStatus {
 // ENTREVISTAS
 // ─────────────────────────────────────────────
 
+model TriagemEtapa {
+  id          String             @id @default(cuid())
+  triagemId   String
+  vagaEtapaId String
+  status      TriagemEtapaStatus @default(PENDENTE)
+  observacao  String?
+  iniciadaEm  DateTime?
+  concluidaEm DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  triagem   Triagem   @relation(fields: [triagemId], references: [id], onDelete: Cascade)
+  vagaEtapa VagaEtapa @relation(fields: [vagaEtapaId], references: [id], onDelete: Cascade)
+
+  @@unique([triagemId, vagaEtapaId])
+}
+
+enum TriagemEtapaStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDO
+  REPROVADO
+  DISPENSADO
+}
+
 // Vinculada ao par candidato + vaga via Triagem
 // Um par pode ter múltiplas entrevistas (técnica, gestor, etc.)
 model Entrevista {
   id               String             @id @default(cuid())
   triagemId        String
+  vagaEtapaId      String?
   dataHora         DateTime
   entrevistador    String
   status           EntrevistaStatus   @default(AGENDADA)
@@ -237,7 +293,8 @@ model Entrevista {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
-  triagem Triagem @relation(fields: [triagemId], references: [id], onDelete: Cascade)
+  triagem   Triagem   @relation(fields: [triagemId], references: [id], onDelete: Cascade)
+  vagaEtapa VagaEtapa? @relation(fields: [vagaEtapaId], references: [id], onDelete: SetNull)
 }
 
 enum EntrevistaStatus {

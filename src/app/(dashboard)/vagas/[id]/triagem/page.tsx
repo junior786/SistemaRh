@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,16 @@ interface Triagem {
   analise: string | null;
   checklist: string | null;
   desatualizado: boolean;
+  etapas: {
+    id: string;
+    status: string;
+    vagaEtapa: {
+      id: string;
+      nome: string;
+      tipo: keyof typeof ETAPA_TIPO_LABEL;
+      ordem: number;
+    };
+  }[];
   candidato: {
     id: string;
     nome: string;
@@ -88,6 +99,13 @@ interface VagaDetalhe {
   salarioMin: number | null;
   salarioMax: number | null;
   requisitos: Requisito[];
+  etapas: {
+    id: string;
+    nome: string;
+    tipo: keyof typeof ETAPA_TIPO_LABEL;
+    ordem: number;
+    obrigatoria: boolean;
+  }[];
 }
 
 interface ChecklistItem {
@@ -192,6 +210,13 @@ function calcularCompatibilidade(
   }
 
   return { ...candidato, compatibilidade: Math.round(score), skillsMatch, salarioOk, localOk };
+}
+
+function getEtapaAtual(triagem: Triagem) {
+  return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
+    ?? triagem.etapas.find((etapa) => etapa.status === "PENDENTE")
+    ?? triagem.etapas[triagem.etapas.length - 1]
+    ?? null;
 }
 
 // ── Componente ───────────────────────────────────────
@@ -604,6 +629,7 @@ export default function TriagemPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Candidato</TableHead>
+                <TableHead>Etapa atual</TableHead>
                 <TableHead>Skills</TableHead>
                 <TableHead className="text-center">Score</TableHead>
                 <TableHead>Status</TableHead>
@@ -613,14 +639,14 @@ export default function TriagemPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <div className="h-20 animate-pulse rounded bg-muted" />
                   </TableCell>
                 </TableRow>
               ) : triagensFiltradas.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="py-8 text-center text-muted-foreground"
                   >
                     Nenhum candidato vinculado ainda. Veja as sugestões abaixo.
@@ -644,6 +670,20 @@ export default function TriagemPage() {
                         <TableCell>
                           <p className="font-medium">{t.candidato.nome}</p>
                           <p className="text-xs text-muted-foreground">{t.candidato.email}</p>
+                        </TableCell>
+                        <TableCell>
+                          {getEtapaAtual(t) ? (
+                            <div className="space-y-1">
+                              <Badge variant="secondary" className="text-[10px]">
+                                {getEtapaAtual(t)?.vagaEtapa.nome}
+                              </Badge>
+                              <p className="text-[11px] text-muted-foreground">
+                                {ETAPA_STATUS_LABEL[getEtapaAtual(t)?.status ?? "PENDENTE"]}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Sem etapas</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -699,8 +739,24 @@ export default function TriagemPage() {
                       </TableRow>
                       {isExpanded && t.status === "CONCLUIDO" && (
                         <TableRow key={`${t.id}-detail`}>
-                          <TableCell colSpan={5} className="bg-muted/30 p-4">
+                          <TableCell colSpan={6} className="bg-muted/30 p-4">
                             <div className="space-y-3">
+                              {t.etapas.length > 0 && (
+                                <div>
+                                  <h4 className="mb-2 text-sm font-semibold">Pipeline da vaga</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {t.etapas.map((etapa) => (
+                                      <div key={etapa.id} className="rounded-md border bg-background px-2 py-1 text-xs">
+                                        <p className="font-medium">{etapa.vagaEtapa.nome}</p>
+                                        <p className="text-muted-foreground">
+                                          {ETAPA_TIPO_LABEL[etapa.vagaEtapa.tipo]} · {ETAPA_STATUS_LABEL[etapa.status]}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               <div>
                                 <h4 className="text-sm font-semibold mb-1">Análise</h4>
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{t.analise}</p>

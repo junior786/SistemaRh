@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ETAPA_STATUS_LABEL } from "@/lib/vaga-etapas";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,10 @@ interface Entrevista {
   status: string;
   observacoes: string | null;
   resultado: string | null;
+  vagaEtapa: {
+    id: string;
+    nome: string;
+  } | null;
 }
 
 interface TriagemInfo {
@@ -39,6 +44,15 @@ interface TriagemInfo {
   score: number | null;
   candidato: { nome: string; email: string };
   vaga: { titulo: string };
+  etapas: {
+    id: string;
+    status: string;
+    vagaEtapa: {
+      id: string;
+      nome: string;
+      tipo: string;
+    };
+  }[];
 }
 
 const statusLabels: Record<string, string> = {
@@ -72,6 +86,7 @@ export default function EntrevistasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dataHora, setDataHora] = useState("");
   const [entrevistador, setEntrevistador] = useState("");
+  const [vagaEtapaId, setVagaEtapaId] = useState("");
 
   // Form edição
   const [editId, setEditId] = useState<string | null>(null);
@@ -96,14 +111,24 @@ export default function EntrevistasPage() {
         score: detalhe.score,
         candidato: { nome: detalhe.candidato.nome, email: detalhe.candidato.email },
         vaga: { titulo: detalhe.vaga.titulo },
+        etapas: detalhe.etapas || [],
       });
       setEntrevistas(detalhe.entrevistas || []);
+      const etapaAtualEntrevista = (detalhe.etapas || []).find(
+        (etapa: TriagemInfo["etapas"][number]) =>
+          etapa.vagaEtapa.tipo === "ENTREVISTA" && etapa.status !== "CONCLUIDO" && etapa.status !== "REPROVADO",
+      );
+      setVagaEtapaId(etapaAtualEntrevista?.vagaEtapa.id ?? "");
     }
     setLoading(false);
   }, [vagaId, candidatoId]);
 
   useEffect(() => {
-    carregarDados();
+    const timeoutId = window.setTimeout(() => {
+      void carregarDados();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [carregarDados]);
 
   async function criarEntrevista() {
@@ -114,6 +139,7 @@ export default function EntrevistasPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         triagemId: triagem.id,
+        vagaEtapaId: vagaEtapaId || null,
         dataHora,
         entrevistador,
       }),
@@ -122,6 +148,7 @@ export default function EntrevistasPage() {
     setDialogOpen(false);
     setDataHora("");
     setEntrevistador("");
+    setVagaEtapaId("");
     carregarDados();
   }
 
@@ -153,6 +180,8 @@ export default function EntrevistasPage() {
   if (!triagem) {
     return <p className="text-muted-foreground">Triagem não encontrada.</p>;
   }
+
+  const etapasEntrevista = triagem.etapas.filter((etapa) => etapa.vagaEtapa.tipo === "ENTREVISTA");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -205,6 +234,23 @@ export default function EntrevistasPage() {
                   onChange={(e) => setEntrevistador(e.target.value)}
                 />
               </div>
+              {etapasEntrevista.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Etapa vinculada</Label>
+                  <Select value={vagaEtapaId} onValueChange={(value) => setVagaEtapaId(value ?? "")}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {etapasEntrevista.map((etapa) => (
+                        <SelectItem key={etapa.id} value={etapa.vagaEtapa.id}>
+                          {etapa.vagaEtapa.nome} · {ETAPA_STATUS_LABEL[etapa.status]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
@@ -311,6 +357,11 @@ export default function EntrevistasPage() {
                           {ent.resultado && (
                             <Badge variant={resultadoVariant[ent.resultado] ?? "outline"}>
                               {resultadoLabels[ent.resultado] ?? ent.resultado}
+                            </Badge>
+                          )}
+                          {ent.vagaEtapa && (
+                            <Badge variant="secondary">
+                              {ent.vagaEtapa.nome}
                             </Badge>
                           )}
                         </div>

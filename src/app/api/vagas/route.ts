@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 
 // GET /api/vagas — listar vagas com contagem de candidatos
 export async function GET(request: NextRequest) {
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
     include: {
       _count: { select: { triagens: true } },
       requisitos: true,
+      etapas: { orderBy: { ordem: "asc" } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
 // POST /api/vagas — criar vaga com requisitos
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, requisitos } = body;
+  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, requisitos, etapas } = body;
 
   if (!titulo || !area || !regime || !modalidade || !localizacao || !descricao) {
     return Response.json({ error: "Campos obrigatórios faltando" }, { status: 400 });
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const etapasNormalizadas = normalizeEtapasInput(etapas);
     const vaga = await prisma.vaga.create({
       data: {
         titulo,
@@ -63,8 +66,19 @@ export async function POST(request: NextRequest) {
             tempoMeses: r.tempoMeses ?? null,
           })),
         },
+        etapas: {
+          create: etapasNormalizadas.map((etapa, index) => ({
+            nome: etapa.nome,
+            tipo: etapa.tipo,
+            obrigatoria: etapa.obrigatoria,
+            ordem: index,
+          })),
+        },
       },
-      include: { requisitos: true },
+      include: {
+        requisitos: true,
+        etapas: { orderBy: { ordem: "asc" } },
+      },
     });
 
     return Response.json(vaga, { status: 201 });

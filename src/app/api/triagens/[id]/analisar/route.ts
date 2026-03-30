@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { concluirEtapaEAvancar } from "@/lib/triagem-etapas";
 import { analisarCompatibilidade, formatarTempoExperiencia } from "@/services/analise-compatibilidade";
 
 // POST /api/triagens/[id]/analisar — RF-03: dispara análise de compatibilidade
@@ -14,6 +15,16 @@ export async function POST(
     where: { id },
     include: {
       vaga: { include: { requisitos: true } },
+      etapas: {
+        include: {
+          vagaEtapa: true,
+        },
+        orderBy: {
+          vagaEtapa: {
+            ordem: "asc",
+          },
+        },
+      },
       candidato: {
         include: {
           skills: true,
@@ -44,6 +55,13 @@ export async function POST(
 async function processarAnalise(
   triagemId: string,
   triagem: {
+    etapas: {
+      status: string;
+      vagaEtapa: {
+        id: string;
+        tipo: string;
+      };
+    }[];
     vaga: {
       titulo: string;
       area: string;
@@ -123,6 +141,11 @@ async function processarAnalise(
         analisadoEm: new Date(),
       },
     });
+
+    const etapaTriagem = triagem.etapas.find((etapa) => etapa.vagaEtapa.tipo === "TRIAGEM");
+    if (etapaTriagem && etapaTriagem.status !== "CONCLUIDO") {
+      await concluirEtapaEAvancar(triagemId, etapaTriagem.vagaEtapa.id);
+    }
   } catch (error) {
     console.error("Erro na análise:", error);
     await prisma.triagem.update({

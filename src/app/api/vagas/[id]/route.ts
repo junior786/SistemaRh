@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 
 // GET /api/vagas/[id] — detalhe da vaga
 export async function GET(
@@ -12,6 +13,7 @@ export async function GET(
     where: { id },
     include: {
       requisitos: true,
+      etapas: { orderBy: { ordem: "asc" } },
       empregados: {
         select: { id: true, nome: true, email: true },
       },
@@ -19,6 +21,16 @@ export async function GET(
         include: {
           candidato: {
             include: { skills: true },
+          },
+          etapas: {
+            include: {
+              vagaEtapa: true,
+            },
+            orderBy: {
+              vagaEtapa: {
+                ordem: "asc",
+              },
+            },
           },
         },
         orderBy: { score: "desc" },
@@ -40,11 +52,21 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, status, requisitos } = body;
+  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, status, requisitos, etapas } = body;
 
   try {
+    if (etapas !== undefined) {
+      const triagensCount = await prisma.triagem.count({ where: { vagaId: id } });
+      if (triagensCount > 0) {
+        return Response.json(
+          { error: "Não é possível alterar as etapas de uma vaga que já possui candidatos vinculados." },
+          { status: 409 },
+        );
+      }
+    }
+
     // Atualiza vaga
-    const vaga = await prisma.vaga.update({
+    await prisma.vaga.update({
       where: { id },
       data: {
         ...(titulo && { titulo }),
@@ -59,7 +81,6 @@ export async function PUT(
         ...(descricao && { descricao }),
         ...(status && { status }),
       },
-      include: { requisitos: true },
     });
 
     // Se requisitos mudaram, atualiza-os e marca triagens como desatualizadas
@@ -83,10 +104,27 @@ export async function PUT(
       });
     }
 
+    if (etapas !== undefined) {
+      const etapasNormalizadas = normalizeEtapasInput(etapas);
+      await prisma.vagaEtapa.deleteMany({ where: { vagaId: id } });
+      await prisma.vagaEtapa.createMany({
+        data: etapasNormalizadas.map((etapa, index) => ({
+          vagaId: id,
+          nome: etapa.nome,
+          tipo: etapa.tipo,
+          obrigatoria: etapa.obrigatoria,
+          ordem: index,
+        })),
+      });
+    }
+
     // Retorna vaga atualizada com requisitos frescos
     const vagaAtualizada = await prisma.vaga.findUnique({
       where: { id },
-      include: { requisitos: true },
+      include: {
+        requisitos: true,
+        etapas: { orderBy: { ordem: "asc" } },
+      },
     });
 
     return Response.json(vagaAtualizada);

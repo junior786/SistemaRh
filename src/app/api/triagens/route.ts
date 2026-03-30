@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { inicializarEtapasTriagem } from "@/lib/triagem-etapas";
 
 // GET /api/triagens?vagaId=xxx — listar triagens de uma vaga
 export async function GET(request: NextRequest) {
@@ -14,6 +15,16 @@ export async function GET(request: NextRequest) {
     include: {
       candidato: {
         include: { skills: true },
+      },
+      etapas: {
+        include: {
+          vagaEtapa: true,
+        },
+        orderBy: {
+          vagaEtapa: {
+            ordem: "asc",
+          },
+        },
       },
     },
     orderBy: { score: "desc" },
@@ -44,6 +55,8 @@ export async function POST(request: NextRequest) {
     data: { vagaId, candidatoId, status: "PENDENTE" },
     include: { candidato: true, vaga: true },
   });
+
+  await inicializarEtapasTriagem(triagem.id, vagaId);
 
   return Response.json(triagem, { status: 201 });
 }

@@ -14,8 +14,26 @@ export async function GET(
       candidato: {
         include: { skills: true, experiencias: true, formacoes: true },
       },
-      vaga: { include: { requisitos: true } },
-      entrevistas: { orderBy: { dataHora: "desc" } },
+      vaga: {
+        include: {
+          requisitos: true,
+          etapas: { orderBy: { ordem: "asc" } },
+        },
+      },
+      entrevistas: {
+        include: { vagaEtapa: true },
+        orderBy: { dataHora: "desc" },
+      },
+      etapas: {
+        include: {
+          vagaEtapa: true,
+        },
+        orderBy: {
+          vagaEtapa: {
+            ordem: "asc",
+          },
+        },
+      },
     },
   });
 
