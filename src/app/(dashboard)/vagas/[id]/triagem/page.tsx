@@ -5,6 +5,16 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -41,6 +51,7 @@ import {
   X,
   Briefcase,
   Filter,
+  Trash2,
 } from "lucide-react";
 
 // ── Tipos ────────────────────────────────────────────
@@ -236,6 +247,8 @@ export default function TriagemPage() {
   const [loadingSugeridos, setLoadingSugeridos] = useState(true);
   const [buscaSugerido, setBuscaSugerido] = useState("");
   const [vinculando, setVinculando] = useState<string | null>(null);
+  const [removendoTriagemId, setRemovendoTriagemId] = useState<string | null>(null);
+  const [triagemParaRemover, setTriagemParaRemover] = useState<Triagem | null>(null);
 
   // Modal de adicionar candidato
   const [modalOpen, setModalOpen] = useState(false);
@@ -408,6 +421,27 @@ export default function TriagemPage() {
         clearInterval(interval);
       }
     }, 3000);
+  }
+
+  async function removerTriagem(triagem: Triagem) {
+    setRemovendoTriagemId(triagem.id);
+    try {
+      const res = await fetch(`/api/triagens/${triagem.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error("Erro ao remover candidato da triagem");
+      }
+
+      setTriagens((prev) => prev.filter((item) => item.id !== triagem.id));
+      if (expandedId === triagem.id) {
+        setExpandedId(null);
+      }
+      setTriagemParaRemover(null);
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível remover o candidato da triagem.");
+    } finally {
+      setRemovendoTriagemId(null);
+    }
   }
 
   // ── Filtro triagens ──
@@ -824,6 +858,22 @@ export default function TriagemPage() {
                                 Entrevistas
                               </Link>
                             )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              disabled={removendoTriagemId === t.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTriagemParaRemover(t);
+                              }}
+                            >
+                              {removendoTriagemId === t.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                             {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </div>
                         </TableCell>
@@ -1039,6 +1089,49 @@ export default function TriagemPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={triagemParaRemover !== null}
+        onOpenChange={(open) => {
+          if (!open && removendoTriagemId === null) {
+            setTriagemParaRemover(null);
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover candidato da triagem?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {triagemParaRemover
+                ? `Isso remove ${triagemParaRemover.candidato.nome} da triagem desta vaga.`
+                : "Confirme a remoção deste candidato da triagem."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removendoTriagemId !== null}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={!triagemParaRemover || removendoTriagemId !== null}
+              onClick={() => {
+                if (triagemParaRemover) {
+                  void removerTriagem(triagemParaRemover);
+                }
+              }}
+            >
+              {removendoTriagemId ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Removendo...
+                </>
+              ) : (
+                "Remover"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
