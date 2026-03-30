@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
 import {
@@ -29,6 +36,9 @@ import {
   AlertCircle,
   Clock,
   UserCheck,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
 
 interface Requisito {
@@ -75,6 +85,11 @@ interface EtapaVaga {
   obrigatoria: boolean;
 }
 
+interface AreaVaga {
+  id: string;
+  nome: string;
+}
+
 interface Vaga {
   id: string;
   titulo: string;
@@ -88,6 +103,7 @@ interface Vaga {
   salarioMax: number | null;
   descricao: string;
   status: string;
+  areas: AreaVaga[];
   requisitos: Requisito[];
   etapas: EtapaVaga[];
   triagens: Triagem[];
@@ -145,14 +161,27 @@ export default function DetalheVagaPage() {
   const vagaId = params.id as string;
   const [vaga, setVaga] = useState<Vaga | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedEtapaId, setExpandedEtapaId] = useState<string | null>(null);
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
+  const [contratadoIds, setContratadoIds] = useState<string[]>([]);
+  const [finalizando, setFinalizando] = useState(false);
 
-  useEffect(() => {
+  const carregarVaga = useCallback(() => {
+    setLoading(true);
     fetch(`/api/vagas/${vagaId}`)
       .then((r) => r.json())
       .then(setVaga)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [vagaId]);
+
+  useEffect(() => {
+    carregarVaga();
+  }, [carregarVaga]);
+
+  useEffect(() => {
+    setContratadoIds(vaga?.empregados.map((empregado) => empregado.id) ?? []);
+  }, [vaga]);
 
   async function handleStatusChange(status: string) {
     await fetch(`/api/vagas/${vagaId}`, {
@@ -161,6 +190,33 @@ export default function DetalheVagaPage() {
       body: JSON.stringify({ status }),
     });
     setVaga((v) => (v ? { ...v, status } : v));
+  }
+
+  async function finalizarVaga() {
+    setFinalizando(true);
+    try {
+      const res = await fetch(`/api/vagas/${vagaId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "FECHADA",
+          contratadoIds,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao finalizar vaga");
+      }
+
+      setFinalizarOpen(false);
+      carregarVaga();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Erro ao finalizar vaga");
+    } finally {
+      setFinalizando(false);
+    }
   }
 
   if (loading) {
@@ -199,6 +255,24 @@ export default function DetalheVagaPage() {
   const mediaScore = triagensConcluidas.length > 0
     ? Math.round(triagensConcluidas.reduce((acc, t) => acc + (t.score ?? 0), 0) / triagensConcluidas.length)
     : null;
+  const candidatosPorEtapa = vaga.triagens.reduce<Record<string, number>>((acc, triagem) => {
+    const etapaAtual = getEtapaAtual(triagem);
+    if (!etapaAtual) {
+      return acc;
+    }
+
+    acc[etapaAtual.vagaEtapa.id] = (acc[etapaAtual.vagaEtapa.id] ?? 0) + 1;
+    return acc;
+  }, {});
+  const triagensPorEtapa = vaga.triagens.reduce<Record<string, Triagem[]>>((acc, triagem) => {
+    const etapaAtual = getEtapaAtual(triagem);
+    if (!etapaAtual) {
+      return acc;
+    }
+
+    acc[etapaAtual.vagaEtapa.id] = [...(acc[etapaAtual.vagaEtapa.id] ?? []), triagem];
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -248,10 +322,29 @@ export default function DetalheVagaPage() {
                     </span>
                   )}
                 </div>
+
+                {vaga.areas.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {vaga.areas.map((areaAtuacao) => (
+                      <Badge key={areaAtuacao.id} variant="outline" className="text-xs">
+                        {areaAtuacao.nome}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Right: actions */}
               <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="gap-1.5"
+                  onClick={() => setFinalizarOpen(true)}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Finalizar vaga
+                </Button>
                 <Select value={vaga.status} onValueChange={(v) => v && handleStatusChange(v)}>
                   <SelectTrigger className="w-[140px] h-9 text-xs">
                     <SelectValue />
@@ -430,7 +523,14 @@ export default function DetalheVagaPage() {
 
               <div className="space-y-3">
                 {vaga.etapas.map((etapa, index) => (
-                  <div key={etapa.id} className="flex items-center gap-3 rounded-lg border px-3 py-3">
+                  <div key={etapa.id} className="rounded-lg border">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedEtapaId((current) => (current === etapa.id ? null : etapa.id))
+                      }
+                      className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-muted/40"
+                    >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                       {index + 1}
                     </div>
@@ -444,6 +544,51 @@ export default function DetalheVagaPage() {
                       <Badge variant="outline" className="text-[10px]">
                         Obrigatória
                       </Badge>
+                    )}
+                    <Badge variant="secondary" className="text-[10px]">
+                      {candidatosPorEtapa[etapa.id] ?? 0} candidato(s)
+                    </Badge>
+                      {expandedEtapaId === etapa.id ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expandedEtapaId === etapa.id && (
+                      <div className="border-t bg-muted/20 px-3 py-3">
+                        {(triagensPorEtapa[etapa.id] ?? []).length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Nenhum candidato estÃ¡ nesta etapa.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(triagensPorEtapa[etapa.id] ?? []).map((triagem) => (
+                              <Link
+                                key={triagem.id}
+                                href={`/vagas/${vagaId}/triagem`}
+                                className="flex items-center gap-3 rounded-md border bg-background px-3 py-2 hover:bg-muted/50"
+                              >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                  {triagem.candidato.nome.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">{triagem.candidato.nome}</p>
+                                  <p className="truncate text-xs text-muted-foreground">{triagem.candidato.email}</p>
+                                </div>
+                                {triagem.score != null ? (
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {triagem.score}%
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {triagem.status}
+                                  </Badge>
+                                )}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -607,6 +752,101 @@ export default function DetalheVagaPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={finalizarOpen} onOpenChange={setFinalizarOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Finalizar vaga</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione os candidatos contratados para esta vaga. Ao confirmar, a vaga serÃ¡ fechada e os candidatos selecionados ficarÃ£o vinculados como empregados desta vaga.
+            </p>
+
+            {vaga.triagens.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                NÃ£o hÃ¡ candidatos vinculados para contratar.
+              </p>
+            ) : (
+              <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                {vaga.triagens.map((triagem) => {
+                  const checked = contratadoIds.includes(triagem.candidato.id);
+                  const etapaAtual = getEtapaAtual(triagem);
+
+                  return (
+                    <label
+                      key={triagem.id}
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 hover:bg-muted/40"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          setContratadoIds((prev) =>
+                            value
+                              ? prev.includes(triagem.candidato.id)
+                                ? prev
+                                : [...prev, triagem.candidato.id]
+                              : prev.filter((id) => id !== triagem.candidato.id),
+                          )
+                        }
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{triagem.candidato.nome}</p>
+                          {triagem.score != null && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {triagem.score}%
+                            </Badge>
+                          )}
+                          {etapaAtual && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {etapaAtual.vagaEtapa.nome}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">{triagem.candidato.email}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {triagem.candidato.skills.slice(0, 4).map((skill) => (
+                            <Badge key={skill.nome} variant="outline" className="text-[10px] px-1.5 py-0">
+                              {skill.nome}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {contratadoIds.length} candidato(s) contratado(s)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setFinalizarOpen(false)}
+                  disabled={finalizando}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={finalizarVaga} disabled={finalizando}>
+                  {finalizando ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Finalizando...
+                    </>
+                  ) : (
+                    "Confirmar e fechar"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

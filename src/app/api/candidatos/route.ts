@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const busca = searchParams.get("busca");
   const jobType = searchParams.get("jobType");
   const cidade = searchParams.get("cidade");
+  const statusEmprego = searchParams.get("statusEmprego");
   const page = parsePage(searchParams.get("page"));
   const pageSize = parsePageSize(searchParams.get("pageSize"));
 
@@ -27,6 +28,9 @@ export async function GET(request: NextRequest) {
   if (cidade) {
     where.cidade = { contains: cidade, mode: "insensitive" };
   }
+  if (statusEmprego) {
+    where.statusEmprego = statusEmprego;
+  }
 
   const total = await prisma.candidato.count({ where });
   const { totalPages, page: currentPage } = getPaginationMeta(total, page, pageSize);
@@ -34,6 +38,7 @@ export async function GET(request: NextRequest) {
   const candidatos = await prisma.candidato.findMany({
     where,
     include: {
+      areas: true,
       skills: true,
       restricoes: true,
       _count: { select: { triagens: true } },
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
   const {
     nome, email, telefone, cidade, cep, genero, resumo, jobType, pretensaoSalarial,
     observacao, statusEmprego,
-    skills, experiencias, formacoes, restricoes,
+    areas, skills, experiencias, formacoes, restricoes,
   } = body;
 
   if (!nome || !email) {
@@ -84,6 +89,9 @@ export async function POST(request: NextRequest) {
       pretensaoSalarial: pretensaoSalarial ? parseFloat(pretensaoSalarial) : null,
       observacao: observacao || null,
       statusEmprego: statusEmprego || "DISPONIVEL",
+      areas: {
+        create: (areas || []).map((a: string) => ({ nome: a })),
+      },
       skills: {
         create: (skills || []).map((s: string) => ({ nome: s })),
       },
@@ -121,7 +129,7 @@ export async function POST(request: NextRequest) {
         create: (restricoes || []).map((r: string) => ({ descricao: r })),
       },
     },
-    include: { skills: true, experiencias: true, formacoes: true, restricoes: true },
+    include: { areas: true, skills: true, experiencias: true, formacoes: true, restricoes: true },
   });
 
   return Response.json(candidato, { status: 201 });

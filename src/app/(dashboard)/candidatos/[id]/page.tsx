@@ -21,7 +21,6 @@ import {
   AlertTriangle,
   StickyNote,
   Save,
-  CheckCircle2,
 } from "lucide-react";
 
 interface Skill {
@@ -74,6 +73,7 @@ interface Candidato {
   pretensaoSalarial: number | null;
   observacao: string | null;
   statusEmprego: string;
+  vagaEmpregado: { id: string; titulo: string; area: string } | null;
   skills: Skill[];
   experiencias: Experiencia[];
   formacoes: Formacao[];
@@ -163,6 +163,14 @@ export default function PerfilCandidatoPage() {
             <Badge variant={statusEmpregoMap[candidato.statusEmprego]?.variant ?? "secondary"} className="text-xs">
               {statusEmpregoMap[candidato.statusEmprego]?.label ?? candidato.statusEmprego}
             </Badge>
+            {candidato.vagaEmpregado && (
+              <Link
+                href={`/vagas/${candidato.vagaEmpregado.id}`}
+                className="text-xs text-primary hover:underline"
+              >
+                Contratado em {candidato.vagaEmpregado.titulo}
+              </Link>
+            )}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">

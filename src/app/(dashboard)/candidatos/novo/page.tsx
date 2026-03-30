@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Upload, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, X, Save, Upload, Loader2, AlertTriangle, Check } from "lucide-react";
+import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
 
 interface Experiencia {
   empresa: string;
@@ -50,6 +51,17 @@ export default function NovoCandidatoPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [importando, setImportando] = useState(false);
+  const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then((r) => r.json())
+      .then((data) => {
+        const nomes = data.map((c: { nome: string }) => c.nome);
+        setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
+      })
+      .catch(() => setAreasDisponiveis([...AREAS_ATUACAO_PADRAO]));
+  }, []);
 
   // Dados pessoais
   const [nome, setNome] = useState("");
@@ -62,6 +74,9 @@ export default function NovoCandidatoPage() {
   const [jobType, setJobType] = useState("");
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
   const [observacao, setObservacao] = useState("");
+
+  // Áreas de atuação
+  const [areas, setAreas] = useState<string[]>([]);
 
   // Skills
   const [skills, setSkills] = useState<string[]>([]);
@@ -164,6 +179,7 @@ export default function NovoCandidatoPage() {
       setResumo(dados.resumo || "");
       setJobType(dados.jobType || "");
       setPretensaoSalarial(dados.pretensaoSalarial?.toString() || "");
+      setAreas(dados.areas || []);
       setSkills(dados.skills || []);
       setRestricoes(dados.restricoes || []);
 
@@ -230,6 +246,7 @@ export default function NovoCandidatoPage() {
           jobType,
           pretensaoSalarial: pretensaoSalarial || null,
           observacao: observacao || null,
+          areas,
           skills: finalSkills,
           experiencias: experiencias.filter((e) => e.empresa && e.cargo),
           formacoes: formacoes.filter((f) => f.instituicao && f.curso),
@@ -353,6 +370,36 @@ export default function NovoCandidatoPage() {
                 value={genero}
                 onChange={(e) => setGenero(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Áreas de atuação */}
+          <div className="space-y-2">
+            <Label>Áreas de Atuação</Label>
+            <p className="text-xs text-muted-foreground">Selecione uma ou mais áreas em que o candidato atua</p>
+            <div className="flex flex-wrap gap-2">
+              {areasDisponiveis.map((area) => {
+                const selecionada = areas.includes(area);
+                return (
+                  <button
+                    key={area}
+                    type="button"
+                    onClick={() =>
+                      setAreas((prev) =>
+                        selecionada ? prev.filter((a) => a !== area) : [...prev, area],
+                      )
+                    }
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      selecionada
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {selecionada && <Check className="h-3 w-3" />}
+                    {area}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, X, Save, Loader2, AlertTriangle, Check } from "lucide-react";
+import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
 
 interface Experiencia {
   empresa: string;
@@ -58,6 +59,17 @@ export default function EditarCandidatoPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then((r) => r.json())
+      .then((data) => {
+        const nomes = data.map((c: { nome: string }) => c.nome);
+        setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
+      })
+      .catch(() => setAreasDisponiveis([...AREAS_ATUACAO_PADRAO]));
+  }, []);
 
   // Dados pessoais
   const [nome, setNome] = useState("");
@@ -71,6 +83,9 @@ export default function EditarCandidatoPage() {
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
   const [observacao, setObservacao] = useState("");
   const [statusEmprego, setStatusEmprego] = useState("DISPONIVEL");
+
+  // Áreas de atuação
+  const [areas, setAreas] = useState<string[]>([]);
 
   // Skills
   const [skills, setSkills] = useState<string[]>([]);
@@ -102,6 +117,7 @@ export default function EditarCandidatoPage() {
         setPretensaoSalarial(data.pretensaoSalarial?.toString() || "");
         setObservacao(data.observacao || "");
         setStatusEmprego(data.statusEmprego || "DISPONIVEL");
+        setAreas((data.areas || []).map((a: { nome: string }) => a.nome));
         setSkills((data.skills || []).map((s: { nome: string }) => s.nome));
         setRestricoes((data.restricoes || []).map((r: { descricao: string }) => r.descricao));
         setExperiencias(
@@ -229,6 +245,7 @@ export default function EditarCandidatoPage() {
           pretensaoSalarial: pretensaoSalarial || null,
           observacao: observacao || null,
           statusEmprego,
+          areas,
           skills: finalSkills,
           experiencias: experiencias.filter((e) => e.empresa && e.cargo),
           formacoes: formacoes.filter((f) => f.instituicao && f.curso),
@@ -336,6 +353,36 @@ export default function EditarCandidatoPage() {
                 value={genero}
                 onChange={(e) => setGenero(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Áreas de atuação */}
+          <div className="space-y-2">
+            <Label>Áreas de Atuação</Label>
+            <p className="text-xs text-muted-foreground">Selecione uma ou mais áreas em que o candidato atua</p>
+            <div className="flex flex-wrap gap-2">
+              {[...new Set([...areasDisponiveis, ...areas])].map((area) => {
+                const selecionada = areas.includes(area);
+                return (
+                  <button
+                    key={area}
+                    type="button"
+                    onClick={() =>
+                      setAreas((prev) =>
+                        selecionada ? prev.filter((a) => a !== area) : [...prev, area],
+                      )
+                    }
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      selecionada
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {selecionada && <Check className="h-3 w-3" />}
+                    {area}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

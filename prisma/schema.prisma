@@ -12,6 +12,23 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────
+// CONFIGURAÇÕES
+// ─────────────────────────────────────────────
+
+// Categorias configuráveis (áreas de atuação, tipos de trabalho, etc.)
+model Categoria {
+  id        String   @id @default(cuid())
+  tipo      String   // "AREA_ATUACAO" | "TIPO_TRABALHO" etc.
+  nome      String
+  ordem     Int      @default(0)
+  ativa     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tipo, nome])
+}
+
+// ─────────────────────────────────────────────
 // VAGAS
 // ─────────────────────────────────────────────
 
@@ -33,6 +50,7 @@ model Vaga {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
+  areas       VagaArea[]
   requisitos  Requisito[]
   etapas      VagaEtapa[]
   triagens    Triagem[]
@@ -56,6 +74,16 @@ enum VagaStatus {
   ABERTA
   EM_REVISAO
   FECHADA
+}
+
+// Áreas de atuação da vaga (ex: Desenvolvimento, Liderança Técnica)
+model VagaArea {
+  id        String   @id @default(cuid())
+  vagaId    String
+  nome      String
+  createdAt DateTime @default(now())
+
+  vaga Vaga @relation(fields: [vagaId], references: [id], onDelete: Cascade)
 }
 
 // Requisito pertence a uma vaga
@@ -126,6 +154,7 @@ model Candidato {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  areas        CandidatoArea[]
   skills       CandidatoSkill[]
   experiencias Experiencia[]
   formacoes    Formacao[]
@@ -146,6 +175,16 @@ model Restricao {
   id          String   @id @default(cuid())
   candidatoId String
   descricao   String
+  createdAt   DateTime @default(now())
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+// Áreas de atuação do candidato (ex: Desenvolvimento, Liderança Técnica)
+model CandidatoArea {
+  id          String   @id @default(cuid())
+  candidatoId String
+  nome        String
   createdAt   DateTime @default(now())
 
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)

@@ -19,6 +19,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
+import { calcularCompatibilidadeBase, normalize } from "@/lib/candidato-compatibilidade";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import {
   UserPlus,
+  ArrowRight,
   RotateCw,
   Calendar,
   AlertTriangle,
@@ -89,6 +91,7 @@ interface CandidatoCompleto {
   cep: string | null;
   jobType: string;
   pretensaoSalarial: number | null;
+  areas: { nome: string }[];
   skills: { nome: string }[];
   _count: { triagens: number };
 }
@@ -109,6 +112,7 @@ interface VagaDetalhe {
   cep: string | null;
   salarioMin: number | null;
   salarioMax: number | null;
+  areas: { id: string; nome: string }[];
   preTriagemIds: string | null;
   preTriagemMotivo: string | null;
   requisitos: Requisito[];
@@ -128,102 +132,8 @@ interface ChecklistItem {
   observacao: string;
 }
 
-interface CandidatoSugerido extends CandidatoCompleto {
-  compatibilidade: number;
-  skillsMatch: string[];
-  salarioOk: boolean | null;
-  localOk: boolean | null;
-}
 
 // ── Lógica de compatibilidade básica ─────────────────
-
-function normalize(str: string) {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function tokenize(str: string): string[] {
-  return normalize(str)
-    .split(/[\s,;/\-+()]+/)
-    .filter((t) => t.length >= 2);
-}
-
-function matchRequisito(skillsNorm: string[], skillTokens: string[][], reqDescricao: string): boolean {
-  const reqNorm = normalize(reqDescricao);
-  const reqTokens = tokenize(reqDescricao);
-
-  for (const s of skillsNorm) {
-    if (reqNorm.includes(s) || s.includes(reqNorm)) return true;
-  }
-
-  for (const rt of reqTokens) {
-    if (rt.length < 3) continue;
-    for (const st of skillTokens) {
-      if (st.some((t) => t === rt || (t.length >= 4 && rt.length >= 4 && (t.includes(rt) || rt.includes(t))))) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function calcularCompatibilidade(
-  candidato: CandidatoCompleto,
-  vaga: VagaDetalhe,
-): CandidatoSugerido {
-  const skillsNorm = candidato.skills.map((s) => normalize(s.nome));
-  const skillTokens = candidato.skills.map((s) => tokenize(s.nome));
-
-  if (candidato.skills.length === 0) {
-    return { ...candidato, compatibilidade: 0, skillsMatch: [], salarioOk: null, localOk: null };
-  }
-
-  const skillsMatch: string[] = [];
-  let reqObrigMatch = 0, reqObrigTotal = 0, reqDesejMatch = 0, reqDesejTotal = 0;
-
-  for (const req of vaga.requisitos) {
-    const match = matchRequisito(skillsNorm, skillTokens, req.descricao);
-    if (req.tipo === "OBRIGATORIO") {
-      reqObrigTotal++;
-      if (match) { reqObrigMatch++; skillsMatch.push(req.descricao); }
-    } else {
-      reqDesejTotal++;
-      if (match) { reqDesejMatch++; skillsMatch.push(req.descricao); }
-    }
-  }
-
-  const totalReqs = reqObrigTotal + reqDesejTotal;
-  if (totalReqs > 0 && skillsMatch.length === 0) {
-    return { ...candidato, compatibilidade: 0, skillsMatch: [], salarioOk: null, localOk: null };
-  }
-
-  const pesoObrig = reqObrigTotal > 0 ? (reqObrigMatch / reqObrigTotal) * 70 : 0;
-  const pesoDesej = reqDesejTotal > 0 ? (reqDesejMatch / reqDesejTotal) * 30 : 0;
-  let score = pesoObrig + pesoDesej;
-
-  let salarioOk: boolean | null = null;
-  if (candidato.pretensaoSalarial && vaga.salarioMax) {
-    salarioOk = candidato.pretensaoSalarial <= vaga.salarioMax * 1.1;
-    if (salarioOk) score = Math.min(100, score + 10);
-  }
-
-  let localOk: boolean | null = null;
-  if (candidato.cep && vaga.cep) {
-    const prefixoCand = candidato.cep.replace(/\D/g, "").slice(0, 3);
-    const prefixoVaga = vaga.cep.replace(/\D/g, "").slice(0, 3);
-    localOk = prefixoCand === prefixoVaga;
-    if (localOk) score = Math.min(100, score + 10);
-  } else if (vaga.modalidade === "REMOTO") {
-    localOk = true;
-    score = Math.min(100, score + 10);
-  }
-
-  return { ...candidato, compatibilidade: Math.round(score), skillsMatch, salarioOk, localOk };
-}
 
 function getEtapaAtual(triagem: Triagem) {
   return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
@@ -249,6 +159,8 @@ export default function TriagemPage() {
   const [loadingSugeridos, setLoadingSugeridos] = useState(true);
   const [buscaSugerido, setBuscaSugerido] = useState("");
   const [vinculando, setVinculando] = useState<string | null>(null);
+  const [movendoTriagemId, setMovendoTriagemId] = useState<string | null>(null);
+  const [triagemParaMover, setTriagemParaMover] = useState<Triagem | null>(null);
   const [removendoTriagemId, setRemovendoTriagemId] = useState<string | null>(null);
   const [triagemParaRemover, setTriagemParaRemover] = useState<Triagem | null>(null);
   const [preTriagemLoading, setPreTriagemLoading] = useState(false);
@@ -283,7 +195,7 @@ export default function TriagemPage() {
   useEffect(() => {
     Promise.all([
       fetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
-      fetch("/api/candidatos?page=1&pageSize=100").then((r) => r.json()),
+      fetch("/api/candidatos?page=1&pageSize=100&statusEmprego=DISPONIVEL").then((r) => r.json()),
     ])
       .then(([vagaData, candidatosData]) => {
         setVaga(vagaData);
@@ -309,6 +221,7 @@ export default function TriagemPage() {
     const params = new URLSearchParams({
       page: String(modalPage),
       pageSize: "10",
+      statusEmprego: "DISPONIVEL",
     });
 
     if (modalBusca.trim()) {
@@ -370,7 +283,10 @@ export default function TriagemPage() {
         : disponiveis;
 
     const comScore = base
-      .map((c) => calcularCompatibilidade(c, vaga))
+      .map((c) => ({
+        ...c,
+        ...calcularCompatibilidadeBase(c, vaga),
+      }))
       .filter((c) => preTriagemIds.size > 0 || vaga.jobType ? true : c.compatibilidade >= 50)
       .sort((a, b) => b.compatibilidade - a.compatibilidade);
 
@@ -437,6 +353,33 @@ export default function TriagemPage() {
         clearInterval(interval);
       }
     }, 3000);
+  }
+
+  async function moverParaEtapa(triagem: Triagem, vagaEtapaId: string) {
+    setMovendoTriagemId(triagem.id);
+    try {
+      const res = await fetch(`/api/triagens/${triagem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "PULAR_PARA_ETAPA",
+          vagaEtapaId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao mover candidato de etapa");
+      }
+
+      setTriagens((prev) => prev.map((item) => (item.id === triagem.id ? data as Triagem : item)));
+      setTriagemParaMover(null);
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Nao foi possivel mover o candidato.");
+    } finally {
+      setMovendoTriagemId(null);
+    }
   }
 
   async function removerTriagem(triagem: Triagem) {
@@ -850,6 +793,10 @@ export default function TriagemPage() {
               ) : (
                 triagensFiltradas.map((t) => {
                   const isExpanded = expandedId === t.id;
+                  const etapaAtual = getEtapaAtual(t);
+                  const etapasFuturas = etapaAtual
+                    ? t.etapas.filter((etapa) => etapa.vagaEtapa.ordem > etapaAtual.vagaEtapa.ordem)
+                    : [];
                   let checklist: ChecklistItem[] = [];
                   if (t.checklist) {
                     try { checklist = JSON.parse(t.checklist); } catch { /* ignore */ }
@@ -867,13 +814,13 @@ export default function TriagemPage() {
                           <p className="text-xs text-muted-foreground">{t.candidato.email}</p>
                         </TableCell>
                         <TableCell>
-                          {getEtapaAtual(t) ? (
+                          {etapaAtual ? (
                             <div className="space-y-1">
                               <Badge variant="secondary" className="text-[10px]">
-                                {getEtapaAtual(t)?.vagaEtapa.nome}
+                                {etapaAtual.vagaEtapa.nome}
                               </Badge>
                               <p className="text-[11px] text-muted-foreground">
-                                {ETAPA_STATUS_LABEL[getEtapaAtual(t)?.status ?? "PENDENTE"]}
+                                {ETAPA_STATUS_LABEL[etapaAtual.status]}
                               </p>
                             </div>
                           ) : (
@@ -916,6 +863,25 @@ export default function TriagemPage() {
                               >
                                 <RotateCw className="h-3 w-3" />
                                 {t.desatualizado ? "Reanalisar" : "Analisar"}
+                              </Button>
+                            )}
+                            {etapasFuturas.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-xs"
+                                disabled={movendoTriagemId === t.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTriagemParaMover(t);
+                                }}
+                              >
+                                {movendoTriagemId === t.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <ArrowRight className="h-3 w-3" />
+                                )}
+                                Mover etapa
                               </Button>
                             )}
                             {t.status === "CONCLUIDO" && (
@@ -1161,6 +1127,65 @@ export default function TriagemPage() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={triagemParaMover !== null}
+        onOpenChange={(open) => {
+          if (!open && movendoTriagemId === null) {
+            setTriagemParaMover(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mover candidato de etapa</DialogTitle>
+          </DialogHeader>
+
+          {triagemParaMover && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">{triagemParaMover.candidato.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  Etapa atual: {getEtapaAtual(triagemParaMover)?.vagaEtapa.nome ?? "Sem etapa"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {triagemParaMover.etapas
+                  .filter((etapa) => {
+                    const atual = getEtapaAtual(triagemParaMover);
+                    return atual ? etapa.vagaEtapa.ordem > atual.vagaEtapa.ordem : false;
+                  })
+                  .map((etapa) => (
+                    <button
+                      key={etapa.id}
+                      type="button"
+                      onClick={() => moverParaEtapa(triagemParaMover, etapa.vagaEtapa.id)}
+                      disabled={movendoTriagemId !== null}
+                      className="flex w-full items-center justify-between rounded-lg border px-3 py-3 text-left hover:bg-muted/50 disabled:opacity-60"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{etapa.vagaEtapa.nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ETAPA_TIPO_LABEL[etapa.vagaEtapa.tipo]}
+                        </p>
+                      </div>
+                      {movendoTriagemId === triagemParaMover.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Ao mover, a etapa atual sera concluida e as etapas intermediarias serao marcadas como dispensadas.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={triagemParaRemover !== null}

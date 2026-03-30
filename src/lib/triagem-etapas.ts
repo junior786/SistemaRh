@@ -72,3 +72,71 @@ export async function reprovarEtapaTriagem(triagemId: string, vagaEtapaId: strin
     },
   });
 }
+
+export async function pularParaEtapaTriagem(triagemId: string, vagaEtapaDestinoId: string) {
+  const agora = new Date();
+
+  const etapas = await prisma.triagemEtapa.findMany({
+    where: { triagemId },
+    include: { vagaEtapa: true },
+    orderBy: {
+      vagaEtapa: {
+        ordem: "asc",
+      },
+    },
+  });
+
+  const etapaDestino = etapas.find((etapa) => etapa.vagaEtapaId === vagaEtapaDestinoId);
+  if (!etapaDestino) {
+    throw new Error("Etapa de destino nao encontrada para esta triagem.");
+  }
+
+  const etapaAtual = etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
+    ?? etapas.find((etapa) => etapa.status === "PENDENTE")
+    ?? null;
+
+  if (!etapaAtual) {
+    throw new Error("Nao ha etapa ativa ou pendente para mover.");
+  }
+
+  if (etapaDestino.vagaEtapa.ordem <= etapaAtual.vagaEtapa.ordem) {
+    throw new Error("So e possivel pular para etapas futuras.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.triagemEtapa.update({
+      where: { id: etapaAtual.id },
+      data: {
+        status: "CONCLUIDO",
+        concluidaEm: etapaAtual.concluidaEm ?? agora,
+      },
+    });
+
+    const etapasIntermediarias = etapas.filter(
+      (etapa) =>
+        etapa.vagaEtapa.ordem > etapaAtual.vagaEtapa.ordem
+        && etapa.vagaEtapa.ordem < etapaDestino.vagaEtapa.ordem,
+    );
+
+    if (etapasIntermediarias.length > 0) {
+      await tx.triagemEtapa.updateMany({
+        where: {
+          id: { in: etapasIntermediarias.map((etapa) => etapa.id) },
+          status: { in: ["PENDENTE", "EM_ANDAMENTO"] },
+        },
+        data: {
+          status: "DISPENSADO",
+          concluidaEm: agora,
+        },
+      });
+    }
+
+    await tx.triagemEtapa.update({
+      where: { id: etapaDestino.id },
+      data: {
+        status: "EM_ANDAMENTO",
+        iniciadaEm: etapaDestino.iniciadaEm ?? agora,
+      },
+    });
+  });
+}

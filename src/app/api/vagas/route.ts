@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     where,
     include: {
       _count: { select: { triagens: true } },
+      areas: true,
       requisitos: true,
       etapas: { orderBy: { ordem: "asc" } },
     },
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 // POST /api/vagas — criar vaga com requisitos
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, requisitos, etapas } = body;
+  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, areas, requisitos, etapas } = body;
 
   if (!titulo || !area || !regime || !modalidade || !localizacao || !descricao) {
     return Response.json({ error: "Campos obrigatórios faltando" }, { status: 400 });
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
         salarioMin: salarioMin ? parseFloat(salarioMin) : null,
         salarioMax: salarioMax ? parseFloat(salarioMax) : null,
         descricao,
+        areas: {
+          create: (areas || []).map((a: string) => ({ nome: a })),
+        },
         requisitos: {
           create: (requisitos || []).map((r: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
             descricao: r.descricao,
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
+        areas: true,
         requisitos: true,
         etapas: { orderBy: { ordem: "asc" } },
       },

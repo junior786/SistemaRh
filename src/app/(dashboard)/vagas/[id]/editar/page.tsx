@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Save, Loader2, Clock } from "lucide-react";
+import { Plus, X, Save, Loader2, Clock, Check } from "lucide-react";
+import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
 
 interface Requisito {
   descricao: string;
@@ -32,6 +33,7 @@ export default function EditarVagaPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
 
   const [titulo, setTitulo] = useState("");
   const [area, setArea] = useState("");
@@ -43,6 +45,7 @@ export default function EditarVagaPage() {
   const [salarioMin, setSalarioMin] = useState("");
   const [salarioMax, setSalarioMax] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [areasVaga, setAreasVaga] = useState<string[]>([]);
   const [etapas, setEtapas] = useState<EtapaFormInput[]>(getDefaultEtapas());
   const [bloquearEdicaoEtapas, setBloquearEdicaoEtapas] = useState(false);
 
@@ -54,6 +57,16 @@ export default function EditarVagaPage() {
   const [novoReqTipo, setNovoReqTipo] = useState<"OBRIGATORIO" | "DESEJAVEL">("OBRIGATORIO");
   const [novoReqTempoValor, setNovoReqTempoValor] = useState("");
   const [novoReqTempoUnidade, setNovoReqTempoUnidade] = useState<"meses" | "anos">("anos");
+
+  useEffect(() => {
+    fetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then((r) => r.json())
+      .then((data) => {
+        const nomes = data.map((c: { nome: string }) => c.nome);
+        setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
+      })
+      .catch(() => setAreasDisponiveis([...AREAS_ATUACAO_PADRAO]));
+  }, []);
 
   // Carregar dados existentes
   useEffect(() => {
@@ -70,6 +83,7 @@ export default function EditarVagaPage() {
         setSalarioMin(data.salarioMin?.toString() || "");
         setSalarioMax(data.salarioMax?.toString() || "");
         setDescricao(data.descricao || "");
+        setAreasVaga((data.areas || []).map((item: { nome: string }) => item.nome));
         setEtapas(
           (data.etapas || []).length > 0
             ? data.etapas.map((etapa: { nome: string; tipo: EtapaFormInput["tipo"]; obrigatoria: boolean }) => ({
@@ -144,6 +158,7 @@ export default function EditarVagaPage() {
           salarioMin: salarioMin || null,
           salarioMax: salarioMax || null,
           descricao,
+          areas: areasVaga,
           requisitos: finalRequisitos,
           etapas,
         }),
@@ -307,6 +322,38 @@ export default function EditarVagaPage() {
               required
             />
           </div>
+          <div className="space-y-2">
+            <Label>Areas de Atuacao</Label>
+            <p className="text-xs text-muted-foreground">
+              Selecione uma ou mais areas para melhorar a compatibilidade dos candidatos.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {areasDisponiveis.map((areaAtuacao) => {
+                const selecionada = areasVaga.includes(areaAtuacao);
+                return (
+                  <button
+                    key={areaAtuacao}
+                    type="button"
+                    onClick={() =>
+                      setAreasVaga((prev) =>
+                        selecionada
+                          ? prev.filter((item) => item !== areaAtuacao)
+                          : [...prev, areaAtuacao],
+                      )
+                    }
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      selecionada
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {selecionada && <Check className="h-3 w-3" />}
+                    {areaAtuacao}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -435,7 +482,7 @@ export default function EditarVagaPage() {
       {/* Ações */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {requisitos.length} requisito(s) e {etapas.length} etapa(s)
+          {requisitos.length} requisito(s), {areasVaga.length} area(s) e {etapas.length} etapa(s)
         </p>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => router.back()}>

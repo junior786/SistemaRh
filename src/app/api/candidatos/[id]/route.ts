@@ -11,10 +11,14 @@ export async function GET(
   const candidato = await prisma.candidato.findUnique({
     where: { id },
     include: {
+      areas: true,
       skills: true,
       restricoes: true,
       experiencias: { orderBy: { dataInicio: "desc" } },
       formacoes: { orderBy: { dataInicio: "desc" } },
+      vagaEmpregado: {
+        select: { id: true, titulo: true, area: true },
+      },
       triagens: {
         include: { vaga: true },
         orderBy: { score: "desc" },
@@ -39,7 +43,7 @@ export async function PUT(
   const {
     nome, email, telefone, cidade, cep, genero, resumo, jobType, pretensaoSalarial,
     observacao, statusEmprego,
-    skills, experiencias, formacoes, restricoes,
+    areas, skills, experiencias, formacoes, restricoes,
   } = body;
 
   const candidato = await prisma.candidato.update({
@@ -59,8 +63,18 @@ export async function PUT(
       ...(observacao !== undefined && { observacao: observacao || null }),
       ...(statusEmprego !== undefined && { statusEmprego }),
     },
-    include: { skills: true, experiencias: true, formacoes: true, restricoes: true },
+    include: { areas: true, skills: true, experiencias: true, formacoes: true, restricoes: true },
   });
+
+  // Atualiza áreas se fornecidas
+  if (areas) {
+    await prisma.candidatoArea.deleteMany({ where: { candidatoId: id } });
+    if (areas.length > 0) {
+      await prisma.candidatoArea.createMany({
+        data: areas.map((a: string) => ({ candidatoId: id, nome: a })),
+      });
+    }
+  }
 
   // Atualiza skills se fornecidas
   if (skills) {

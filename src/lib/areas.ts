@@ -1,0 +1,27 @@
+// Áreas de atuação padrão (seed inicial)
+// Em produção, as áreas vêm da tabela Categoria (tipo=AREA_ATUACAO)
+export const AREAS_ATUACAO_PADRAO = [
+  "Desenvolvimento",
+  "Líder Técnico",
+  "Arquitetura de Software",
+  "DevOps / Infra",
+  "QA / Testes",
+  "Dados / Analytics",
+  "Produto / PM",
+  "Design / UX",
+  "Suporte / Helpdesk",
+  "Administração",
+  "Financeiro",
+  "RH / Pessoas",
+  "Comercial / Vendas",
+  "Marketing",
+  "Logística",
+  "Operações",
+  "Jurídico",
+  "Saúde",
+  "Educação",
+  "Engenharia",
+  "Serviços Gerais",
+  "Motorista / Transporte",
+  "Outro",
+];

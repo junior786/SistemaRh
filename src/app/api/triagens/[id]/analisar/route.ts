@@ -14,7 +14,7 @@ export async function POST(
   const triagem = await prisma.triagem.findUnique({
     where: { id },
     include: {
-      vaga: { include: { requisitos: true } },
+      vaga: { include: { requisitos: true, areas: true } },
       etapas: {
         include: {
           vagaEtapa: true,
@@ -27,6 +27,7 @@ export async function POST(
       },
       candidato: {
         include: {
+          areas: true,
           skills: true,
           restricoes: true,
           experiencias: { orderBy: { dataInicio: "desc" } },
@@ -65,6 +66,7 @@ async function processarAnalise(
     vaga: {
       titulo: string;
       area: string;
+      areas: { nome: string }[];
       jobType: string;
       regime: string;
       descricao: string;
@@ -75,6 +77,7 @@ async function processarAnalise(
       resumo: string | null;
       genero: string | null;
       jobType: string;
+      areas: { nome: string }[];
       skills: { nome: string }[];
       restricoes: { descricao: string }[];
       experiencias: {
@@ -97,6 +100,7 @@ async function processarAnalise(
       {
         titulo: triagem.vaga.titulo,
         area: triagem.vaga.area,
+        areas: triagem.vaga.areas.map((area) => area.nome),
         jobType: triagem.vaga.jobType,
         regime: triagem.vaga.regime,
         descricao: triagem.vaga.descricao,
@@ -111,6 +115,7 @@ async function processarAnalise(
         resumo: triagem.candidato.resumo,
         genero: triagem.candidato.genero,
         jobType: triagem.candidato.jobType,
+        areas: triagem.candidato.areas.map((area) => area.nome),
         skills: triagem.candidato.skills.map((s) => s.nome),
         restricoes: triagem.candidato.restricoes.map((r) => r.descricao),
         experiencias: triagem.candidato.experiencias.map((e) => ({

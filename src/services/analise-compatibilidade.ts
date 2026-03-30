@@ -1,7 +1,3 @@
-// RF-03 / RN-01 — Motor de compatibilidade via OpenRouter
-// Modelo: deepseek/deepseek-chat (MODEL_ANALISE_VAGA)
-// Score de 0-100, justificativa, checklist de requisitos
-
 import { chatCompletion, parseAIResponse } from "@/lib/openrouter";
 
 export interface ChecklistItem {
@@ -20,6 +16,7 @@ export interface ResultadoAnalise {
 interface DadosVaga {
   titulo: string;
   area: string;
+  areas: string[];
   jobType: string;
   regime: string;
   descricao: string;
@@ -31,6 +28,7 @@ interface DadosCandidato {
   resumo: string | null;
   genero: string | null;
   jobType: string;
+  areas: string[];
   skills: string[];
   restricoes: string[];
   experiencias: {
@@ -46,26 +44,26 @@ interface DadosCandidato {
   }[];
 }
 
-const SYSTEM_PROMPT = `Você é um analista de RH especializado em triagem de candidatos. Analise a compatibilidade entre o candidato e a vaga.
+const SYSTEM_PROMPT = `Voce e um analista de RH especializado em triagem de candidatos. Analise a compatibilidade entre o candidato e a vaga.
 
-REGRAS DE SCORING (RN-01):
-- REGRA PRINCIPAL: Se o Tipo de Trabalho da vaga e do candidato são INCOMPATÍVEIS (ex: vaga de Doméstica e candidato Desenvolvedor, ou vaga de Motorista e candidato Enfermeiro), o score MÁXIMO é 10%. Perfis de áreas completamente diferentes NÃO são compatíveis, independente de skills ou experiência.
-- Requisitos OBRIGATÓRIOS têm peso eliminatório. Se o candidato NÃO atende QUALQUER requisito obrigatório, o score MÁXIMO é 50%.
-- Requisitos DESEJÁVEIS distribuem pontos proporcionalmente no restante.
-- Use as experiências profissionais com tempo calculado como fator principal.
-- RESTRIÇÕES do candidato (ex: filhos, falta de CNH, disponibilidade limitada) devem ser consideradas como contexto para avaliar compatibilidade prática com a vaga.
-- Score final: 0 a 100 (inteiro).
+REGRAS DE SCORING:
+- Se o tipo de trabalho da vaga e do candidato sao claramente incompativeis, o score maximo e 10.
+- Se as areas de atuacao sao completamente diferentes, isso deve pesar negativamente mesmo que existam skills parecidas.
+- Requisitos obrigatorios tem peso eliminatorio. Se o candidato nao atende qualquer requisito obrigatorio, o score maximo e 50.
+- Requisitos desejaveis distribuem pontos proporcionalmente no restante.
+- Use as experiencias profissionais com tempo calculado como fator principal.
+- Restricoes do candidato devem ser consideradas como contexto pratico.
+- Score final: 0 a 100, inteiro.
 
-Retorne APENAS um JSON válido (sem markdown, sem blocos de código):
-
+Retorne APENAS um JSON valido:
 {
-  "score": 0-100,
-  "analise": "Texto com pontos fortes e pontos de atenção do candidato para esta vaga",
+  "score": 0,
+  "analise": "Texto com pontos fortes e pontos de atencao do candidato para esta vaga",
   "checklist": [
     {
-      "requisito": "descrição do requisito",
-      "tipo": "OBRIGATORIO ou DESEJAVEL",
-      "atende": true/false,
+      "requisito": "descricao do requisito",
+      "tipo": "OBRIGATORIO",
+      "atende": true,
       "observacao": "justificativa breve"
     }
   ]
@@ -88,60 +86,54 @@ export async function analisarCompatibilidade(
   candidato: DadosCandidato,
 ): Promise<ResultadoAnalise> {
   const model = process.env.MODEL_ANALISE_VAGA;
-  if (!model) throw new Error("MODEL_ANALISE_VAGA não configurada");
-
-  const experienciasFormatadas = candidato.experiencias.map((e) => ({
-    ...e,
-    tempoFormatado: e.tempoFormatado,
-  }));
+  if (!model) throw new Error("MODEL_ANALISE_VAGA nao configurada");
 
   const prompt = `## VAGA
-Título: ${vaga.titulo}
-Área: ${vaga.area}
+Titulo: ${vaga.titulo}
+Area principal: ${vaga.area}
+Areas de atuacao: ${vaga.areas.join(", ") || "Nao informadas"}
 Tipo de Trabalho: ${vaga.jobType}
 Regime: ${vaga.regime}
-Descrição: ${vaga.descricao}
+Descricao: ${vaga.descricao}
 
-### Requisitos:
-${vaga.requisitos.map((r) => {
-    let line = `- [${r.tipo}] ${r.descricao}`;
-    if (r.tempoMeses) {
-      const anos = Math.floor(r.tempoMeses / 12);
-      const meses = r.tempoMeses % 12;
-      const tempo = anos > 0 ? (meses > 0 ? `${anos} ano(s) e ${meses} mês(es)` : `${anos} ano(s)`) : `${meses} mês(es)`;
-      line += ` (mínimo ${tempo} de experiência)`;
+### Requisitos
+${vaga.requisitos.map((requisito) => {
+    let linha = `- [${requisito.tipo}] ${requisito.descricao}`;
+    if (requisito.tempoMeses) {
+      const anos = Math.floor(requisito.tempoMeses / 12);
+      const meses = requisito.tempoMeses % 12;
+      const tempo = anos > 0
+        ? meses > 0
+          ? `${anos} ano(s) e ${meses} mes(es)`
+          : `${anos} ano(s)`
+        : `${meses} mes(es)`;
+      linha += ` (minimo ${tempo} de experiencia)`;
     }
-    return line;
+    return linha;
   }).join("\n")}
 
 ## CANDIDATO
 Nome: ${candidato.nome}
-${candidato.genero ? `Gênero: ${candidato.genero}` : ""}
+${candidato.genero ? `Genero: ${candidato.genero}` : ""}
 Tipo de Trabalho Pretendido: ${candidato.jobType}
-Resumo: ${candidato.resumo || "Não informado"}
+Areas de atuacao: ${candidato.areas.join(", ") || "Nao informadas"}
+Resumo: ${candidato.resumo || "Nao informado"}
 Skills: ${candidato.skills.join(", ") || "Nenhuma informada"}
-${candidato.restricoes.length > 0 ? `\nRestrições / Informações relevantes:\n${candidato.restricoes.map((r) => `- ${r}`).join("\n")}` : ""}
+${candidato.restricoes.length > 0 ? `\nRestricoes / Informacoes relevantes:\n${candidato.restricoes.map((restricao) => `- ${restricao}`).join("\n")}` : ""}
 
-### Experiências profissionais:
-${
-  experienciasFormatadas.length > 0
-    ? experienciasFormatadas
-        .map(
-          (e) =>
-            `- ${e.cargo} na ${e.empresa} (${e.tempoFormatado})${e.descricao ? `: ${e.descricao}` : ""}`,
-        )
+### Experiencias profissionais
+${candidato.experiencias.length > 0
+    ? candidato.experiencias
+        .map((experiencia) => `- ${experiencia.cargo} na ${experiencia.empresa} (${experiencia.tempoFormatado})${experiencia.descricao ? `: ${experiencia.descricao}` : ""}`)
         .join("\n")
-    : "Nenhuma experiência cadastrada"
-}
+    : "Nenhuma experiencia cadastrada"}
 
-### Formação acadêmica:
-${
-  candidato.formacoes.length > 0
+### Formacao academica
+${candidato.formacoes.length > 0
     ? candidato.formacoes
-        .map((f) => `- ${f.nivel}: ${f.curso} — ${f.instituicao}`)
+        .map((formacao) => `- ${formacao.nivel}: ${formacao.curso} - ${formacao.instituicao}`)
         .join("\n")
-    : "Nenhuma formação cadastrada"
-}`;
+    : "Nenhuma formacao cadastrada"}`;
 
   const raw = await chatCompletion(model, [
     { role: "system", content: SYSTEM_PROMPT },

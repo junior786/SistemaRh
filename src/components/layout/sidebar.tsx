@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Users,
   CalendarDays,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -20,6 +21,12 @@ const navItems = [
       { label: "Nova Vaga", href: "/vagas/nova", icon: PlusCircle },
       { label: "Candidatos", href: "/candidatos", icon: Users },
       { label: "Entrevistas", href: "/entrevistas", icon: CalendarDays },
+    ],
+  },
+  {
+    section: "SISTEMA",
+    items: [
+      { label: "Configurações", href: "/configuracoes", icon: Settings },
     ],
   },
 ];
