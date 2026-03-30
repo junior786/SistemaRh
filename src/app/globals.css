@@ -197,6 +197,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
   body {
     @apply bg-background text-foreground;
   }
