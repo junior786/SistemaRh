@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { concluirEtapaEAvancar } from "@/lib/triagem-etapas";
+import { registrarEventoTriagem, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
 import { analisarCompatibilidade, formatarTempoExperiencia } from "@/services/analise-compatibilidade";
 
-// POST /api/triagens/[id]/analisar — RF-03: dispara análise de compatibilidade
-// RNF-02: executa assincronamente, retorna 202 imediatamente
+// POST /api/triagens/[id]/analisar - dispara analise de compatibilidade
+// Executa assincronamente e retorna 202 imediatamente
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -38,16 +39,21 @@ export async function POST(
   });
 
   if (!triagem) {
-    return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
+    return Response.json({ error: "Triagem nao encontrada" }, { status: 404 });
   }
 
-  // Marca como processando
   await prisma.triagem.update({
     where: { id },
     data: { status: "PROCESSANDO" },
   });
 
-  // Dispara análise em background (não bloqueia a resposta)
+  await registrarEventoTriagem({
+    triagemId: id,
+    tipo: TRIAGEM_EVENTO_TIPO.ANALISE_SOLICITADA,
+    descricao: "Analise de compatibilidade solicitada.",
+    origem: "RH",
+  });
+
   processarAnalise(id, triagem).catch(console.error);
 
   return Response.json({ status: "PROCESSANDO" }, { status: 202 });
@@ -147,12 +153,29 @@ async function processarAnalise(
       },
     });
 
+    await registrarEventoTriagem({
+      triagemId,
+      tipo: TRIAGEM_EVENTO_TIPO.ANALISE_CONCLUIDA,
+      descricao: `Analise concluida com score ${resultado.score}%.`,
+      origem: "SISTEMA",
+      metadados: { score: resultado.score },
+    });
+
     const etapaTriagem = triagem.etapas.find((etapa) => etapa.vagaEtapa.tipo === "TRIAGEM");
     if (etapaTriagem && etapaTriagem.status !== "CONCLUIDO") {
       await concluirEtapaEAvancar(triagemId, etapaTriagem.vagaEtapa.id);
     }
   } catch (error) {
-    console.error("Erro na análise:", error);
+    console.error("Erro na analise:", error);
+    await registrarEventoTriagem({
+      triagemId,
+      tipo: TRIAGEM_EVENTO_TIPO.ANALISE_COM_ERRO,
+      descricao: "Analise de compatibilidade falhou.",
+      origem: "SISTEMA",
+      metadados: {
+        erro: error instanceof Error ? error.message : String(error),
+      },
+    });
     await prisma.triagem.update({
       where: { id: triagemId },
       data: { status: "ERRO" },

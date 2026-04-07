@@ -276,6 +276,7 @@ model Triagem {
 
   entrevistas Entrevista[]
   etapas      TriagemEtapa[]
+  eventos     TriagemEvento[]
 
   vaga      Vaga      @relation(fields: [vagaId], references: [id], onDelete: Cascade)
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
@@ -294,6 +295,22 @@ enum TriagemStatus {
 // ─────────────────────────────────────────────
 // ENTREVISTAS
 // ─────────────────────────────────────────────
+
+model TriagemEvento {
+  id        String   @id @default(cuid())
+  triagemId String?
+  vagaId    String
+  vagaTitulo String
+  candidatoId String
+  candidatoNome String
+  tipo      String
+  descricao String
+  origem    String   @default("SISTEMA")
+  metadados String?
+  createdAt DateTime @default(now())
+
+  triagem Triagem? @relation(fields: [triagemId], references: [id], onDelete: SetNull)
+}
 
 model TriagemEtapa {
   id          String             @id @default(cuid())

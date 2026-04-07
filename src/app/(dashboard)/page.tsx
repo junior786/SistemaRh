@@ -20,6 +20,7 @@ import {
   UserCheck,
   Clock3,
   BrainCircuit,
+  History,
 } from "lucide-react";
 
 interface Metricas {
@@ -71,6 +72,17 @@ interface DashboardData {
   statusVagas: StatusVaga[];
   seriesMensal: SerieMensal[];
   vagasDestaque: VagaDestaque[];
+  atividadesRecentes: {
+    id: string;
+    tipo: string;
+    descricao: string;
+    origem: string;
+    createdAt: string;
+    vagaId: string;
+    vagaTitulo: string;
+    candidatoId: string;
+    candidatoNome: string;
+  }[];
 }
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -99,6 +111,8 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const atividadesRecentes = data?.atividadesRecentes ?? [];
 
   const metricas = data?.metricas ?? {
     vagasAbertas: 0,
@@ -373,6 +387,55 @@ export default function DashboardPage() {
                     <Bar dataKey="total" radius={10} />
                   </BarChart>
                 </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              <div className="border-b px-6 py-5">
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" />
+                  <h2 className="text-base font-semibold">Atividade recente</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">Ultimos movimentos do funil e operacao do RH</p>
+              </div>
+
+              <div className="divide-y">
+                {atividadesRecentes.length === 0 ? (
+                  <div className="p-6 text-sm text-muted-foreground">
+                    Nenhuma atividade recente registrada ainda.
+                  </div>
+                ) : (
+                  atividadesRecentes.map((atividade) => (
+                    <Link
+                      key={atividade.id}
+                      href={`/vagas/${atividade.vagaId}`}
+                      className="block px-6 py-4 transition-colors hover:bg-muted/40"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium">{atividade.candidatoNome}</p>
+                            <Badge variant="outline" className="text-[10px]">
+                              {atividade.origem}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{atividade.descricao}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {atividade.vagaTitulo}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">
+                          {new Intl.DateTimeFormat("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }).format(new Date(atividade.createdAt))}
+                        </span>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

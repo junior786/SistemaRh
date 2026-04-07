@@ -44,6 +44,7 @@ export async function GET() {
     candidatosRecentes,
     triagensRecentes,
     vagasDestaque,
+    atividadesRecentes,
   ] = await Promise.all([
     prisma.vaga.groupBy({
       by: ["status"],
@@ -99,6 +100,21 @@ export async function GET() {
         { createdAt: "desc" },
       ],
       take: 8,
+    }),
+    prisma.triagemEvento.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        tipo: true,
+        descricao: true,
+        origem: true,
+        createdAt: true,
+        vagaId: true,
+        vagaTitulo: true,
+        candidatoId: true,
+        candidatoNome: true,
+      },
     }),
   ]);
 
@@ -160,6 +176,17 @@ export async function GET() {
       totalCandidatos: vaga._count.triagens,
       contratados: vaga._count.empregados,
       melhorScore: vaga.triagens[0]?.score ?? null,
+    })),
+    atividadesRecentes: atividadesRecentes.map((evento) => ({
+      id: evento.id,
+      tipo: evento.tipo,
+      descricao: evento.descricao,
+      origem: evento.origem,
+      createdAt: evento.createdAt,
+      vagaId: evento.vagaId,
+      vagaTitulo: evento.vagaTitulo,
+      candidatoId: evento.candidatoId,
+      candidatoNome: evento.candidatoNome,
     })),
   });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
-import { calcularCompatibilidadeBase, normalize } from "@/lib/candidato-compatibilidade";
+import { normalize } from "@/lib/candidato-compatibilidade";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,9 @@ import {
 import {
   UserPlus,
   ArrowRight,
+  ArrowLeft,
   RotateCw,
+  RotateCcw,
   Calendar,
   AlertTriangle,
   ChevronDown,
@@ -54,6 +57,7 @@ import {
   Briefcase,
   Filter,
   Trash2,
+  Ban,
 } from "lucide-react";
 
 // ── Tipos ────────────────────────────────────────────
@@ -94,6 +98,15 @@ interface CandidatoCompleto {
   areas: { nome: string }[];
   skills: { nome: string }[];
   _count: { triagens: number };
+}
+
+interface CandidatoSugerido extends CandidatoCompleto {
+  compatibilidade: number;
+  skillsMatch: string[];
+  salarioOk: boolean | null;
+  localOk: boolean | null;
+  areaOk: boolean | null;
+  jobTypeOk: boolean | null;
 }
 
 interface Requisito {
@@ -138,7 +151,17 @@ interface ChecklistItem {
 function getEtapaAtual(triagem: Triagem) {
   return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
     ?? triagem.etapas.find((etapa) => etapa.status === "PENDENTE")
-    ?? triagem.etapas[triagem.etapas.length - 1]
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "REPROVADO")
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "CONCLUIDO")
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "DISPENSADO")
+    ?? null;
+}
+
+function getEtapaReferenciaRetorno(triagem: Triagem) {
+  return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
+    ?? triagem.etapas.find((etapa) => etapa.status === "PENDENTE")
+    ?? [...triagem.etapas].reverse().find((etapa) =>
+      ["CONCLUIDO", "REPROVADO", "DISPENSADO"].includes(etapa.status))
     ?? null;
 }
 
@@ -158,14 +181,24 @@ export default function TriagemPage() {
   const [todosCandidatos, setTodosCandidatos] = useState<CandidatoCompleto[]>([]);
   const [loadingSugeridos, setLoadingSugeridos] = useState(true);
   const [buscaSugerido, setBuscaSugerido] = useState("");
+  const [sugeridos, setSugeridos] = useState<CandidatoSugerido[]>([]);
+  const [sugestoesPage, setSugestoesPage] = useState(1);
+  const [sugestoesTotal, setSugestoesTotal] = useState(0);
+  const [sugestoesTotalPages, setSugestoesTotalPages] = useState(1);
+  const [origemSugestoes, setOrigemSugestoes] = useState<"PRE_TRIAGEM" | "HEURISTICA">("HEURISTICA");
   const [vinculando, setVinculando] = useState<string | null>(null);
   const [movendoTriagemId, setMovendoTriagemId] = useState<string | null>(null);
   const [triagemParaMover, setTriagemParaMover] = useState<Triagem | null>(null);
+  const [voltandoTriagemId, setVoltandoTriagemId] = useState<string | null>(null);
+  const [triagemParaVoltar, setTriagemParaVoltar] = useState<Triagem | null>(null);
+  const [reabrindoTriagemId, setReabrindoTriagemId] = useState<string | null>(null);
+  const [triagemParaReabrir, setTriagemParaReabrir] = useState<Triagem | null>(null);
+  const [reprovandoTriagemId, setReprovandoTriagemId] = useState<string | null>(null);
+  const [triagemParaReprovar, setTriagemParaReprovar] = useState<Triagem | null>(null);
   const [removendoTriagemId, setRemovendoTriagemId] = useState<string | null>(null);
   const [triagemParaRemover, setTriagemParaRemover] = useState<Triagem | null>(null);
   const [preTriagemLoading, setPreTriagemLoading] = useState(false);
   const [preTriagemResult, setPreTriagemResult] = useState<string | null>(null);
-  const [preTriagemIds, setPreTriagemIds] = useState<Set<string>>(new Set());
 
   // Modal de adicionar candidato
   const [modalOpen, setModalOpen] = useState(false);
@@ -202,16 +235,54 @@ export default function TriagemPage() {
         setTodosCandidatos(Array.isArray(candidatosData?.items) ? candidatosData.items : []);
 
         // Carrega IDs da pré-triagem IA salvos no banco
-        if (vagaData.preTriagemIds) {
-          try {
-            const ids: string[] = JSON.parse(vagaData.preTriagemIds);
-            setPreTriagemIds(new Set(ids));
-          } catch { /* ignore */ }
-        }
+        void vagaData;
       })
       .catch(console.error)
       .finally(() => setLoadingSugeridos(false));
   }, [vagaId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({
+      page: String(sugestoesPage),
+      pageSize: "9",
+    });
+
+    if (buscaSugerido.trim()) {
+      params.set("busca", buscaSugerido.trim());
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setLoadingSugeridos(true);
+
+      fetch(`/api/vagas/${vagaId}/sugestoes?${params}`)
+        .then(async (r) => {
+          const text = await r.text();
+          const data = text ? JSON.parse(text) : null;
+
+          if (!r.ok) {
+            throw new Error(data?.error || "Erro ao carregar sugestoes");
+          }
+
+          return data;
+        })
+        .then((data) => {
+          setSugeridos(Array.isArray(data?.items) ? data.items : []);
+          setSugestoesTotal(typeof data?.total === "number" ? data.total : 0);
+          setSugestoesTotalPages(typeof data?.totalPages === "number" ? data.totalPages : 1);
+          setOrigemSugestoes(data?.origem === "PRE_TRIAGEM" ? "PRE_TRIAGEM" : "HEURISTICA");
+        })
+        .catch((error) => {
+          console.error(error);
+          setSugeridos([]);
+          setSugestoesTotal(0);
+          setSugestoesTotalPages(1);
+          setOrigemSugestoes("HEURISTICA");
+        })
+        .finally(() => setLoadingSugeridos(false));
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [vagaId, buscaSugerido, sugestoesPage, triagens]);
 
   useEffect(() => {
     if (!modalOpen) {
@@ -267,7 +338,7 @@ export default function TriagemPage() {
 
   // ── Candidatos sugeridos ──
 
-  const sugeridos = useMemo(() => {
+  /* const sugestoesLegadas = useMemo(() => {
     if (!vaga || todosCandidatos.length === 0) return [];
 
     const idsVinculados = new Set(triagens.map((t) => t.candidato.id));
@@ -301,7 +372,7 @@ export default function TriagemPage() {
     }
 
     return comScore;
-  }, [vaga, todosCandidatos, triagens, buscaSugerido, preTriagemIds]);
+  }, [vaga, todosCandidatos, triagens, buscaSugerido, preTriagemIds]); */
 
   // ── Modal: todos os candidatos disponíveis com filtros ──
 
@@ -374,11 +445,94 @@ export default function TriagemPage() {
 
       setTriagens((prev) => prev.map((item) => (item.id === triagem.id ? data as Triagem : item)));
       setTriagemParaMover(null);
+      toast.success("Candidato movido de etapa.");
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : "Nao foi possivel mover o candidato.");
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel mover o candidato.");
     } finally {
       setMovendoTriagemId(null);
+    }
+  }
+
+  async function voltarEtapa(triagem: Triagem) {
+    setVoltandoTriagemId(triagem.id);
+    try {
+      const res = await fetch(`/api/triagens/${triagem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "VOLTAR_ETAPA",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao voltar etapa");
+      }
+
+      setTriagens((prev) => prev.map((item) => (item.id === triagem.id ? data as Triagem : item)));
+      setTriagemParaVoltar(null);
+      toast.success("Candidato retornado para a etapa anterior.");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel voltar a etapa.");
+    } finally {
+      setVoltandoTriagemId(null);
+    }
+  }
+
+  async function reabrirEtapa(triagem: Triagem, vagaEtapaId: string) {
+    setReabrindoTriagemId(triagem.id);
+    try {
+      const res = await fetch(`/api/triagens/${triagem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "REABRIR_ETAPA",
+          vagaEtapaId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao reabrir etapa");
+      }
+
+      setTriagens((prev) => prev.map((item) => (item.id === triagem.id ? data as Triagem : item)));
+      setTriagemParaReabrir(null);
+      toast.success("Etapa reaberta com sucesso.");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel reabrir a etapa.");
+    } finally {
+      setReabrindoTriagemId(null);
+    }
+  }
+
+  async function reprovarEtapa(triagem: Triagem) {
+    setReprovandoTriagemId(triagem.id);
+    try {
+      const res = await fetch(`/api/triagens/${triagem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "REPROVAR_ETAPA",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao reprovar etapa");
+      }
+
+      setTriagens((prev) => prev.map((item) => (item.id === triagem.id ? data as Triagem : item)));
+      setTriagemParaReprovar(null);
+      toast.success("Candidato reprovado na etapa atual.");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel reprovar a etapa.");
+    } finally {
+      setReprovandoTriagemId(null);
     }
   }
 
@@ -395,6 +549,7 @@ export default function TriagemPage() {
         setExpandedId(null);
       }
       setTriagemParaRemover(null);
+      toast.success("Candidato removido da triagem.");
     } catch (error) {
       console.error(error);
       alert("Não foi possível remover o candidato da triagem.");
@@ -416,7 +571,7 @@ export default function TriagemPage() {
       }
 
       setPreTriagemResult(data.message);
-      setPreTriagemIds(new Set(data.candidatos_ids || []));
+      setSugestoesPage(1);
     } catch {
       setPreTriagemResult("Erro de conexão ao executar pré-triagem");
     } finally {
@@ -794,9 +949,20 @@ export default function TriagemPage() {
                 triagensFiltradas.map((t) => {
                   const isExpanded = expandedId === t.id;
                   const etapaAtual = getEtapaAtual(t);
+                  const etapaReferenciaRetorno = getEtapaReferenciaRetorno(t);
+                  const etapaAnterior = etapaReferenciaRetorno
+                    ? [...t.etapas]
+                      .reverse()
+                      .find((etapa) => etapa.vagaEtapa.ordem < etapaReferenciaRetorno.vagaEtapa.ordem)
+                    : null;
                   const etapasFuturas = etapaAtual
                     ? t.etapas.filter((etapa) => etapa.vagaEtapa.ordem > etapaAtual.vagaEtapa.ordem)
                     : [];
+                  const etapasReabriveis = t.etapas.filter((etapa) =>
+                    ["CONCLUIDO", "REPROVADO", "DISPENSADO"].includes(etapa.status));
+                  const podeReprovar = etapaAtual
+                    ? ["EM_ANDAMENTO", "PENDENTE"].includes(etapaAtual.status)
+                    : false;
                   let checklist: ChecklistItem[] = [];
                   if (t.checklist) {
                     try { checklist = JSON.parse(t.checklist); } catch { /* ignore */ }
@@ -882,6 +1048,63 @@ export default function TriagemPage() {
                                   <ArrowRight className="h-3 w-3" />
                                 )}
                                 Mover etapa
+                              </Button>
+                            )}
+                            {etapaAnterior && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-xs"
+                                disabled={voltandoTriagemId === t.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTriagemParaVoltar(t);
+                                }}
+                              >
+                                {voltandoTriagemId === t.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <ArrowLeft className="h-3 w-3" />
+                                )}
+                                Voltar etapa
+                              </Button>
+                            )}
+                            {etapasReabriveis.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-xs"
+                                disabled={reabrindoTriagemId === t.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTriagemParaReabrir(t);
+                                }}
+                              >
+                                {reabrindoTriagemId === t.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="h-3 w-3" />
+                                )}
+                                Reabrir etapa
+                              </Button>
+                            )}
+                            {podeReprovar && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-xs text-destructive hover:text-destructive"
+                                disabled={reprovandoTriagemId === t.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTriagemParaReprovar(t);
+                                }}
+                              >
+                                {reprovandoTriagemId === t.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Ban className="h-3 w-3" />
+                                )}
+                                Reprovar
                               </Button>
                             )}
                             {t.status === "CONCLUIDO" && (
@@ -982,10 +1205,10 @@ export default function TriagemPage() {
             <div>
               <h3 className="text-base font-semibold">Candidatos Sugeridos</h3>
               <p className="text-xs text-muted-foreground">
-                {preTriagemIds.size > 0
-                  ? `${preTriagemIds.size} candidato(s) selecionado(s) pela IA`
+                {origemSugestoes === "PRE_TRIAGEM"
+                  ? `${sugestoesTotal} candidato(s) ranqueado(s) a partir da pre-triagem IA`
                   : vaga?.jobType
-                    ? `Filtrados por tipo: ${vaga.jobType}`
+                    ? `Ranking heuristico por compatibilidade para ${vaga.jobType}`
                     : "Filtro básico por skills, salário e localização"}
               </p>
             </div>
@@ -996,7 +1219,10 @@ export default function TriagemPage() {
               placeholder="Buscar candidato ou skill..."
               className="w-[250px] pl-8"
               value={buscaSugerido}
-              onChange={(e) => setBuscaSugerido(e.target.value)}
+              onChange={(e) => {
+                setBuscaSugerido(e.target.value);
+                setSugestoesPage(1);
+              }}
             />
           </div>
         </div>
@@ -1020,6 +1246,7 @@ export default function TriagemPage() {
             </CardContent>
           </Card>
         ) : (
+          <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sugeridos.map((c) => {
               const isVinculando = vinculando === c.id;
@@ -1125,6 +1352,32 @@ export default function TriagemPage() {
               );
             })}
           </div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Pagina {sugestoesPage} de {sugestoesTotalPages} · {sugestoesTotal} candidato(s)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={sugestoesPage <= 1 || loadingSugeridos}
+                onClick={() => setSugestoesPage((current) => Math.max(1, current - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={sugestoesPage >= sugestoesTotalPages || loadingSugeridos}
+                onClick={() => setSugestoesPage((current) => Math.min(sugestoesTotalPages, current + 1))}
+              >
+                Proxima
+              </Button>
+            </div>
+          </div>
+          </>
         )}
       </div>
 
@@ -1186,6 +1439,147 @@ export default function TriagemPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={triagemParaReabrir !== null}
+        onOpenChange={(open) => {
+          if (!open && reabrindoTriagemId === null) {
+            setTriagemParaReabrir(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reabrir etapa</DialogTitle>
+          </DialogHeader>
+
+          {triagemParaReabrir && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">{triagemParaReabrir.candidato.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  Selecione a etapa que deve voltar para em andamento.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {triagemParaReabrir.etapas
+                  .filter((etapa) => ["CONCLUIDO", "REPROVADO", "DISPENSADO"].includes(etapa.status))
+                  .map((etapa) => (
+                    <button
+                      key={etapa.id}
+                      type="button"
+                      onClick={() => reabrirEtapa(triagemParaReabrir, etapa.vagaEtapa.id)}
+                      disabled={reabrindoTriagemId !== null}
+                      className="flex w-full items-center justify-between rounded-lg border px-3 py-3 text-left hover:bg-muted/50 disabled:opacity-60"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{etapa.vagaEtapa.nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ETAPA_TIPO_LABEL[etapa.vagaEtapa.tipo]} · {ETAPA_STATUS_LABEL[etapa.status]}
+                        </p>
+                      </div>
+                      {reabrindoTriagemId === triagemParaReabrir.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Ao reabrir uma etapa, as etapas posteriores voltam para pendente.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={triagemParaVoltar !== null}
+        onOpenChange={(open) => {
+          if (!open && voltandoTriagemId === null) {
+            setTriagemParaVoltar(null);
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voltar para a etapa anterior?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {triagemParaVoltar
+                ? `Isso reabre a etapa anterior para ${triagemParaVoltar.candidato.nome} e retorna as etapas seguintes para pendente.`
+                : "Confirme o retorno do candidato para a etapa anterior."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voltandoTriagemId !== null}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!triagemParaVoltar || voltandoTriagemId !== null}
+              onClick={() => {
+                if (triagemParaVoltar) {
+                  void voltarEtapa(triagemParaVoltar);
+                }
+              }}
+            >
+              {voltandoTriagemId ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Voltando...
+                </>
+              ) : (
+                "Confirmar retorno"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={triagemParaReprovar !== null}
+        onOpenChange={(open) => {
+          if (!open && reprovandoTriagemId === null) {
+            setTriagemParaReprovar(null);
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reprovar etapa atual?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {triagemParaReprovar
+                ? `Isso reprova ${triagemParaReprovar.candidato.nome} na etapa atual e dispensa as etapas seguintes.`
+                : "Confirme a reprovação manual da etapa atual."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reprovandoTriagemId !== null}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={!triagemParaReprovar || reprovandoTriagemId !== null}
+              onClick={() => {
+                if (triagemParaReprovar) {
+                  void reprovarEtapa(triagemParaReprovar);
+                }
+              }}
+            >
+              {reprovandoTriagemId ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Reprovando...
+                </>
+              ) : (
+                "Reprovar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={triagemParaRemover !== null}

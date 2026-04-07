@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  History,
 } from "lucide-react";
 
 interface Requisito {
@@ -108,6 +110,15 @@ interface Vaga {
   etapas: EtapaVaga[];
   triagens: Triagem[];
   empregados: Empregado[];
+  eventos: {
+    id: string;
+    triagemId: string | null;
+    candidatoId: string;
+    candidatoNome: string;
+    descricao: string;
+    origem: string;
+    createdAt: string;
+  }[];
 }
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -149,10 +160,19 @@ function scoreBg(score: number) {
   return "bg-destructive/10";
 }
 
+function formatarDataHora(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 function getEtapaAtual(triagem: Triagem) {
   return triagem.etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
     ?? triagem.etapas.find((etapa) => etapa.status === "PENDENTE")
-    ?? triagem.etapas[triagem.etapas.length - 1]
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "REPROVADO")
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "CONCLUIDO")
+    ?? [...triagem.etapas].reverse().find((etapa) => etapa.status === "DISPENSADO")
     ?? null;
 }
 
@@ -169,7 +189,16 @@ export default function DetalheVagaPage() {
   const carregarVaga = useCallback(() => {
     setLoading(true);
     fetch(`/api/vagas/${vagaId}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        const data = text ? JSON.parse(text) : null;
+
+        if (!r.ok) {
+          throw new Error(data?.error || "Erro ao carregar vaga");
+        }
+
+        return data;
+      })
       .then(setVaga)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -184,12 +213,19 @@ export default function DetalheVagaPage() {
   }, [vaga]);
 
   async function handleStatusChange(status: string) {
-    await fetch(`/api/vagas/${vagaId}`, {
+    const res = await fetch(`/api/vagas/${vagaId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      toast.error(data?.error || "Nao foi possivel atualizar o status da vaga.");
+      return;
+    }
     setVaga((v) => (v ? { ...v, status } : v));
+    toast.success("Status da vaga atualizado.");
   }
 
   async function finalizarVaga() {
@@ -210,10 +246,11 @@ export default function DetalheVagaPage() {
       }
 
       setFinalizarOpen(false);
+      toast.success("Vaga finalizada com sucesso.");
       carregarVaga();
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : "Erro ao finalizar vaga");
+      toast.error(error instanceof Error ? error.message : "Erro ao finalizar vaga");
     } finally {
       setFinalizando(false);
     }
@@ -273,6 +310,7 @@ export default function DetalheVagaPage() {
     acc[etapaAtual.vagaEtapa.id] = [...(acc[etapaAtual.vagaEtapa.id] ?? []), triagem];
     return acc;
   }, {});
+  const eventosRecentes = vaga.eventos.slice(0, 12);
 
   return (
     <div className="space-y-6">
@@ -593,6 +631,50 @@ export default function DetalheVagaPage() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="mb-4 flex items-center gap-2 font-semibold">
+                <History className="h-4 w-4 text-primary" />
+                Atividade recente
+                <span className="ml-auto text-xs font-normal text-muted-foreground">
+                  {eventosRecentes.length} evento(s)
+                </span>
+              </h3>
+
+              {eventosRecentes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ainda nao ha eventos registrados para esta vaga.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {eventosRecentes.map((evento) => (
+                    <Link
+                      key={evento.id}
+                      href={`/vagas/${vagaId}/triagem`}
+                      className="flex items-start gap-3 rounded-lg border px-3 py-3 hover:bg-muted/40"
+                    >
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                        {evento.candidatoNome.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{evento.candidatoNome}</p>
+                          <Badge variant="outline" className="text-[10px]">
+                            {evento.origem}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{evento.descricao}</p>
+                      </div>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {formatarDataHora(evento.createdAt)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

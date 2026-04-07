@@ -1,0 +1,194 @@
+# RH Selector — Requisitos da feature WhatsApp
+
+---
+
+## Requisitos funcionais
+
+### RF-07 — Comunicação via WhatsApp (Meta Cloud API)
+O RH pode enviar mensagens WhatsApp para candidatos diretamente pelo perfil do candidato. As respostas chegam via webhook e são registradas automaticamente.
+
+- Histórico completo de conversa por candidato, persistido no PostgreSQL
+- Mensagens livres dentro da janela de 24h da Meta
+- Templates aprovados fora da janela de 24h
+- Status de entrega atualizado em tempo real (enviada, entregue, lida, falha)
+- Cada empresa tem suas próprias credenciais Meta (WABA ID, Phone Number ID, token)
+- Webhook único roteia pelo `phone_number_id` para identificar a empresa correta
+
+### RF-12 (parcial) — Configurações da empresa — WhatsApp
+Tela `/configuracoes` acessível ao ADMIN da empresa:
+- Configurar credenciais WhatsApp (WABA ID, Phone Number ID, token Meta)
+- Toggle para ativar/desativar IA assistente no WhatsApp
+
+### RF-13 — IA assistente no WhatsApp
+Quando ativada, a IA responde automaticamente mensagens recebidas dos candidatos. O contexto enviado à IA inclui: dados da empresa, dados da vaga vinculada ao candidato, e as últimas 10 mensagens do histórico.
+
+**RF-13.1 — Modo de intervenção do RH**
+Na tela de conversa, o RH pode clicar em "Assumir conversa" para pausar a IA para aquele candidato específico e responder manualmente. "Retomar IA" devolve o controle à automação. O status (IA ativa / RH no controle) é visível na listagem de conversas.
+
+**RF-13.2 — Identificação da IA**
+A IA sempre se apresenta em nome da empresa (ex: "Olá, sou a assistente da Empresa X"). Nunca se identifica como IA nem como humano — responde como "assistente" da empresa.
+
+**RF-13.3 — Escopo de respostas**
+A IA pode responder sobre: dúvidas da vaga (salário, regime, localização), confirmação de recebimento de candidatura, agendamento de entrevista (data e horário), resultado do processo, e informações gerais da empresa. Se não souber responder, informa que o RH entrará em contato.
+
+**RF-13.4 — Consumo do limite**
+Cada resposta automática da IA consome 1 unidade do contador mensal de IA da empresa. Quando o limite é atingido, a IA para de responder automaticamente e o sistema notifica o RH.
+
+### RF-06 (parcial) — Notificação de entrevista via WhatsApp
+Ao salvar uma entrevista com status AGENDADA, o sistema pode disparar automaticamente uma mensagem WhatsApp para o candidato. Opt-in via checkbox no formulário de agendamento.
+
+---
+
+## Requisito não funcional
+
+### RNF-07 — WhatsApp (Meta Cloud API)
+- Webhook único `POST /api/whatsapp/webhook` para todas as empresas
+- Roteamento pelo `phone_number_id` do payload Meta
+- Webhook valida assinatura HMAC-SHA256 com `WHATSAPP_WEBHOOK_SECRET` antes de processar qualquer payload
+- Falha no envio não bloqueia outras operações — tratada de forma assíncrona
+- Número do candidato armazenado no formato E.164 (`+5511999999999`)
+- Tokens Meta armazenados criptografados no banco em produção — nunca expostos ao cliente
+- Respostas da IA assistente devem retornar em até 5 segundos
+- Política de retenção: apagar mensagens de candidatos inativos após 24 meses (LGPD)
+
+---
+
+## Regras de negócio
+
+### RN-06 — Janela de 24h
+A Meta só permite mensagens livres dentro de 24h após a última mensagem do candidato. Fora dessa janela, o campo de texto livre fica bloqueado e apenas templates ficam disponíveis. A IA também respeita essa restrição — usa template quando fora da janela.
+
+### RN-07 — Número obrigatório
+Se o candidato não tiver telefone cadastrado, o botão WhatsApp fica desabilitado com tooltip explicativo.
+
+### RN-08 — Notificação de entrevista é opt-in
+O envio automático de WhatsApp ao agendar entrevista é controlado por checkbox no formulário — não dispara sem confirmação do RH.
+
+### RN-11 — Webhook unificado
+O endpoint recebe mensagens de todas as empresas. Identifica a empresa pelo `phone_number_id` do payload, busca as credenciais correspondentes no banco e roteia a mensagem para o candidato correto dentro daquela empresa.
+
+### RN-13 — IA respeita intervenção do RH
+Quando o RH assume uma conversa (`ControleConversa.iaAtiva = false`), a IA não envia nenhuma resposta para aquele candidato, mesmo que receba mensagens. A IA só volta a responder após o RH clicar em "Retomar IA".
+
+---
+
+## Tela
+
+| Tela | Rota |
+|---|---|
+| Conversa WhatsApp do candidato | `/candidatos/[id]/mensagens` |
+
+---
+
+## Rotas de API
+
+| Rota | Método | Descrição |
+|---|---|---|
+| `/api/whatsapp/webhook` | GET | Verificação do webhook pela Meta |
+| `/api/whatsapp/webhook` | POST | Recebe mensagens e status updates de todas as empresas |
+| `/api/whatsapp/send` | POST | RH envia mensagem para candidato |
+| `/api/whatsapp/controle` | POST | RH assume ou retoma conversa (toggle IA) |
+
+---
+
+## Schema — modelos envolvidos
+
+### Campos novos em `Empresa`
+```prisma
+iaWhatsappAtivo     Boolean @default(false)  // toggle global da IA
+waPhoneNumberId     String?                   // credenciais Meta (criptografadas)
+waBusinessAccountId String?
+waAccessToken       String?
+```
+
+### Model `Mensagem`
+```prisma
+model Mensagem {
+  id           String          @id @default(cuid())
+  candidatoId  String
+  waMessageId  String?         @unique  // ID retornado pela Meta API
+  direcao      MensagemDirecao          // ENVIADA | RECEBIDA
+  conteudo     String
+  status       MensagemStatus  @default(ENVIADA)
+  tipo         MensagemTipo    @default(LIVRE)
+  templateId   String?                  // nome do template se tipo = TEMPLATE
+  geradaPorIA  Boolean         @default(false)
+  criadoEm     DateTime        @default(now())
+  atualizadoEm DateTime        @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+enum MensagemDirecao { ENVIADA   RECEBIDA }
+enum MensagemStatus  { ENVIADA   ENTREGUE   LIDA   FALHA }
+enum MensagemTipo    { LIVRE     TEMPLATE }
+```
+
+### Model `ControleConversa`
+```prisma
+// Estado de controle por candidato
+// iaAtiva = false → RH assumiu, IA não responde
+model ControleConversa {
+  id          String    @id @default(cuid())
+  candidatoId String    @unique
+  iaAtiva     Boolean   @default(true)
+  assumidoEm  DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+```
+
+### Campo novo em `Entrevista`
+```prisma
+notificarWhats Boolean @default(false)  // opt-in envio WhatsApp ao agendar
+```
+
+---
+
+## IA assistente — modelo e contexto
+
+| Função | Modelo | Variável de ambiente |
+|---|---|---|
+| Assistente WhatsApp | `deepseek/deepseek-chat` | `MODEL_ASSISTENTE_WHATS` |
+
+**Estrutura do prompt enviado à IA a cada mensagem recebida:**
+```
+Você é a assistente virtual de RH da empresa "{nome da empresa}".
+Responda sempre de forma cordial e profissional em nome da empresa.
+Nunca diga que é uma IA — apresente-se como "assistente da {empresa}".
+
+VAGA VINCULADA AO CANDIDATO:
+- Título, regime, localização, faixa salarial, requisitos
+
+HISTÓRICO DA CONVERSA (últimas 10 mensagens):
+[mensagens anteriores]
+
+MENSAGEM ATUAL DO CANDIDATO:
+"{mensagem recebida}"
+
+Responda de forma curta e objetiva. Se não souber responder,
+diga que vai verificar e que o RH entrará em contato.
+```
+
+---
+
+## Variáveis de ambiente
+
+```env
+# Webhook Meta (único para todas as empresas)
+WHATSAPP_WEBHOOK_SECRET="..."
+
+# IA assistente via OpenRouter
+MODEL_ASSISTENTE_WHATS="deepseek/deepseek-chat"
+
+# Credenciais Meta por empresa ficam no banco (tabela Empresa),
+# não em variáveis de ambiente
+```
+
+---
+
+## Feature futura relacionada
+
+**FF-01 — Embedded Signup**
+Substituir o cadastro manual de credenciais Meta por um flow oficial de Embedded Signup. O cliente clica em "Conectar WhatsApp", um popup Meta abre, faz login com Facebook, seleciona o número e autoriza o app. Credenciais retornam automaticamente via callback — o cliente não precisa copiar nenhuma string técnica.

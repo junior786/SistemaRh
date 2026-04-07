@@ -1,14 +1,31 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { definirContratadosDaVaga } from "@/lib/contratacao";
+import { registrarEventosTriagemLote, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 
-// GET /api/vagas/[id] — detalhe da vaga
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id } = await params;
+async function carregarEventosVaga(vagaId: string) {
+  try {
+    return await prisma.triagemEvento.findMany({
+      where: { vagaId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("TableDoesNotExist")
+      || message.includes("triagemevento")
+      || message.includes("TriagemEvento")
+    ) {
+      return [];
+    }
 
+    throw error;
+  }
+}
+
+async function carregarVagaComHistorico(id: string) {
   const vaga = await prisma.vaga.findUnique({
     where: { id },
     include: {
@@ -40,33 +57,65 @@ export async function GET(
   });
 
   if (!vaga) {
-    return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
+    return null;
+  }
+
+  const eventos = await carregarEventosVaga(id);
+
+  return { ...vaga, eventos };
+}
+
+// GET /api/vagas/[id]
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const vaga = await carregarVagaComHistorico(id);
+
+  if (!vaga) {
+    return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
   }
 
   return Response.json(vaga);
 }
 
-// PUT /api/vagas/[id] — atualizar vaga (marca triagens como desatualizadas - RN-03)
+// PUT /api/vagas/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, status, areas, requisitos, etapas, contratadoIds } = body;
+  const {
+    titulo,
+    area,
+    jobType,
+    regime,
+    modalidade,
+    localizacao,
+    cep,
+    salarioMin,
+    salarioMax,
+    descricao,
+    status,
+    areas,
+    requisitos,
+    etapas,
+    contratadoIds,
+  } = body;
 
   try {
     if (etapas !== undefined) {
       const triagensCount = await prisma.triagem.count({ where: { vagaId: id } });
       if (triagensCount > 0) {
         return Response.json(
-          { error: "Não é possível alterar as etapas de uma vaga que já possui candidatos vinculados." },
+          { error: "Nao e possivel alterar as etapas de uma vaga que ja possui candidatos vinculados." },
           { status: 409 },
         );
       }
     }
 
-    // Atualiza vaga
     await prisma.vaga.update({
       where: { id },
       data: {
@@ -85,74 +134,51 @@ export async function PUT(
     });
 
     if (contratadoIds !== undefined) {
-      const idsContratados = Array.isArray(contratadoIds)
-        ? Array.from(new Set(contratadoIds.filter((value): value is string => typeof value === "string" && value.length > 0)))
-        : [];
+      const ids = Array.isArray(contratadoIds) ? contratadoIds : [];
+      await definirContratadosDaVaga(id, ids);
 
-      const triagensValidas = await prisma.triagem.findMany({
-        where: {
-          vagaId: id,
-          candidatoId: { in: idsContratados },
-        },
-        select: { candidatoId: true },
+      const triagensFinalizadas = await prisma.triagem.findMany({
+        where: { vagaId: id, candidatoId: { in: ids } },
+        select: { id: true, candidatoId: true },
       });
 
-      const idsValidos = new Set(triagensValidas.map((triagem) => triagem.candidatoId));
-      if (idsValidos.size !== idsContratados.length) {
-        return Response.json(
-          { error: "So e permitido contratar candidatos vinculados a esta vaga." },
-          { status: 400 },
-        );
-      }
-
-      await prisma.$transaction([
-        prisma.candidato.updateMany({
-          where: {
-            vagaEmpregadoId: id,
-            id: { notIn: idsContratados },
+      await registrarEventosTriagemLote(
+        triagensFinalizadas.map((triagem) => ({
+          triagemId: triagem.id,
+          tipo: TRIAGEM_EVENTO_TIPO.VAGA_FINALIZADA,
+          descricao: "Vaga finalizada com o candidato marcado como contratado.",
+          origem: "RH",
+          metadados: {
+            vagaId: id,
+            candidatoId: triagem.candidatoId,
+            totalContratados: ids.length,
           },
-          data: {
-            statusEmprego: "DISPONIVEL",
-            vagaEmpregadoId: null,
-          },
-        }),
-        prisma.candidato.updateMany({
-          where: {
-            id: { in: idsContratados },
-          },
-          data: {
-            statusEmprego: "EMPREGADO",
-            vagaEmpregadoId: id,
-          },
-        }),
-      ]);
+        })),
+      );
     }
 
-    // Atualiza áreas se fornecidas
     if (areas) {
       await prisma.vagaArea.deleteMany({ where: { vagaId: id } });
       if (areas.length > 0) {
         await prisma.vagaArea.createMany({
-          data: areas.map((a: string) => ({ vagaId: id, nome: a })),
+          data: areas.map((nome: string) => ({ vagaId: id, nome })),
         });
       }
     }
 
-    // Se requisitos mudaram, atualiza-os e marca triagens como desatualizadas
     if (requisitos) {
       await prisma.requisito.deleteMany({ where: { vagaId: id } });
       if (requisitos.length > 0) {
         await prisma.requisito.createMany({
-          data: requisitos.map((r: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
+          data: requisitos.map((requisito: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
             vagaId: id,
-            descricao: r.descricao,
-            tipo: r.tipo,
-            tempoMeses: r.tempoMeses ?? null,
+            descricao: requisito.descricao,
+            tipo: requisito.tipo,
+            tempoMeses: requisito.tempoMeses ?? null,
           })),
         });
       }
 
-      // RN-03: marca triagens existentes como desatualizadas
       await prisma.triagem.updateMany({
         where: { vagaId: id, status: "CONCLUIDO" },
         data: { desatualizado: true },
@@ -173,19 +199,7 @@ export async function PUT(
       });
     }
 
-    // Retorna vaga atualizada com requisitos frescos
-    const vagaAtualizada = await prisma.vaga.findUnique({
-      where: { id },
-      include: {
-        areas: true,
-        requisitos: true,
-        etapas: { orderBy: { ordem: "asc" } },
-        empregados: {
-          select: { id: true, nome: true, email: true },
-        },
-      },
-    });
-
+    const vagaAtualizada = await carregarVagaComHistorico(id);
     return Response.json(vagaAtualizada);
   } catch (err) {
     console.error("Erro ao atualizar vaga:", err);

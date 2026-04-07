@@ -70,6 +70,7 @@
 
 - Prioridade: Critico
 - Esforco: Medio
+- Status: Em andamento
 - Dependencias: nenhuma
 - Objetivo:
   Garantir uma unica regra de verdade para contratacao do candidato, evitando conflito entre aprovacao de entrevista e fechamento manual da vaga.
@@ -82,11 +83,17 @@
   - decidir se contratacao acontece so no fechamento da vaga, so na entrevista final, ou nas duas com mesma regra
   - impedir contratacao duplicada ou ambigua
   - opcional: registrar data de contratacao no schema
+- Progresso atual:
+  - servico unificado de contratacao criado
+  - fechamento manual da vaga usa a mesma validacao
+  - aprovacao de entrevista usa a mesma validacao
+  - falta fechar regra de impacto nas outras triagens do candidato
 
 ### 2. Encerrar outras triagens do candidato contratado
 
 - Prioridade: Critico
 - Esforco: Medio
+- Status: Em andamento
 - Dependencias: 1. Unificar regra de contratacao
 - Objetivo:
   Ao contratar um candidato, encerrar ou bloquear processos paralelos dele em outras vagas segundo a regra de negocio definida.
@@ -97,11 +104,17 @@
 - Entregas:
   - definir se outras triagens viram `DISPENSADO`, `REPROVADO` ou bloqueadas
   - refletir isso nas telas de vaga e candidato
+- Progresso atual:
+  - outras triagens do candidato contratado agora sao encerradas automaticamente
+  - etapas pendentes/em andamento passam para `DISPENSADO`
+  - novas triagens para candidato ja empregado passaram a ser bloqueadas
+  - ainda falta refletir melhor esse encerramento nas telas com mensagem/status mais explicitos
 
 ### 3. Auditoria de eventos da triagem
 
 - Prioridade: Critico
 - Esforco: Alto
+- Status: Em andamento
 - Dependencias: 1. Unificar regra de contratacao
 - Objetivo:
   Registrar historico de operacoes importantes do funil.
@@ -115,11 +128,17 @@
   - novo modelo de evento/auditoria
   - logar vinculacao, remocao, mover etapa, dispensar etapa, reprovacao, contratacao, finalizacao da vaga
   - exibir historico no detalhe da triagem ou da vaga
+- Progresso atual:
+  - modelo `TriagemEvento` criado no Prisma
+  - vinculacao, analise, erro de analise, mover etapa, entrevista, contratacao e finalizacao da vaga passaram a gerar evento
+  - detalhe da vaga agora exibe atividade recente consolidada
+  - remocao da triagem agora preserva historico por snapshot no evento, sem depender da triagem continuar existindo
 
 ### 4. Completar operacao manual do pipeline
 
 - Prioridade: Importante
 - Esforco: Medio
+- Status: Concluido
 - Dependencias: 3. Auditoria de eventos da triagem
 - Objetivo:
   Fechar o conjunto de acoes manuais do RH sobre o candidato.
@@ -132,11 +151,16 @@
   - voltar para etapa anterior
   - reabrir etapa
   - bloquear acoes invalidas conforme status
+- Progresso atual:
+  - pular para etapa futura ja implementado
+  - reprovar manualmente, voltar etapa e reabrir etapa agora estao disponiveis na triagem
+  - backend passou a validar transicoes e registrar eventos das acoes manuais
 
 ### 5. Escalar sugestoes de candidatos
 
 - Prioridade: Importante
 - Esforco: Medio
+- Status: Em andamento
 - Dependencias: nenhuma
 - Objetivo:
   Parar de depender de carga parcial de candidatos no cliente para o painel de sugestoes.
@@ -149,11 +173,17 @@
   - endpoint dedicado para recomendacao
   - paginacao real
   - ordenacao por score compartilhado no backend
+- Progresso atual:
+  - heuristica e shortlist ja foram movidos para o backend da pre-triagem
+  - endpoint dedicado de sugestoes com paginação e ranking server-side implementado
+  - painel de sugeridos da triagem agora consome o ranking paginado do backend
+  - ainda falta remover a dependencia da carga parcial local do modal para chips de filtro
 
 ### 6. Padronizar feedback visual e erros
 
 - Prioridade: Critico
 - Esforco: Baixo
+- Status: Pendente
 - Dependencias: nenhuma
 - Objetivo:
   Remover `alert` e respostas cruas nos fluxos principais.
@@ -171,6 +201,7 @@
 
 - Prioridade: Importante
 - Esforco: Medio
+- Status: Em andamento
 - Dependencias: 3. Auditoria de eventos da triagem
 - Objetivo:
   Transformar o dashboard em ferramenta gerencial de conversao do processo.
@@ -182,11 +213,15 @@
   - tempo medio por etapa
   - gargalos por vaga
   - skills mais presentes em contratados
+- Progresso atual:
+  - dashboard visual e graficos ja implementados
+  - ainda faltam metricas de conversao e tempo por etapa
 
 ### 8. Exibir melhor vinculo empregaticio do candidato
 
 - Prioridade: Importante
 - Esforco: Baixo
+- Status: Parcial
 - Dependencias: 1. Unificar regra de contratacao
 - Objetivo:
   Tornar o perfil do candidato mais claro para o RH.
@@ -197,11 +232,15 @@
   - mostrar vaga contratante com mais destaque
   - opcional: data da contratacao
   - opcional: situacao das outras candidaturas
+- Progresso atual:
+  - vaga contratante ja aparece no perfil do candidato
+  - ainda faltam data da contratacao e contexto das outras candidaturas
 
 ### 9. Limpeza de encoding e textos antigos
 
 - Prioridade: Nice to Have
 - Esforco: Medio
+- Status: Pendente
 - Dependencias: nenhuma
 - Objetivo:
   Corrigir labels e textos com caracteres quebrados.
@@ -216,6 +255,7 @@
 
 - Prioridade: Importante
 - Esforco: Alto
+- Status: Pendente
 - Dependencias: 1, 2, 3 e 4
 - Objetivo:
   Cobrir os fluxos mais sensiveis do sistema com testes.
