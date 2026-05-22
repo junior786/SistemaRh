@@ -1,0 +1,230 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link [ref=e252] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link [ref=e253] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link [ref=e254] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link [ref=e255] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link [ref=e256] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link [ref=e257] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading [level=1] [ref=e258]: RH Selector
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox [ref=e259]:
+              - /placeholder: Buscar...
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button [ref=e260] [cursor=pointer]:
+            - img
+          - link [ref=e261] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - heading [level=2] [ref=e262]:
+              - img [ref=e73]
+              - text: Calendário de Entrevistas
+            - paragraph [ref=e75]: Visualize e gerencie todas as entrevistas agendadas
+          - generic [ref=e70]:
+            - generic [ref=e77]:
+              - paragraph [ref=e78]: "0"
+              - paragraph [ref=e79]: Hoje
+            - generic [ref=e81]:
+              - paragraph [ref=e82]: "1"
+              - paragraph [ref=e83]: Próximos 7 dias
+            - generic [ref=e85]:
+              - paragraph [ref=e86]: "1"
+              - paragraph [ref=e87]: Agendadas
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: "1"
+              - paragraph [ref=e91]: Total no período
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - button [ref=e97] [cursor=pointer]:
+                  - img
+                - button [ref=e263] [cursor=pointer]: Hoje
+                - button [ref=e99] [cursor=pointer]:
+                  - img
+                - heading [level=2] [ref=e264]: abril 2026
+              - generic [ref=e101]:
+                - button [ref=e265] [cursor=pointer]: Mês
+                - button [ref=e266] [cursor=pointer]: Semana
+                - button [ref=e267] [cursor=pointer]: Dia
+                - button [ref=e268] [cursor=pointer]: Lista
+            - table [ref=e269]:
+              - row [ref=e270]:
+                - columnheader [ref=e271]: domingo
+                - columnheader [ref=e272]: segunda
+                - columnheader [ref=e273]: terça
+                - columnheader [ref=e274]: quarta
+                - columnheader [ref=e275]: quinta
+                - columnheader [ref=e276]: sexta
+                - columnheader [ref=e277]: sábado
+              - rowgroup [ref=e122]:
+                - row [ref=e278]:
+                  - generic [ref=e132]:
+                    - cell [ref=e279]:
+                      - button [ref=e280] [cursor=pointer]: "29"
+                    - cell [ref=e281]:
+                      - button [ref=e282] [cursor=pointer]: "30"
+                    - cell [ref=e283]:
+                      - button [ref=e284] [cursor=pointer]: "31"
+                    - cell [ref=e285]:
+                      - button [ref=e286] [cursor=pointer]: "01"
+                    - cell [ref=e287]:
+                      - button [ref=e288] [cursor=pointer]: "02"
+                    - cell [ref=e289]:
+                      - button [ref=e290] [cursor=pointer]: "03"
+                    - cell [ref=e291]:
+                      - button [ref=e292] [cursor=pointer]: "04"
+              - rowgroup [ref=e147]:
+                - row [ref=e293]:
+                  - generic [ref=e157]:
+                    - cell [ref=e294]:
+                      - button [ref=e295] [cursor=pointer]: "05"
+                    - cell [ref=e296]:
+                      - button [ref=e297] [cursor=pointer]: "06"
+                    - cell [ref=e298]:
+                      - button [ref=e299] [cursor=pointer]: "07"
+                    - cell [ref=e300]:
+                      - button [ref=e301] [cursor=pointer]: "08"
+                    - cell [ref=e302]:
+                      - button [ref=e303] [cursor=pointer]: "09"
+                    - cell [ref=e304]:
+                      - button [ref=e305] [cursor=pointer]: "10"
+                    - cell [ref=e306]:
+                      - button [ref=e307] [cursor=pointer]: "11"
+              - rowgroup [ref=e172]:
+                - row [ref=e308]:
+                  - generic [ref=e182]:
+                    - cell [ref=e309]:
+                      - button [ref=e310] [cursor=pointer]: "12"
+                    - cell [ref=e311]:
+                      - button [ref=e312] [cursor=pointer]: "13"
+                    - cell [ref=e313]:
+                      - button [ref=e314] [cursor=pointer]: "14"
+                    - cell [ref=e315]:
+                      - button [ref=e316] [cursor=pointer]: "15"
+                    - cell [ref=e317]:
+                      - button [ref=e318] [cursor=pointer]: "16"
+                    - cell [ref=e319]:
+                      - button [ref=e320] [cursor=pointer]: "17"
+                    - cell [ref=e321]:
+                      - button [ref=e322] [cursor=pointer]: "18"
+                  - generic [ref=e323] [cursor=pointer]: Ricardo Fracassi — Vaga Kenai
+              - rowgroup [ref=e202]:
+                - row [ref=e324]:
+                  - generic [ref=e212]:
+                    - cell [ref=e325]:
+                      - button [ref=e326] [cursor=pointer]: "19"
+                    - cell [ref=e327]:
+                      - button [ref=e328] [cursor=pointer]: "20"
+                    - cell [ref=e329]:
+                      - button [ref=e330] [cursor=pointer]: "21"
+                    - cell [ref=e331]:
+                      - button [ref=e332] [cursor=pointer]: "22"
+                    - cell [ref=e333]:
+                      - button [ref=e334] [cursor=pointer]: "23"
+                    - cell [ref=e335]:
+                      - button [ref=e336] [cursor=pointer]: "24"
+                    - cell [ref=e337]:
+                      - button [ref=e338] [cursor=pointer]: "25"
+              - rowgroup [ref=e227]:
+                - row [ref=e339]:
+                  - generic [ref=e237]:
+                    - cell [ref=e340]:
+                      - button [ref=e341] [cursor=pointer]: "26"
+                    - cell [ref=e342]:
+                      - button [ref=e343] [cursor=pointer]: "27"
+                    - cell [ref=e344]:
+                      - button [ref=e345] [cursor=pointer]: "28"
+                    - cell [ref=e346]:
+                      - button [ref=e347] [cursor=pointer]: "29"
+                    - cell [ref=e348]:
+                      - button [ref=e349] [cursor=pointer]: "30"
+                    - cell [ref=e350]:
+                      - button [ref=e351] [cursor=pointer]: "01"
+                    - cell [ref=e352]:
+                      - button [ref=e353] [cursor=pointer]: "02"
+  - region "Notifications alt+T"
+  - alert [ref=e71]
+  - dialog "Detalhes da Entrevista" [ref=e357]:
+    - heading "Detalhes da Entrevista" [level=2] [ref=e359]:
+      - img [ref=e360]
+      - text: Detalhes da Entrevista
+    - generic [ref=e362]:
+      - generic [ref=e363]:
+        - generic [ref=e364]:
+          - img [ref=e365]
+          - generic [ref=e368]: 16/04/2026 às 14:47
+        - generic [ref=e370]: Agendada
+      - generic [ref=e371]:
+        - generic [ref=e372]:
+          - img [ref=e373]
+          - text: Candidato
+        - paragraph [ref=e376]: Ricardo Fracassi
+        - generic [ref=e377]:
+          - generic [ref=e378]: Desenvolvedor
+          - generic [ref=e379]: ricardo.jr1999@hotmail.com
+      - generic [ref=e380]:
+        - generic [ref=e381]:
+          - img [ref=e382]
+          - text: Vaga
+        - paragraph [ref=e385]: Vaga Kenai
+        - text: Residencial
+      - generic [ref=e386]:
+        - img [ref=e387]
+        - generic [ref=e390]: "Entrevistador:"
+        - generic [ref=e391]: teste
+      - link "Ver todas as entrevistas" [active] [ref=e393] [cursor=pointer]:
+        - /url: /vagas/cmnootwf800006sun58yew9u6/triagem/cmnooug2w00046sunfg1l1rgs/entrevistas
+        - text: Ver todas as entrevistas
+        - img [ref=e394]
+    - button "Close" [ref=e398] [cursor=pointer]:
+      - img
+      - generic [ref=e399]: Close

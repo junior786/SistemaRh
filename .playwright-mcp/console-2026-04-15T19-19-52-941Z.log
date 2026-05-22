@@ -1,0 +1,12 @@
+[      23ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/vagas/cmnootwf800006sun58yew9u6/triagem:0
+[      46ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/0k6w.5-7vvo.b.js:0
+[      46ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/17z2.nte~xpvu.js:0
+[     101ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/0k6w.5-7vvo.b.js from module 64893
+    at http://localhost:3000/_next/static/chunks/turbopack-0aoz8grfttx_8.js:1:6057
+[  128559ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  128630ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  128835ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  128985ms] [LOG] [Fast Refresh] done in 250ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  132761ms] [WARNING] Your app (or one of its dependencies) is using an outdated JSX transform. Update to the modern JSX transform for faster performance: https://react.dev/link/new-jsx-transform @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  135024ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  135025ms] [LOG] [Fast Refresh] done in 104ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431

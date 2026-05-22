@@ -1,0 +1,20 @@
+[    3292ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/0pmesbo4x6vs3.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/vagas/cmnootwf800006sun58yew9u6:0
+[   92952ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/0k6w.5-7vvo.b.js:0
+[   92952ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/17z2.nte~xpvu.js:0
+[   92993ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/0k6w.5-7vvo.b.js from module 64893
+    at http://localhost:3000/_next/static/chunks/turbopack-0aoz8grfttx_8.js:1:6057
+[   94354ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/vagas/cmnootwf800006sun58yew9u6/triagem?:0
+[   94375ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/0k6w.5-7vvo.b.js:0
+[   94375ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/17z2.nte~xpvu.js:0
+[   94421ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/0k6w.5-7vvo.b.js from module 64893
+    at http://localhost:3000/_next/static/chunks/turbopack-0aoz8grfttx_8.js:1:6057
+[   94920ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/vagas/cmnootwf800006sun58yew9u6/triagem?:0
+[   94939ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/0k6w.5-7vvo.b.js:0
+[   94939ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/17z2.nte~xpvu.js:0
+[   94975ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/0k6w.5-7vvo.b.js from module 64893
+    at http://localhost:3000/_next/static/chunks/turbopack-0aoz8grfttx_8.js:1:6057
+[   95407ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/vagas/cmnootwf800006sun58yew9u6/triagem?:0
+[   95423ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/0k6w.5-7vvo.b.js:0
+[   95424ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/chunks/17z2.nte~xpvu.js:0
+[   95461ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/0k6w.5-7vvo.b.js from module 64893
+    at http://localhost:3000/_next/static/chunks/turbopack-0aoz8grfttx_8.js:1:6057

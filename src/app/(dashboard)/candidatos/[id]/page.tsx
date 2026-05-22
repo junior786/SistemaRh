@@ -9,6 +9,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizePhoneBR } from "@/lib/phone";
+import { toast } from "sonner";
 import {
   Mail,
   Phone,
@@ -21,6 +23,9 @@ import {
   AlertTriangle,
   StickyNote,
   Save,
+  MessageCircle,
+  Clock3,
+  ArrowRight,
 } from "lucide-react";
 
 interface Skill {
@@ -52,7 +57,8 @@ interface Triagem {
   score: number | null;
   status: string;
   desatualizado: boolean;
-  vaga: { id: string; titulo: string; area: string };
+  vaga: { id: string; titulo: string; area: string; status: string };
+  eventos?: { tipo: string; descricao: string }[];
 }
 
 interface Restricao {
@@ -73,12 +79,30 @@ interface Candidato {
   pretensaoSalarial: number | null;
   observacao: string | null;
   statusEmprego: string;
+  contratadoEm: string | null;
   vagaEmpregado: { id: string; titulo: string; area: string } | null;
   skills: Skill[];
   experiencias: Experiencia[];
   formacoes: Formacao[];
   triagens: Triagem[];
   restricoes: Restricao[];
+  timeline: {
+    id: string;
+    tipo: "OBSERVACAO" | "MENSAGEM" | "ENTREVISTA" | "EVENTO_TRIAGEM";
+    titulo: string;
+    descricao: string;
+    createdAt: string;
+    href: string | null;
+    metadata: {
+      direcao?: string;
+      status?: string;
+      geradaPorIA?: boolean;
+      resultado?: string | null;
+      origem?: string;
+      vagaId?: string;
+      vagaTitulo?: string;
+    } | null;
+  }[];
 }
 
 const statusEmpregoMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
@@ -112,6 +136,38 @@ function calcTempo(inicio: string, fim: string | null): string {
   return `${anos} ano${anos > 1 ? "s" : ""} e ${m} meses`;
 }
 
+function formatDateTime(d: string) {
+  return new Date(d).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function timelineLabel(tipo: Candidato["timeline"][number]["tipo"]) {
+  if (tipo === "MENSAGEM") return "Mensagem";
+  if (tipo === "ENTREVISTA") return "Entrevista";
+  if (tipo === "EVENTO_TRIAGEM") return "Triagem";
+  return "Observacao";
+}
+
+function timelineBadgeClass(tipo: Candidato["timeline"][number]["tipo"]) {
+  if (tipo === "MENSAGEM") return "border-sky-500/30 bg-sky-500/10 text-sky-700";
+  if (tipo === "ENTREVISTA") return "border-amber-500/30 bg-amber-500/10 text-amber-700";
+  if (tipo === "EVENTO_TRIAGEM") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700";
+  return "border-primary/30 bg-primary/10 text-primary";
+}
+
+function triagemStatusLabel(triagem: Triagem) {
+  if (triagem.status === "PENDENTE") return "Analise pendente";
+  if (triagem.status === "PROCESSANDO") return "Analisando";
+  if (triagem.status === "ERRO") return "Erro na analise";
+  if (triagem.score != null) return `${triagem.score}% de compatibilidade`;
+  return triagem.status;
+}
+
 export default function PerfilCandidatoPage() {
   const params = useParams();
   const candidatoId = params.id as string;
@@ -140,10 +196,36 @@ export default function PerfilCandidatoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ observacao: obsEdit || null }),
       });
-      setCandidato((c) => c ? { ...c, observacao: obsEdit || null } : c);
+      setCandidato((c) => {
+        if (!c) return c;
+
+        const timelineSemObservacao = c.timeline.filter((item) => item.tipo !== "OBSERVACAO");
+        const timelineAtualizada = obsEdit
+          ? [
+              {
+                id: `observacao-${c.id}`,
+                tipo: "OBSERVACAO" as const,
+                titulo: "Observacao do RH",
+                descricao: obsEdit,
+                createdAt: new Date().toISOString(),
+                href: `/candidatos/${c.id}`,
+                metadata: null,
+              },
+              ...timelineSemObservacao,
+            ]
+          : timelineSemObservacao;
+
+        return {
+          ...c,
+          observacao: obsEdit || null,
+          timeline: timelineAtualizada.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ),
+        };
+      });
       setObsEditing(false);
     } catch {
-      alert("Erro ao salvar observação");
+      toast.error("Erro ao salvar observação");
     } finally {
       setObsSaving(false);
     }
@@ -151,6 +233,12 @@ export default function PerfilCandidatoPage() {
 
   if (loading) return <div className="h-64 animate-pulse rounded-lg bg-muted" />;
   if (!candidato) return <p className="text-muted-foreground">Candidato não encontrado.</p>;
+
+  const mensagensCount = candidato.timeline.filter((item) => item.tipo === "MENSAGEM").length;
+  const entrevistasCount = candidato.timeline.filter((item) => item.tipo === "ENTREVISTA").length;
+  const triagensOperacionais = candidato.triagens.filter((triagem) =>
+    !triagem.eventos?.some((evento) => evento.tipo === "OUTRAS_TRIAGENS_ENCERRADAS"));
+  const ultimaAtividade = candidato.timeline[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -169,6 +257,11 @@ export default function PerfilCandidatoPage() {
                 className="text-xs text-primary hover:underline"
               >
                 Contratado em {candidato.vagaEmpregado.titulo}
+                {candidato.contratadoEm && (
+                  <span className="text-muted-foreground ml-1">
+                    ({new Date(candidato.contratadoEm).toLocaleDateString("pt-BR")})
+                  </span>
+                )}
               </Link>
             )}
           </div>
@@ -178,7 +271,7 @@ export default function PerfilCandidatoPage() {
             </span>
             {candidato.telefone && (
               <span className="flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" /> {candidato.telefone}
+                <Phone className="h-3.5 w-3.5" /> {normalizePhoneBR(candidato.telefone)}
               </span>
             )}
             {candidato.cidade && (
@@ -202,10 +295,130 @@ export default function PerfilCandidatoPage() {
             )}
           </div>
         </div>
-        <Link href={`/candidatos/${candidatoId}/editar`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-          Editar
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/candidatos/${candidatoId}/mensagens`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5", !candidato.telefone && "pointer-events-none opacity-50")}
+            title={!candidato.telefone ? "Candidato sem telefone cadastrado" : "Conversa WhatsApp"}
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
+          </Link>
+          <Link href={`/candidatos/${candidatoId}/editar`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Editar
+          </Link>
+        </div>
       </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h3 className="font-semibold">Centro operacional</h3>
+              <p className="text-sm text-muted-foreground">
+                Mensagens, entrevistas e vagas em andamento reunidas em um ponto de acao.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/candidatos/${candidatoId}/mensagens`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5", !candidato.telefone && "pointer-events-none opacity-50")}
+                title={!candidato.telefone ? "Candidato sem telefone cadastrado" : "Conversa WhatsApp"}
+              >
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
+              </Link>
+              <Link
+                href={`/candidatos/${candidatoId}/editar`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                Editar cadastro
+              </Link>
+            </div>
+          </div>
+
+          <div className="mb-4 grid gap-3 md:grid-cols-4">
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Mensagens</p>
+              <p className="mt-2 text-2xl font-semibold">{mensagensCount}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Entrevistas</p>
+              <p className="mt-2 text-2xl font-semibold">{entrevistasCount}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Triagens ativas</p>
+              <p className="mt-2 text-2xl font-semibold">{triagensOperacionais.length}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Ultima atividade</p>
+              <p className="mt-2 text-sm font-medium">
+                {ultimaAtividade ? timelineLabel(ultimaAtividade.tipo) : "Sem historico"}
+              </p>
+              {ultimaAtividade && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatDateTime(ultimaAtividade.createdAt)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {triagensOperacionais.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Nenhuma vaga ativa vinculada no momento.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {triagensOperacionais.map((triagem) => (
+                <div key={`operacao-${triagem.id}`} className="rounded-lg border p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{triagem.vaga.titulo}</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {triagem.vaga.area}
+                        </Badge>
+                        {triagem.desatualizado && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Desatualizado
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {triagemStatusLabel(triagem)}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={`/vagas/${triagem.vaga.id}/triagem`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+                      >
+                        <Briefcase className="h-4 w-4" />
+                        Abrir triagem
+                      </Link>
+                      <Link
+                        href={`/vagas/${triagem.vaga.id}/triagem/${candidato.id}/entrevistas`}
+                        className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Agendar entrevista
+                      </Link>
+                      <Link
+                        href={`/vagas/${triagem.vaga.id}/entrevistas`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+                      >
+                        Agenda da vaga
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Skills */}
       {candidato.skills.length > 0 && (
@@ -307,6 +520,83 @@ export default function PerfilCandidatoPage() {
         </CardContent>
       </Card>
 
+      {candidato.timeline.length > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Historico unificado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Mensagens, triagens, entrevistas e observacoes do RH em uma unica linha do tempo.
+                </p>
+              </div>
+              <Badge variant="outline">{candidato.timeline.length} itens</Badge>
+            </div>
+
+            <div className="space-y-4">
+              {candidato.timeline.map((item) => (
+                <div key={item.id} className="flex gap-3 rounded-lg border p-4">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Clock3 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className={cn("text-[10px]", timelineBadgeClass(item.tipo))}>
+                        {timelineLabel(item.tipo)}
+                      </Badge>
+                      <p className="text-sm font-medium">{item.titulo}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(item.createdAt)}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {item.descricao}
+                    </p>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {item.metadata?.status && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {item.metadata.status}
+                        </Badge>
+                      )}
+                      {item.metadata?.resultado && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Resultado: {item.metadata.resultado}
+                        </Badge>
+                      )}
+                      {item.metadata?.direcao && (
+                        <Badge variant="outline" className="text-[10px]">
+                          {item.metadata.direcao === "RECEBIDA" ? "Recebida" : "Enviada"}
+                        </Badge>
+                      )}
+                      {item.metadata?.geradaPorIA && (
+                        <Badge variant="outline" className="text-[10px]">
+                          IA
+                        </Badge>
+                      )}
+                      {item.metadata?.vagaTitulo && (
+                        <span className="text-xs text-muted-foreground">
+                          {item.metadata.vagaTitulo}
+                        </span>
+                      )}
+                    </div>
+
+                    {item.href && (
+                      <div className="mt-2">
+                        <Link href={item.href} className="text-xs text-primary hover:underline">
+                          Abrir contexto
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Experiências */}
         <Card>
@@ -379,42 +669,76 @@ export default function PerfilCandidatoPage() {
               Vagas vinculadas ({candidato.triagens.length})
             </h3>
             <div className="space-y-2">
-              {candidato.triagens.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/vagas/${t.vaga.id}/triagem`}
-                  className="flex items-center justify-between rounded-md border px-4 py-3 hover:bg-muted/50"
-                >
-                  <div>
-                    <p className="font-medium">{t.vaga.titulo}</p>
-                    <p className="text-xs text-muted-foreground">{t.vaga.area}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {t.score != null ? (
-                      <span
-                        className={`text-lg font-bold ${
-                          t.score >= 70
-                            ? "text-success"
-                            : t.score >= 40
-                              ? "text-warning"
-                              : "text-destructive"
-                        }`}
-                      >
-                        {t.score}%
-                      </span>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        Pendente
-                      </Badge>
-                    )}
-                    {t.desatualizado && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Desatualizado
-                      </Badge>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              {candidato.triagens.map((t) => {
+                const dispensadoPorContratacao = t.eventos?.some(
+                  (e) => e.tipo === "OUTRAS_TRIAGENS_ENCERRADAS",
+                );
+                return (
+                  <Link
+                    key={t.id}
+                    href={`/vagas/${t.vaga.id}/triagem`}
+                    className="flex items-center justify-between rounded-md border px-4 py-3 hover:bg-muted/50"
+                  >
+                    <div>
+                      <p className="font-medium">{t.vaga.titulo}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground">{t.vaga.area}</span>
+                        {dispensadoPorContratacao && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Encerrada — contratado em outra vaga
+                          </Badge>
+                        )}
+                        {!dispensadoPorContratacao && t.status === "CONCLUIDO" && t.vaga.status === "FINALIZADA" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Vaga finalizada
+                          </Badge>
+                        )}
+                        {t.status === "PENDENTE" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Análise pendente
+                          </Badge>
+                        )}
+                        {t.status === "PROCESSANDO" && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Analisando...
+                          </Badge>
+                        )}
+                        {t.status === "ERRO" && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Erro na análise
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {t.score != null ? (
+                        <span
+                          className={`text-lg font-bold ${
+                            t.score >= 70
+                              ? "text-success"
+                              : t.score >= 40
+                                ? "text-warning"
+                                : "text-destructive"
+                          }`}
+                        >
+                          {t.score}%
+                        </span>
+                      ) : (
+                        !dispensadoPorContratacao && t.status !== "PENDENTE" && t.status !== "PROCESSANDO" && t.status !== "ERRO" && (
+                          <Badge variant="outline" className="text-xs">
+                            Sem score
+                          </Badge>
+                        )
+                      )}
+                      {t.desatualizado && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Desatualizado
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

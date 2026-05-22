@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { Fragment, useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -107,6 +107,16 @@ interface CandidatoSugerido extends CandidatoCompleto {
   localOk: boolean | null;
   areaOk: boolean | null;
   jobTypeOk: boolean | null;
+  motivosMatch: string[];
+  motivosAtencao: string[];
+  scoreDetalhado: {
+    id: string;
+    label: string;
+    pontos: number;
+    maximo: number;
+    status: "positivo" | "parcial" | "negativo" | "neutro";
+    detalhe: string;
+  }[];
 }
 
 interface Requisito {
@@ -178,7 +188,8 @@ export default function TriagemPage() {
 
   // Painel de sugeridos
   const [vaga, setVaga] = useState<VagaDetalhe | null>(null);
-  const [todosCandidatos, setTodosCandidatos] = useState<CandidatoCompleto[]>([]);
+  const [filtroTipos, setFiltroTipos] = useState<string[]>([]);
+  const [filtroCidades, setFiltroCidades] = useState<string[]>([]);
   const [loadingSugeridos, setLoadingSugeridos] = useState(true);
   const [buscaSugerido, setBuscaSugerido] = useState("");
   const [sugeridos, setSugeridos] = useState<CandidatoSugerido[]>([]);
@@ -186,6 +197,7 @@ export default function TriagemPage() {
   const [sugestoesTotal, setSugestoesTotal] = useState(0);
   const [sugestoesTotalPages, setSugestoesTotalPages] = useState(1);
   const [origemSugestoes, setOrigemSugestoes] = useState<"PRE_TRIAGEM" | "HEURISTICA">("HEURISTICA");
+  const [sugestaoExpandidaId, setSugestaoExpandidaId] = useState<string | null>(null);
   const [vinculando, setVinculando] = useState<string | null>(null);
   const [movendoTriagemId, setMovendoTriagemId] = useState<string | null>(null);
   const [triagemParaMover, setTriagemParaMover] = useState<Triagem | null>(null);
@@ -228,14 +240,12 @@ export default function TriagemPage() {
   useEffect(() => {
     Promise.all([
       fetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
-      fetch("/api/candidatos?page=1&pageSize=100&statusEmprego=DISPONIVEL").then((r) => r.json()),
+      fetch("/api/candidatos/filtros").then((r) => r.json()),
     ])
-      .then(([vagaData, candidatosData]) => {
+      .then(([vagaData, filtrosData]) => {
         setVaga(vagaData);
-        setTodosCandidatos(Array.isArray(candidatosData?.items) ? candidatosData.items : []);
-
-        // Carrega IDs da pré-triagem IA salvos no banco
-        void vagaData;
+        setFiltroTipos(Array.isArray(filtrosData?.tipos) ? filtrosData.tipos : []);
+        setFiltroCidades(Array.isArray(filtrosData?.cidades) ? filtrosData.cidades : []);
       })
       .catch(console.error)
       .finally(() => setLoadingSugeridos(false));
@@ -381,18 +391,9 @@ export default function TriagemPage() {
     return modalCandidatos.filter((c) => !idsVinculados.has(c.id));
   }, [modalCandidatos, triagens]);
 
-  // Valores únicos para chips de filtro
-  const tiposUnicos = useMemo(() => {
-    const set = new Set<string>();
-    todosCandidatos.forEach((c) => { if (c.jobType) set.add(c.jobType); });
-    return Array.from(set).sort();
-  }, [todosCandidatos]);
-
-  const cidadesUnicas = useMemo(() => {
-    const set = new Set<string>();
-    todosCandidatos.forEach((c) => { if (c.cidade) set.add(c.cidade); });
-    return Array.from(set).sort();
-  }, [todosCandidatos]);
+  // Valores únicos para chips de filtro (vindos do endpoint dedicado)
+  const tiposUnicos = filtroTipos;
+  const cidadesUnicas = filtroCidades;
 
   // ── Ações ──
 
@@ -448,7 +449,7 @@ export default function TriagemPage() {
       toast.success("Candidato movido de etapa.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Nao foi possivel mover o candidato.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível mover o candidato.");
     } finally {
       setMovendoTriagemId(null);
     }
@@ -475,7 +476,7 @@ export default function TriagemPage() {
       toast.success("Candidato retornado para a etapa anterior.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Nao foi possivel voltar a etapa.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível voltar a etapa.");
     } finally {
       setVoltandoTriagemId(null);
     }
@@ -503,7 +504,7 @@ export default function TriagemPage() {
       toast.success("Etapa reaberta com sucesso.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Nao foi possivel reabrir a etapa.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível reabrir a etapa.");
     } finally {
       setReabrindoTriagemId(null);
     }
@@ -530,7 +531,7 @@ export default function TriagemPage() {
       toast.success("Candidato reprovado na etapa atual.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Nao foi possivel reprovar a etapa.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível reprovar a etapa.");
     } finally {
       setReprovandoTriagemId(null);
     }
@@ -552,7 +553,7 @@ export default function TriagemPage() {
       toast.success("Candidato removido da triagem.");
     } catch (error) {
       console.error(error);
-      alert("Não foi possível remover o candidato da triagem.");
+      toast.error("Não foi possível remover o candidato da triagem.");
     } finally {
       setRemovendoTriagemId(null);
     }
@@ -938,11 +939,40 @@ export default function TriagemPage() {
                 </TableRow>
               ) : triagensFiltradas.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    Nenhum candidato vinculado ainda. Veja as sugestões abaixo.
+                  <TableCell colSpan={6} className="py-8">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Nenhum candidato vinculado ainda.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Rode a pre-triagem ou vincule manualmente um candidato para iniciar o pipeline.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={preTriagemLoading}
+                          onClick={() => void preTriagemIA()}
+                        >
+                          {preTriagemLoading ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Buscando...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Rodar pre-triagem
+                            </>
+                          )}
+                        </Button>
+                        <Button type="button" size="sm" onClick={() => setModalOpen(true)}>
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Vincular manualmente
+                        </Button>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -963,15 +993,15 @@ export default function TriagemPage() {
                   const podeReprovar = etapaAtual
                     ? ["EM_ANDAMENTO", "PENDENTE"].includes(etapaAtual.status)
                     : false;
+                  const temEtapaEntrevista = t.etapas.some((etapa) => etapa.vagaEtapa.tipo === "ENTREVISTA");
                   let checklist: ChecklistItem[] = [];
                   if (t.checklist) {
                     try { checklist = JSON.parse(t.checklist); } catch { /* ignore */ }
                   }
 
                   return (
-                    <>
+                    <Fragment key={t.id}>
                       <TableRow
-                        key={t.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setExpandedId(isExpanded ? null : t.id)}
                       >
@@ -1107,14 +1137,24 @@ export default function TriagemPage() {
                                 Reprovar
                               </Button>
                             )}
-                            {t.status === "CONCLUIDO" && (
+                            {temEtapaEntrevista && (
+                              <Link
+                                href={`/vagas/${vagaId}/triagem/${t.candidato.id}/entrevistas`}
+                                onClick={(e) => e.stopPropagation()}
+                                className={cn(buttonVariants({ size: "sm" }), "gap-1 text-xs")}
+                              >
+                                <Calendar className="h-3 w-3" />
+                                Agendar entrevista
+                              </Link>
+                            )}
+                            {temEtapaEntrevista && (
                               <Link
                                 href={`/vagas/${vagaId}/triagem/${t.candidato.id}/entrevistas`}
                                 onClick={(e) => e.stopPropagation()}
                                 className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1 text-xs")}
                               >
                                 <Calendar className="h-3 w-3" />
-                                Entrevistas
+                                Ver entrevistas
                               </Link>
                             )}
                             <Button
@@ -1138,7 +1178,7 @@ export default function TriagemPage() {
                         </TableCell>
                       </TableRow>
                       {isExpanded && t.status === "CONCLUIDO" && (
-                        <TableRow key={`${t.id}-detail`}>
+                        <TableRow>
                           <TableCell colSpan={6} className="bg-muted/30 p-4">
                             <div className="space-y-3">
                               {t.etapas.length > 0 && (
@@ -1186,7 +1226,7 @@ export default function TriagemPage() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })
               )}
@@ -1243,6 +1283,31 @@ export default function TriagemPage() {
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Candidatos precisam ter skills que correspondam aos requisitos da vaga
               </p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={preTriagemLoading}
+                  onClick={() => void preTriagemIA()}
+                >
+                  {preTriagemLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Buscando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Tentar pre-triagem IA
+                    </>
+                  )}
+                </Button>
+                <Button type="button" size="sm" onClick={() => setModalOpen(true)}>
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Adicionar candidato manualmente
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -1250,6 +1315,7 @@ export default function TriagemPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sugeridos.map((c) => {
               const isVinculando = vinculando === c.id;
+              const sugestaoExpandida = sugestaoExpandidaId === c.id;
 
               return (
                 <Card
@@ -1305,6 +1371,74 @@ export default function TriagemPage() {
                         <div className={cn("flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px]", c.localOk ? "bg-success/5 text-success" : "bg-muted text-muted-foreground")}>
                           <MapPin className="h-3 w-3" />
                           {c.localOk ? "Região" : "Distante"}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-3 space-y-2 rounded-lg border bg-muted/30 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Por que foi sugerido
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setSugestaoExpandidaId((current) => current === c.id ? null : c.id)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                        >
+                          {sugestaoExpandida ? "Menos detalhes" : "Ver score"}
+                          {sugestaoExpandida ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {c.motivosMatch.slice(0, 3).map((motivo) => (
+                          <Badge key={motivo} variant="outline" className="border-success/30 bg-success/5 text-[10px] text-success">
+                            {motivo}
+                          </Badge>
+                        ))}
+                        {c.motivosMatch.length === 0 && (
+                          <span className="text-xs text-muted-foreground">Sem sinais fortes de match; sugestao por proximidade parcial.</span>
+                        )}
+                      </div>
+
+                      {c.motivosAtencao.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {c.motivosAtencao.slice(0, 2).map((motivo) => (
+                            <Badge key={motivo} variant="outline" className="border-warning/30 bg-warning/5 text-[10px] text-warning">
+                              Atencao: {motivo}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {sugestaoExpandida && (
+                        <div className="space-y-2 pt-1">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                            Score com pesos visiveis
+                          </p>
+                          <div className="space-y-2">
+                            {c.scoreDetalhado.map((item) => (
+                              <div key={item.id} className="rounded-md border bg-background/80 p-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-xs font-medium">{item.label}</p>
+                                    <p className="text-[11px] text-muted-foreground">{item.detalhe}</p>
+                                  </div>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "shrink-0 text-[10px]",
+                                      item.status === "positivo" && "border-success/30 bg-success/5 text-success",
+                                      item.status === "parcial" && "border-warning/30 bg-warning/5 text-warning",
+                                      item.status === "negativo" && "border-destructive/30 bg-destructive/5 text-destructive",
+                                    )}
+                                  >
+                                    {item.pontos}/{item.maximo}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

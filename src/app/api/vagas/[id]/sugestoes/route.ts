@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calcularCompatibilidadeBase, normalize } from "@/lib/candidato-compatibilidade";
+import {
+  atendeCorteMinimoPreTriagem,
+  atendeCorteMinimoSugestao,
+  calcularCompatibilidadeBase,
+  normalize,
+} from "@/lib/candidato-compatibilidade";
 import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 
 // GET /api/vagas/[id]/sugestoes
@@ -23,7 +28,7 @@ export async function GET(
   });
 
   if (!vaga) {
-    return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
   }
 
   const idsPreTriagem = (() => {
@@ -108,13 +113,10 @@ export async function GET(
     }))
     .filter((candidato) => {
       if (idsPreTriagem && idsPreTriagem.length > 0) {
-        return true;
+        return atendeCorteMinimoPreTriagem(candidato);
       }
 
-      return candidato.compatibilidade >= 20
-        || candidato.jobTypeOk
-        || candidato.areaOk
-        || candidato.skillsMatch.length > 0;
+      return atendeCorteMinimoSugestao(candidato);
     })
     .sort((a, b) => {
       if (b.compatibilidade !== a.compatibilidade) {

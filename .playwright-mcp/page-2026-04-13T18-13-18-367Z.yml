@@ -1,0 +1,205 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Nova Vaga" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - heading "Criar Nova Vaga" [level=2] [ref=e70]
+            - paragraph [ref=e71]: Preencha os dados abaixo para criar uma nova vaga e começar a receber candidatos.
+          - generic [ref=e73]:
+            - heading "1. Informações Básicas" [level=3] [ref=e74]
+            - generic [ref=e75]:
+              - generic [ref=e76]: Título da Vaga *
+              - textbox "Título da Vaga *" [ref=e77]:
+                - /placeholder: "ex: Desenvolvedor Frontend Sênior"
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]: Área *
+                - textbox "Área *" [ref=e81]:
+                  - /placeholder: "ex: Engenharia"
+              - generic [ref=e82]:
+                - generic [ref=e83]: Tipo de Trabalho *
+                - textbox "Tipo de Trabalho *" [ref=e84]:
+                  - /placeholder: "ex: Desenvolvedor, Motorista, Doméstica"
+            - generic [ref=e86]:
+              - generic [ref=e87]: Regime *
+              - combobox [ref=e88] [cursor=pointer]:
+                - generic [ref=e89]: Selecione o regime
+                - img: ▼
+              - textbox [ref=e90]
+            - generic [ref=e92]:
+              - generic [ref=e93]: Modalidade *
+              - combobox [ref=e94] [cursor=pointer]:
+                - generic [ref=e95]: Selecione a modalidade
+                - img: ▼
+              - textbox [ref=e96]
+            - generic [ref=e97]:
+              - generic [ref=e98]: Localização *
+              - textbox "Localização *" [ref=e99]:
+                - /placeholder: "ex: São Paulo, SP"
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]: Salário Mínimo
+                - spinbutton "Salário Mínimo" [ref=e103]
+              - generic [ref=e104]:
+                - generic [ref=e105]: Salário Máximo
+                - spinbutton "Salário Máximo" [ref=e106]
+            - generic [ref=e107]:
+              - generic [ref=e108]: Descrição da Vaga *
+              - textbox "Descrição da Vaga *" [ref=e109]:
+                - /placeholder: Descreva as responsabilidades e o que o candidato vai fazer...
+            - generic [ref=e110]:
+              - generic [ref=e111]: Areas de Atuacao
+              - paragraph [ref=e112]: Selecione uma ou mais areas para melhorar a compatibilidade dos candidatos.
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - heading "2. Requisitos" [level=3] [ref=e116]
+              - generic [ref=e117]: Obrigatórios afetam o score de compatibilidade
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e121]: Descrição do requisito
+                - 'textbox "ex: Experiência com React" [ref=e122]'
+              - generic [ref=e123]:
+                - generic [ref=e124]:
+                  - generic [ref=e125]: Tempo mín.
+                  - spinbutton [ref=e126]
+                - combobox [ref=e127] [cursor=pointer]:
+                  - generic [ref=e128]: anos
+                  - img: ▼
+                - textbox [ref=e129]: anos
+              - combobox [ref=e130] [cursor=pointer]:
+                - generic [ref=e131]: OBRIGATORIO
+                - img: ▼
+              - textbox [ref=e132]: OBRIGATORIO
+              - button [ref=e133] [cursor=pointer]:
+                - img
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - heading "3. Etapas do processo" [level=3] [ref=e137]
+              - generic [ref=e138]: 2 etapa(s)
+            - generic [ref=e139]:
+              - generic [ref=e140]: A primeira etapa é fixa como triagem automática. As próximas etapas definem o funil da vaga.
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - generic [ref=e143]:
+                    - generic [ref=e144]:
+                      - paragraph [ref=e145]: Etapa 1
+                      - paragraph [ref=e146]: Etapa obrigatória de entrada
+                    - generic [ref=e147]:
+                      - button [disabled]:
+                        - img
+                      - button [ref=e148] [cursor=pointer]:
+                        - img
+                      - button [disabled]:
+                        - img
+                  - generic [ref=e149]:
+                    - generic [ref=e150]:
+                      - generic [ref=e151]: Nome da etapa
+                      - textbox [ref=e152]: Triagem IA
+                    - generic [ref=e153]:
+                      - generic [ref=e154]: Tipo
+                      - combobox [disabled] [ref=e155]:
+                        - generic [ref=e156]: TRIAGEM
+                        - img: ▼
+                      - textbox [disabled] [ref=e157]: TRIAGEM
+                    - generic [ref=e158]:
+                      - checkbox "Obrigatória" [checked] [ref=e159]
+                      - text: Obrigatória
+                - generic [ref=e160]:
+                  - generic [ref=e161]:
+                    - generic [ref=e162]:
+                      - paragraph [ref=e163]: Etapa 2
+                      - paragraph [ref=e164]: Etapa configurável do processo
+                    - generic [ref=e165]:
+                      - button [ref=e166] [cursor=pointer]:
+                        - img
+                      - button [disabled]:
+                        - img
+                      - button [ref=e167] [cursor=pointer]:
+                        - img
+                  - generic [ref=e168]:
+                    - generic [ref=e169]:
+                      - generic [ref=e170]: Nome da etapa
+                      - textbox [ref=e171]: Entrevista RH
+                    - generic [ref=e172]:
+                      - generic [ref=e173]: Tipo
+                      - combobox [ref=e174] [cursor=pointer]:
+                        - generic [ref=e175]: ENTREVISTA
+                        - img: ▼
+                      - textbox [ref=e176]: ENTREVISTA
+                    - generic [ref=e177]:
+                      - checkbox "Obrigatória" [checked] [ref=e178]
+                      - text: Obrigatória
+              - button "Adicionar etapa" [ref=e179] [cursor=pointer]:
+                - img
+                - text: Adicionar etapa
+          - generic [ref=e180]:
+            - paragraph [ref=e181]: 0 requisito(s), 0 area(s) e 2 etapa(s)
+            - generic [ref=e182]:
+              - button "Cancelar" [ref=e183] [cursor=pointer]
+              - button "Salvar Vaga" [ref=e184] [cursor=pointer]:
+                - img
+                - text: Salvar Vaga
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e190] [cursor=pointer]:
+    - img [ref=e191]

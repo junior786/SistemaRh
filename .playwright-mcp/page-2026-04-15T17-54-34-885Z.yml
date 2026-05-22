@@ -1,0 +1,264 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Detalhe da Vaga" [level=1] [ref=e504]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e505]:
+          - generic [ref=e510]:
+            - generic [ref=e511]:
+              - generic [ref=e512]:
+                - heading "Vaga Kenai" [level=1] [ref=e513]
+                - generic [ref=e514]: Aberta
+              - generic [ref=e515]:
+                - generic [ref=e516]:
+                  - img
+                  - text: Domestica
+                - generic [ref=e517]:
+                  - img
+                  - text: Residencial
+                - generic [ref=e518]: CLT
+                - generic [ref=e519]:
+                  - img
+                  - text: Remoto
+              - generic [ref=e520]:
+                - generic [ref=e521]:
+                  - img [ref=e522]
+                  - text: Porto alegre
+                - generic [ref=e525]:
+                  - img [ref=e526]
+                  - text: R$ 2.500 – R$ 3.000
+              - generic [ref=e529]: Outro
+            - generic [ref=e530]:
+              - button "Finalizar vaga" [ref=e531] [cursor=pointer]:
+                - img
+                - text: Finalizar vaga
+              - combobox [ref=e532] [cursor=pointer]:
+                - generic [ref=e533]: ABERTA
+                - img: ▼
+              - textbox [ref=e534]: ABERTA
+              - link "Editar" [ref=e535] [cursor=pointer]:
+                - /url: /vagas/cmnootwf800006sun58yew9u6/editar
+                - img
+                - text: Editar
+              - link "Triagem" [ref=e536] [cursor=pointer]:
+                - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                - img
+                - text: Triagem
+          - generic [ref=e537]:
+            - generic [ref=e539]:
+              - img [ref=e541]
+              - generic [ref=e546]:
+                - paragraph [ref=e547]: "1"
+                - paragraph [ref=e548]: Candidatos
+            - generic [ref=e550]:
+              - img [ref=e552]
+              - generic [ref=e555]:
+                - paragraph [ref=e556]: "1"
+                - paragraph [ref=e557]: Analisados
+            - generic [ref=e559]:
+              - img [ref=e561]
+              - generic [ref=e565]:
+                - paragraph [ref=e566]: 10%
+                - paragraph [ref=e567]: Score médio
+            - generic [ref=e569]:
+              - img [ref=e571]
+              - generic [ref=e573]:
+                - paragraph [ref=e574]: "0"
+                - paragraph [ref=e575]: Obrigatórios
+          - generic [ref=e576]:
+            - generic [ref=e577]:
+              - generic [ref=e579]:
+                - heading "Descrição da Vaga" [level=3] [ref=e580]:
+                  - img [ref=e581]
+                  - text: Descrição da Vaga
+                - paragraph [ref=e584]: teste
+              - generic [ref=e586]:
+                - heading "Requisitos 0 total" [level=3] [ref=e587]:
+                  - img [ref=e588]
+                  - text: Requisitos
+                  - generic [ref=e592]: 0 total
+                - paragraph [ref=e593]: Nenhum requisito definido.
+              - generic [ref=e595]:
+                - heading "Etapas do processo 2 total" [level=3] [ref=e596]:
+                  - img [ref=e597]
+                  - text: Etapas do processo
+                  - generic [ref=e601]: 2 total
+                - generic [ref=e602]:
+                  - button "1 Triagem IA Triagem IA Obrigatória 0 candidato(s)" [ref=e604] [cursor=pointer]:
+                    - generic [ref=e605]: "1"
+                    - generic [ref=e606]:
+                      - paragraph [ref=e607]: Triagem IA
+                      - paragraph [ref=e608]: Triagem IA
+                    - generic [ref=e609]: Obrigatória
+                    - generic [ref=e610]: 0 candidato(s)
+                    - img [ref=e611]
+                  - button "2 Entrevista RH Entrevista Obrigatória 1 candidato(s)" [ref=e614] [cursor=pointer]:
+                    - generic [ref=e615]: "2"
+                    - generic [ref=e616]:
+                      - paragraph [ref=e617]: Entrevista RH
+                      - paragraph [ref=e618]: Entrevista
+                    - generic [ref=e619]: Obrigatória
+                    - generic [ref=e620]: 1 candidato(s)
+                    - img [ref=e621]
+              - generic [ref=e624]:
+                - heading "Atividade recente 8 evento(s)" [level=3] [ref=e625]:
+                  - img [ref=e626]
+                  - text: Atividade recente
+                  - generic [ref=e630]: 8 evento(s)
+                - generic [ref=e631]:
+                  - link "R Ricardo Fracassi SISTEMA Análise concluída com score 10%. 15/04/2026, 14:45" [ref=e632] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e633]: R
+                    - generic [ref=e634]:
+                      - generic [ref=e635]:
+                        - paragraph [ref=e636]: Ricardo Fracassi
+                        - generic [ref=e637]: SISTEMA
+                      - paragraph [ref=e638]: Análise concluída com score 10%.
+                    - generic [ref=e639]: 15/04/2026, 14:45
+                  - link "R Ricardo Fracassi RH Análise de compatibilidade solicitada. 15/04/2026, 14:44" [ref=e640] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e641]: R
+                    - generic [ref=e642]:
+                      - generic [ref=e643]:
+                        - paragraph [ref=e644]: Ricardo Fracassi
+                        - generic [ref=e645]: RH
+                      - paragraph [ref=e646]: Análise de compatibilidade solicitada.
+                    - generic [ref=e647]: 15/04/2026, 14:44
+                  - link "R Ricardo Fracassi RH Candidato vinculado a vaga e triagem iniciada. 15/04/2026, 14:44" [ref=e648] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e649]: R
+                    - generic [ref=e650]:
+                      - generic [ref=e651]:
+                        - paragraph [ref=e652]: Ricardo Fracassi
+                        - generic [ref=e653]: RH
+                      - paragraph [ref=e654]: Candidato vinculado a vaga e triagem iniciada.
+                    - generic [ref=e655]: 15/04/2026, 14:44
+                  - link "R Ricardo Fracassi RH Candidato removido da triagem da vaga. 15/04/2026, 14:43" [ref=e656] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e657]: R
+                    - generic [ref=e658]:
+                      - generic [ref=e659]:
+                        - paragraph [ref=e660]: Ricardo Fracassi
+                        - generic [ref=e661]: RH
+                      - paragraph [ref=e662]: Candidato removido da triagem da vaga.
+                    - generic [ref=e663]: 15/04/2026, 14:43
+                  - link "R Ricardo Fracassi RH Candidato retornado para a etapa Triagem IA. 15/04/2026, 14:43" [ref=e664] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e665]: R
+                    - generic [ref=e666]:
+                      - generic [ref=e667]:
+                        - paragraph [ref=e668]: Ricardo Fracassi
+                        - generic [ref=e669]: RH
+                      - paragraph [ref=e670]: Candidato retornado para a etapa Triagem IA.
+                    - generic [ref=e671]: 15/04/2026, 14:43
+                  - link "R Ricardo Fracassi SISTEMA Análise concluída com score 10%. 13/04/2026, 19:38" [ref=e672] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e673]: R
+                    - generic [ref=e674]:
+                      - generic [ref=e675]:
+                        - paragraph [ref=e676]: Ricardo Fracassi
+                        - generic [ref=e677]: SISTEMA
+                      - paragraph [ref=e678]: Análise concluída com score 10%.
+                    - generic [ref=e679]: 13/04/2026, 19:38
+                  - link "R Ricardo Fracassi RH Análise de compatibilidade solicitada. 13/04/2026, 19:38" [ref=e680] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e681]: R
+                    - generic [ref=e682]:
+                      - generic [ref=e683]:
+                        - paragraph [ref=e684]: Ricardo Fracassi
+                        - generic [ref=e685]: RH
+                      - paragraph [ref=e686]: Análise de compatibilidade solicitada.
+                    - generic [ref=e687]: 13/04/2026, 19:38
+                  - link "R Ricardo Fracassi RH Candidato vinculado a vaga e triagem iniciada. 13/04/2026, 15:12" [ref=e688] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                    - generic [ref=e689]: R
+                    - generic [ref=e690]:
+                      - generic [ref=e691]:
+                        - paragraph [ref=e692]: Ricardo Fracassi
+                        - generic [ref=e693]: RH
+                      - paragraph [ref=e694]: Candidato vinculado a vaga e triagem iniciada.
+                    - generic [ref=e695]: 13/04/2026, 15:12
+            - generic [ref=e698]:
+              - generic [ref=e699]:
+                - heading "Candidatos" [level=3] [ref=e700]:
+                  - img [ref=e701]
+                  - text: Candidatos
+                - generic [ref=e706]: "1"
+              - link "R Entrevista RH Em andamento Ricardo Fracassi Java Spring Framework JavaScript +12 10%" [ref=e708] [cursor=pointer]:
+                - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                - generic [ref=e709]: R
+                - generic [ref=e710]:
+                  - generic [ref=e711]: Entrevista RH
+                  - generic [ref=e712]: Em andamento
+                - generic [ref=e713]:
+                  - paragraph [ref=e714]: Ricardo Fracassi
+                  - generic [ref=e715]:
+                    - generic [ref=e716]: Java
+                    - generic [ref=e717]: Spring Framework
+                    - generic [ref=e718]: JavaScript
+                    - generic [ref=e719]: "+12"
+                - generic [ref=e720]:
+                  - generic [ref=e722]: 10%
+                  - img [ref=e723]
+  - region "Notifications alt+T"
+  - alert [ref=e453]
+  - generic [ref=e454]: Pendentes

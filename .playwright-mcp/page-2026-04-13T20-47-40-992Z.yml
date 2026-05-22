@@ -1,0 +1,157 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Triagem" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Triagem de candidatos" [level=2] [ref=e71]
+              - paragraph [ref=e72]: Vaga Kenai · 1 candidato(s) vinculado(s)
+            - generic [ref=e73]:
+              - spinbutton [ref=e74]
+              - button "Pré-Triagem IA" [ref=e75] [cursor=pointer]:
+                - img
+                - text: Pré-Triagem IA
+              - button "Adicionar Candidato" [ref=e76] [cursor=pointer]:
+                - img
+                - text: Adicionar Candidato
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - img [ref=e161]
+              - text: Nenhum candidato disponivel encontrado
+            - button [ref=e164] [cursor=pointer]:
+              - img [ref=e165]
+          - table [ref=e80]:
+            - rowgroup [ref=e81]:
+              - row "Candidato Etapa atual Skills Score Status Ações" [ref=e82]:
+                - columnheader "Candidato" [ref=e83]
+                - columnheader "Etapa atual" [ref=e84]
+                - columnheader "Skills" [ref=e85]
+                - columnheader "Score" [ref=e86]
+                - columnheader "Status" [ref=e87]
+                - columnheader "Ações" [ref=e88]
+            - rowgroup [ref=e89]:
+              - row "Ricardo Fracassi ricardo.jr1999@hotmail.com Triagem IA Em andamento Java Spring Framework JavaScript TypeScript — Pendente Analisar Mover etapa Reprovar Agendar entrevista Ver entrevistas" [ref=e121] [cursor=pointer]:
+                - cell "Ricardo Fracassi ricardo.jr1999@hotmail.com" [ref=e122]:
+                  - paragraph [ref=e123]: Ricardo Fracassi
+                  - paragraph [ref=e124]: ricardo.jr1999@hotmail.com
+                - cell "Triagem IA Em andamento" [ref=e125]:
+                  - generic [ref=e126]:
+                    - generic [ref=e127]: Triagem IA
+                    - paragraph [ref=e128]: Em andamento
+                - cell "Java Spring Framework JavaScript TypeScript" [ref=e129]:
+                  - generic [ref=e130]:
+                    - generic [ref=e131]: Java
+                    - generic [ref=e132]: Spring Framework
+                    - generic [ref=e133]: JavaScript
+                    - generic [ref=e134]: TypeScript
+                - cell "—" [ref=e135]
+                - cell "Pendente" [ref=e136]:
+                  - generic [ref=e137]: Pendente
+                - cell "Analisar Mover etapa Reprovar Agendar entrevista Ver entrevistas" [ref=e138]:
+                  - generic [ref=e139]:
+                    - button "Analisar" [ref=e140]:
+                      - img
+                      - text: Analisar
+                    - button "Mover etapa" [ref=e141]:
+                      - img
+                      - text: Mover etapa
+                    - button "Reprovar" [ref=e142]:
+                      - img
+                      - text: Reprovar
+                    - link "Agendar entrevista" [ref=e143]:
+                      - /url: /vagas/cmnootwf800006sun58yew9u6/triagem/cmnooug2w00046sunfg1l1rgs/entrevistas
+                      - img
+                      - text: Agendar entrevista
+                    - link "Ver entrevistas" [ref=e144]:
+                      - /url: /vagas/cmnootwf800006sun58yew9u6/triagem/cmnooug2w00046sunfg1l1rgs/entrevistas
+                      - img
+                      - text: Ver entrevistas
+                    - button [ref=e145]:
+                      - img
+                    - img [ref=e146]
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - img [ref=e97]
+                - generic [ref=e100]:
+                  - heading "Candidatos Sugeridos" [level=3] [ref=e101]
+                  - paragraph [ref=e102]: Ranking heuristico por compatibilidade para Domestica
+              - generic [ref=e103]:
+                - img [ref=e104]
+                - textbox "Buscar candidato ou skill..." [ref=e107]
+            - generic [ref=e149]:
+              - img [ref=e150]
+              - paragraph [ref=e153]: Nenhum candidato compatível encontrado
+              - paragraph [ref=e154]: Candidatos precisam ter skills que correspondam aos requisitos da vaga
+              - generic [ref=e155]:
+                - button "Tentar pre-triagem IA" [ref=e156] [cursor=pointer]:
+                  - img
+                  - text: Tentar pre-triagem IA
+                - button "Adicionar candidato manualmente" [ref=e157] [cursor=pointer]:
+                  - img
+                  - text: Adicionar candidato manualmente
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e117] [cursor=pointer]:
+    - img [ref=e118]
+  - alert [ref=e158]

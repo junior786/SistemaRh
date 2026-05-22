@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { chatCompletion, parseAIResponse } from "@/lib/openrouter";
-import { calcularCompatibilidadeBase } from "@/lib/candidato-compatibilidade";
+import {
+  atendeCorteMinimoPreTriagem,
+  calcularCompatibilidadeBase,
+} from "@/lib/candidato-compatibilidade";
 
 const SHORTLIST_LIMIT = 30;
 
@@ -19,7 +22,7 @@ export async function POST(
   });
 
   if (!vaga) {
-    return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
   }
 
   if (vaga.status === "FECHADA") {
@@ -82,12 +85,7 @@ export async function POST(
         vagaScoring,
       ),
     }))
-    .filter(({ scoreBase }) =>
-      scoreBase.compatibilidade >= 20
-      || scoreBase.jobTypeOk
-      || scoreBase.areaOk
-      || scoreBase.skillsMatch.length > 0,
-    )
+    .filter(({ scoreBase }) => atendeCorteMinimoPreTriagem(scoreBase))
     .sort((a, b) => b.scoreBase.compatibilidade - a.scoreBase.compatibilidade);
 
   const shortlist = (candidatosComScore.length > 0
@@ -123,7 +121,7 @@ export async function POST(
 
   const model = process.env.MODEL_ANALISE_VAGA;
   if (!model) {
-    return Response.json({ error: "MODEL_ANALISE_VAGA nao configurada" }, { status: 500 });
+    return Response.json({ error: "MODEL_ANALISE_VAGA não configurada" }, { status: 500 });
   }
 
   const systemPrompt = `Voce e um analista de RH. Receba uma vaga e uma lista de candidatos.
@@ -180,6 +178,6 @@ ${candidatosResumo.map((candidato) => `- ID: ${candidato.id} | Nome: ${candidato
     });
   } catch (error) {
     console.error("Erro na pre-triagem IA:", error);
-    return Response.json({ error: "Erro ao processar analise da IA" }, { status: 500 });
+    return Response.json({ error: "Erro ao processar análise da IA" }, { status: 500 });
   }
 }

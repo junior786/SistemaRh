@@ -1,0 +1,90 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e128] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e129] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e130] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e131] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e132] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e133] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Triagem" [level=1] [ref=e134]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e135]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e136] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e137] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e80]:
+            - paragraph [ref=e81]: Ricardo Fracassi
+            - paragraph [ref=e82]: Vaga Kenai · ricardo.jr1999@hotmail.com
+          - generic [ref=e83]:
+            - heading "Entrevistas (1)" [level=3] [ref=e138]
+            - button "Agendar Entrevista" [active] [ref=e139] [cursor=pointer]:
+              - img
+              - text: Agendar Entrevista
+          - generic [ref=e143]:
+            - generic [ref=e144]:
+              - generic [ref=e145]:
+                - img [ref=e146]
+                - generic [ref=e148]: 20/04/2026 às 10:30
+                - generic [ref=e149]: Agendada
+                - generic [ref=e150]: Entrevista RH
+              - paragraph [ref=e151]: "Entrevistador: Ana RH"
+            - generic [ref=e152]:
+              - button [ref=e153] [cursor=pointer]:
+                - img
+              - button [ref=e154] [cursor=pointer]:
+                - img
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e74] [cursor=pointer]:
+    - img [ref=e75]
+  - alert [ref=e91]

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { definirContratadosDaVaga } from "@/lib/contratacao";
 import { registrarEventosTriagemLote, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
+import { validateVagaFields } from "@/lib/form-validations";
 
 async function carregarEventosVaga(vagaId: string) {
   try {
@@ -74,7 +75,7 @@ export async function GET(
   const vaga = await carregarVagaComHistorico(id);
 
   if (!vaga) {
-    return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
   }
 
   return Response.json(vaga);
@@ -105,12 +106,17 @@ export async function PUT(
     contratadoIds,
   } = body;
 
+  const fieldErrors = validateVagaFields({ titulo, area, jobType, regime, modalidade, localizacao, descricao, cep });
+  if (Object.keys(fieldErrors).length > 0) {
+    return Response.json({ error: "Campos obrigatorios faltando", fieldErrors }, { status: 400 });
+  }
+
   try {
     if (etapas !== undefined) {
       const triagensCount = await prisma.triagem.count({ where: { vagaId: id } });
       if (triagensCount > 0) {
         return Response.json(
-          { error: "Nao e possivel alterar as etapas de uma vaga que ja possui candidatos vinculados." },
+          { error: "Não é possível alterar as etapas de uma vaga que já possui candidatos vinculados." },
           { status: 409 },
         );
       }

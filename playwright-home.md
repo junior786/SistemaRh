@@ -1,0 +1,12 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]
+      - navigation [ref=e10]
+      - generic [ref=e50]
+    - generic [ref=e55]:
+      - banner [ref=e56]
+      - main [ref=e67]
+  - region "Notifications alt+T"
+  - alert [ref=e453]
+  - generic [ref=e454]: Pendentes

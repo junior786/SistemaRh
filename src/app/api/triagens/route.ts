@@ -58,12 +58,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (!candidato) {
-    return Response.json({ error: "Candidato nao encontrado" }, { status: 404 });
+    return Response.json({ error: "Candidato não encontrado" }, { status: 404 });
   }
 
   if (candidato.statusEmprego === "EMPREGADO") {
     return Response.json(
-      { error: "Nao e possivel vincular um candidato ja contratado a uma nova triagem." },
+      { error: "Não é possível vincular um candidato já contratado a uma nova triagem." },
       { status: 409 },
     );
   }

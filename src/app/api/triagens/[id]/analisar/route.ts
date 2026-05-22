@@ -39,7 +39,7 @@ export async function POST(
   });
 
   if (!triagem) {
-    return Response.json({ error: "Triagem nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
   }
 
   await prisma.triagem.update({
@@ -50,7 +50,7 @@ export async function POST(
   await registrarEventoTriagem({
     triagemId: id,
     tipo: TRIAGEM_EVENTO_TIPO.ANALISE_SOLICITADA,
-    descricao: "Analise de compatibilidade solicitada.",
+    descricao: "Análise de compatibilidade solicitada.",
     origem: "RH",
   });
 
@@ -156,7 +156,7 @@ async function processarAnalise(
     await registrarEventoTriagem({
       triagemId,
       tipo: TRIAGEM_EVENTO_TIPO.ANALISE_CONCLUIDA,
-      descricao: `Analise concluida com score ${resultado.score}%.`,
+      descricao: `Análise concluída com score ${resultado.score}%.`,
       origem: "SISTEMA",
       metadados: { score: resultado.score },
     });
@@ -170,7 +170,7 @@ async function processarAnalise(
     await registrarEventoTriagem({
       triagemId,
       tipo: TRIAGEM_EVENTO_TIPO.ANALISE_COM_ERRO,
-      descricao: "Analise de compatibilidade falhou.",
+      descricao: "Análise de compatibilidade falhou.",
       origem: "SISTEMA",
       metadados: {
         erro: error instanceof Error ? error.message : String(error),

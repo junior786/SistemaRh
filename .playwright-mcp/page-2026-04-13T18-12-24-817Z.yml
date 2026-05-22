@@ -1,0 +1,112 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Candidatos" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - img [ref=e71]
+              - textbox "Buscar candidatos..." [ref=e74]
+            - link "Novo Candidato" [ref=e75] [cursor=pointer]:
+              - /url: /candidatos/novo
+              - img
+              - text: Novo Candidato
+          - table [ref=e79]:
+            - rowgroup [ref=e80]:
+              - row "Nome Email Cidade Gênero Status Skills Vagas" [ref=e81]:
+                - columnheader "Nome" [ref=e82]
+                - columnheader "Email" [ref=e83]
+                - columnheader "Cidade" [ref=e84]
+                - columnheader "Gênero" [ref=e85]
+                - columnheader "Status" [ref=e86]
+                - columnheader "Skills" [ref=e87]
+                - columnheader "Vagas" [ref=e88]
+                - columnheader [ref=e89]
+            - rowgroup [ref=e90]:
+              - row [ref=e91]:
+                - cell [ref=e92]
+              - row [ref=e94]:
+                - cell [ref=e95]
+              - row [ref=e97]:
+                - cell [ref=e98]
+              - row [ref=e100]:
+                - cell [ref=e101]
+              - row [ref=e103]:
+                - cell [ref=e104]
+          - generic [ref=e106]:
+            - paragraph [ref=e107]: 0 candidato(s) no total
+            - navigation "pagination" [ref=e108]:
+              - list [ref=e109]:
+                - listitem [ref=e110]:
+                  - button "Go to previous page" [disabled]:
+                    - img
+                    - generic: Anterior
+                - listitem [ref=e111]:
+                  - button "1" [ref=e112] [cursor=pointer]
+                - listitem [ref=e113]:
+                  - button "Go to next page" [disabled]:
+                    - generic: Próxima
+                    - img
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e119] [cursor=pointer]:
+    - img [ref=e120]

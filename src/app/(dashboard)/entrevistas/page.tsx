@@ -25,7 +25,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-// ─── Localizer (date-fns + pt-BR) ───────────────────────
 const locales = { "pt-BR": ptBR };
 const localizer = dateFnsLocalizer({
   format,
@@ -35,7 +34,6 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// ─── Types ───────────────────────────────────────────────
 interface EntrevistaAPI {
   id: string;
   dataHora: string;
@@ -81,7 +79,6 @@ const resultadoVariant: Record<string, "default" | "destructive" | "secondary"> 
   PROXIMA_FASE: "secondary",
 };
 
-// ─── Custom Toolbar ──────────────────────────────────────
 function CustomToolbar({ label, onNavigate, onView, view }: {
   label: string;
   onNavigate: (action: "PREV" | "NEXT" | "TODAY") => void;
@@ -89,7 +86,7 @@ function CustomToolbar({ label, onNavigate, onView, view }: {
   view: View;
 }) {
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onNavigate("PREV")}>
           <ChevronLeft className="h-4 w-4" />
@@ -108,14 +105,14 @@ function CustomToolbar({ label, onNavigate, onView, view }: {
           { key: "week" as View, label: "Semana" },
           { key: "day" as View, label: "Dia" },
           { key: "agenda" as View, label: "Lista" },
-        ]).map((v) => (
+        ]).map((option) => (
           <Button
-            key={v.key}
-            variant={view === v.key ? "default" : "outline"}
+            key={option.key}
+            variant={view === option.key ? "default" : "outline"}
             size="sm"
-            onClick={() => onView(v.key)}
+            onClick={() => onView(option.key)}
           >
-            {v.label}
+            {option.label}
           </Button>
         ))}
       </div>
@@ -123,14 +120,11 @@ function CustomToolbar({ label, onNavigate, onView, view }: {
   );
 }
 
-// ─── Page ────────────────────────────────────────────────
 export default function EntrevistasCalendarioPage() {
   const [entrevistas, setEntrevistas] = useState<EntrevistaAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<View>("month");
-
-  // Modal de detalhe
   const [selected, setSelected] = useState<EntrevistaAPI | null>(null);
 
   const fetchEntrevistas = useCallback(async (date: Date) => {
@@ -149,27 +143,25 @@ export default function EntrevistasCalendarioPage() {
   }, []);
 
   useEffect(() => {
-    fetchEntrevistas(currentDate);
+    void fetchEntrevistas(currentDate);
   }, [currentDate, fetchEntrevistas]);
 
-  // Converter para eventos do calendário
   const events: CalendarEvent[] = useMemo(
     () =>
-      entrevistas.map((e) => {
-        const start = new Date(e.dataHora);
-        const end = new Date(start.getTime() + 60 * 60 * 1000); // 1h duração
+      entrevistas.map((entrevista) => {
+        const start = new Date(entrevista.dataHora);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
         return {
-          id: e.id,
-          title: `${e.triagem.candidato.nome} — ${e.triagem.vaga.titulo}`,
+          id: entrevista.id,
+          title: `${entrevista.triagem.candidato.nome} - ${entrevista.triagem.vaga.titulo}`,
           start,
           end,
-          resource: e,
+          resource: entrevista,
         };
       }),
     [entrevistas],
   );
 
-  // Contadores para os cards de resumo
   const stats = useMemo(() => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -181,21 +173,19 @@ export default function EntrevistasCalendarioPage() {
 
     return {
       total: entrevistas.length,
-      hoje: entrevistas.filter((e) => {
-        const d = new Date(e.dataHora);
-        return d >= hoje && d <= fimHoje;
+      hoje: entrevistas.filter((entrevista) => {
+        const data = new Date(entrevista.dataHora);
+        return data >= hoje && data <= fimHoje;
       }).length,
-      semana: entrevistas.filter((e) => {
-        const d = new Date(e.dataHora);
-        return d >= hoje && d <= fimSemana && e.status === "AGENDADA";
+      semana: entrevistas.filter((entrevista) => {
+        const data = new Date(entrevista.dataHora);
+        return data >= hoje && data <= fimSemana && entrevista.status === "AGENDADA";
       }).length,
-      agendadas: entrevistas.filter((e) => e.status === "AGENDADA").length,
+      agendadas: entrevistas.filter((entrevista) => entrevista.status === "AGENDADA").length,
     };
   }, [entrevistas]);
 
-  // Estilos dos eventos no calendário
   const eventStyleGetter = useCallback((event: CalendarEvent) => {
-    const status = event.resource.status;
     const colorMap: Record<string, string> = {
       AGENDADA: "var(--primary)",
       REALIZADA: "var(--success)",
@@ -203,7 +193,7 @@ export default function EntrevistasCalendarioPage() {
     };
     return {
       style: {
-        backgroundColor: colorMap[status] || "var(--primary)",
+        backgroundColor: colorMap[event.resource.status] || "var(--primary)",
         borderRadius: "6px",
         border: "none",
         color: "white",
@@ -232,18 +222,16 @@ export default function EntrevistasCalendarioPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
+        <h2 className="flex items-center gap-2 text-xl font-semibold">
           <CalendarDays className="h-5 w-5" />
-          Calendário de Entrevistas
+          Visão Geral de Entrevistas
         </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Visualize e gerencie todas as entrevistas agendadas
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Panorama operacional de todas as vagas. O fluxo principal de agendamento acontece dentro de cada vaga.
         </p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
@@ -271,7 +259,6 @@ export default function EntrevistasCalendarioPage() {
         </Card>
       </div>
 
-      {/* Calendar */}
       <Card>
         <CardContent className="p-4">
           <Calendar
@@ -283,7 +270,7 @@ export default function EntrevistasCalendarioPage() {
             date={currentDate}
             view={view}
             onNavigate={handleNavigate}
-            onView={(v) => setView(v)}
+            onView={(nextView) => setView(nextView)}
             onSelectEvent={handleSelectEvent}
             eventPropGetter={eventStyleGetter}
             components={{ toolbar: CustomToolbar }}
@@ -307,19 +294,17 @@ export default function EntrevistasCalendarioPage() {
         </CardContent>
       </Card>
 
-      {/* Modal de detalhe da entrevista */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
-              Detalhes da Entrevista
+              Detalhes da entrevista
             </DialogTitle>
           </DialogHeader>
 
           {selected && (
             <div className="space-y-4 pt-2">
-              {/* Data/Hora + Status */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -342,8 +327,7 @@ export default function EntrevistasCalendarioPage() {
                 </div>
               </div>
 
-              {/* Candidato */}
-              <div className="rounded-lg border p-3 space-y-1">
+              <div className="space-y-1 rounded-lg border p-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   Candidato
@@ -359,8 +343,7 @@ export default function EntrevistasCalendarioPage() {
                 </div>
               </div>
 
-              {/* Vaga */}
-              <div className="rounded-lg border p-3 space-y-1">
+              <div className="space-y-1 rounded-lg border p-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
                   Vaga
@@ -371,28 +354,32 @@ export default function EntrevistasCalendarioPage() {
                 </span>
               </div>
 
-              {/* Entrevistador */}
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Entrevistador:</span>
                 <span className="font-medium">{selected.entrevistador}</span>
               </div>
 
-              {/* Observações */}
               {selected.observacoes && (
                 <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Observações</p>
-                  <p className="text-sm whitespace-pre-wrap">{selected.observacoes}</p>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Observações</p>
+                  <p className="whitespace-pre-wrap text-sm">{selected.observacoes}</p>
                 </div>
               )}
 
-              {/* Link para página da triagem */}
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end gap-4 pt-2">
+                <Link
+                  href={`/vagas/${selected.triagem.vaga.id}/entrevistas`}
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  Abrir agenda da vaga
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
                 <Link
                   href={`/vagas/${selected.triagem.vaga.id}/triagem/${selected.triagem.candidato.id}/entrevistas`}
                   className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                 >
-                  Ver todas as entrevistas
+                  Abrir agenda do candidato
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
               </div>

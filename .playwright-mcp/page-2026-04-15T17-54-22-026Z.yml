@@ -1,0 +1,121 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [active] [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Vagas" [level=1] [ref=e455]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e456]:
+          - generic [ref=e457]:
+            - generic [ref=e458]:
+              - combobox [ref=e459] [cursor=pointer]:
+                - generic [ref=e460]: todos
+                - img: ▼
+              - textbox [ref=e461]: todos
+            - generic [ref=e462]:
+              - generic [ref=e463]:
+                - img [ref=e464]
+                - textbox "Buscar vagas..." [ref=e467]
+              - link "Nova Vaga" [ref=e468] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img
+                - text: Nova Vaga
+          - table [ref=e472]:
+            - rowgroup [ref=e473]:
+              - row "Vaga Área Regime Candidatos Status" [ref=e474]:
+                - columnheader "Vaga" [ref=e475]
+                - columnheader "Área" [ref=e476]
+                - columnheader "Regime" [ref=e477]
+                - columnheader "Candidatos" [ref=e478]
+                - columnheader "Status" [ref=e479]
+                - columnheader [ref=e480]
+            - rowgroup [ref=e481]:
+              - row "Vaga Kenai Porto alegre Residencial CLT 1 Aberta" [ref=e482]:
+                - cell "Vaga Kenai Porto alegre" [ref=e483]:
+                  - link "Vaga Kenai Porto alegre" [ref=e484] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6
+                    - paragraph [ref=e485]: Vaga Kenai
+                    - paragraph [ref=e486]: Porto alegre
+                - cell "Residencial" [ref=e487]
+                - cell "CLT" [ref=e488]
+                - cell "1" [ref=e489]
+                - cell "Aberta" [ref=e490]:
+                  - generic [ref=e491]: Aberta
+                - cell [ref=e492]:
+                  - link [ref=e493] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6
+                    - img [ref=e494]
+          - generic [ref=e496]:
+            - paragraph [ref=e497]: 1 vaga(s) no total
+            - navigation "pagination" [ref=e498]:
+              - list [ref=e499]:
+                - listitem [ref=e500]:
+                  - button "Go to previous page" [disabled]:
+                    - img
+                    - generic: Anterior
+                - listitem [ref=e501]:
+                  - button "1" [ref=e502] [cursor=pointer]
+                - listitem [ref=e503]:
+                  - button "Go to next page" [disabled]:
+                    - generic: Próxima
+                    - img
+  - region "Notifications alt+T"
+  - alert [ref=e453]
+  - generic [ref=e454]: Pendentes

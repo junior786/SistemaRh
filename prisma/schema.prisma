@@ -12,6 +12,42 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────
+// EMPRESA
+// ─────────────────────────────────────────────
+
+model Empresa {
+  id                String   @id @default(cuid())
+  nome              String
+  iaWhatsappAtivo   Boolean  @default(false)
+  twilioAccountSid  String?  @unique // criptografar em produção
+  twilioAuthToken   String?
+  twilioFromNumber  String?  // formato whatsapp:+E164 (ex: whatsapp:+14155238886)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  templatesWhats TwilioTemplate[]
+}
+
+// Templates aprovados no Twilio Content Builder
+// contentSid identifica o template; variaveis lista os placeholders esperados ({{1}}, {{2}}...)
+model TwilioTemplate {
+  id           String   @id @default(cuid())
+  empresaId    String
+  slug         String   // identificador interno usado pelo código (ex: "convite_entrevista")
+  nome         String
+  contentSid   String   // HX... do Twilio
+  variaveis    String   // CSV ordenado: "data,horario" mapeia para {"1": data, "2": horario}
+  descricao    String?
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, slug])
+}
+
+// ─────────────────────────────────────────────
 // CONFIGURAÇÕES
 // ─────────────────────────────────────────────
 
@@ -151,6 +187,7 @@ model Candidato {
   observacao        String?         // notas internas editáveis pelo RH
   statusEmprego     StatusEmprego   @default(DISPONIVEL)
   vagaEmpregadoId   String?         // vaga em que foi contratado
+  contratadoEm      DateTime?       // data da contratação
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -160,6 +197,8 @@ model Candidato {
   formacoes    Formacao[]
   triagens     Triagem[]
   restricoes   Restricao[]
+  mensagens    Mensagem[]
+  controleConversa ControleConversa?
   vagaEmpregado Vaga?  @relation("empregados", fields: [vagaEmpregadoId], references: [id], onDelete: SetNull)
 }
 
@@ -348,6 +387,7 @@ model Entrevista {
   status           EntrevistaStatus   @default(AGENDADA)
   observacoes      String?
   resultado        EntrevistaResultado?
+  notificarWhats   Boolean            @default(false)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -365,4 +405,53 @@ enum EntrevistaResultado {
   APROVADO
   REPROVADO
   PROXIMA_FASE
+}
+
+// ─────────────────────────────────────────────
+// WHATSAPP
+// ─────────────────────────────────────────────
+
+model Mensagem {
+  id                 String          @id @default(cuid())
+  candidatoId        String
+  providerMessageSid String?         @unique
+  direcao            MensagemDirecao
+  conteudo           String
+  status             MensagemStatus  @default(ENVIADA)
+  tipo               MensagemTipo    @default(LIVRE)
+  templateId         String?
+  geradaPorIA        Boolean         @default(false)
+  criadoEm           DateTime        @default(now())
+  atualizadoEm       DateTime        @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+// Estado de controle por candidato
+// iaAtiva = false → RH assumiu, IA não responde
+model ControleConversa {
+  id          String    @id @default(cuid())
+  candidatoId String    @unique
+  iaAtiva     Boolean   @default(true)
+  assumidoEm  DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+}
+
+enum MensagemDirecao {
+  ENVIADA
+  RECEBIDA
+}
+
+enum MensagemStatus {
+  ENVIADA
+  ENTREGUE
+  LIDA
+  FALHA
+}
+
+enum MensagemTipo {
+  LIVRE
+  TEMPLATE
 }

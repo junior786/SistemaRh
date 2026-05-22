@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, X, Save, Upload, Loader2, AlertTriangle, Check } from "lucide-react";
 import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
+import { toast } from "sonner";
+import { normalizePhoneBR } from "@/lib/phone";
 
 interface Experiencia {
   empresa: string;
@@ -47,10 +49,27 @@ const niveisFormacao = [
   { value: "CURSO_LIVRE", label: "Curso Livre" },
 ];
 
+type FormErrors = Record<string, string>;
+
+function validarCandidato(fields: { nome: string; email: string; jobType: string }): FormErrors {
+  const errors: FormErrors = {};
+  if (!fields.nome.trim()) errors.nome = "Nome é obrigatório";
+  if (!fields.email.trim()) errors.email = "Email é obrigatório";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) errors.email = "Email inválido";
+  if (!fields.jobType.trim()) errors.jobType = "Tipo de trabalho é obrigatório";
+  return errors;
+}
+
+function FieldError({ error }: { error?: string }) {
+  if (!error) return null;
+  return <p className="text-xs text-destructive mt-1">{error}</p>;
+}
+
 export default function NovoCandidatoPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [importando, setImportando] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
 
   useEffect(() => {
@@ -163,7 +182,7 @@ export default function NovoCandidatoPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Erro ao importar PDF");
+        toast.error(err.error || "Erro ao importar PDF");
         return;
       }
 
@@ -172,7 +191,7 @@ export default function NovoCandidatoPage() {
       // Preenche o formulário para revisão humana (RN-02: nunca salva automaticamente)
       setNome(dados.nome || "");
       setEmail(dados.email || "");
-      setTelefone(dados.telefone || "");
+      setTelefone(normalizePhoneBR(dados.telefone) || "");
       setCidade(dados.cidade || "");
       setCep(dados.cep || "");
       setGenero(dados.genero || "");
@@ -209,7 +228,7 @@ export default function NovoCandidatoPage() {
         );
       }
     } catch {
-      alert("Erro ao processar PDF");
+      toast.error("Erro ao processar PDF");
     } finally {
       setImportando(false);
     }
@@ -217,6 +236,15 @@ export default function NovoCandidatoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const validationErrors = validarCandidato({ nome, email, jobType });
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      const firstErrorField = document.querySelector("[data-error='true']");
+      firstErrorField?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setSaving(true);
 
     // Auto-add pending items before submitting
@@ -238,7 +266,7 @@ export default function NovoCandidatoPage() {
         body: JSON.stringify({
           nome,
           email,
-          telefone: telefone || null,
+          telefone: normalizePhoneBR(telefone),
           cidade: cidade || null,
           cep: cep || null,
           genero: genero || null,
@@ -256,14 +284,17 @@ export default function NovoCandidatoPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Erro ao salvar candidato");
+        if (err.fieldErrors) {
+          setErrors(err.fieldErrors as FormErrors);
+        }
+        toast.error(err.error || "Erro ao salvar candidato");
         return;
       }
 
       const candidato = await res.json();
       router.push(`/candidatos/${candidato.id}`);
     } catch {
-      alert("Erro ao salvar candidato");
+      toast.error("Erro ao salvar candidato");
     } finally {
       setSaving(false);
     }
@@ -301,32 +332,57 @@ export default function NovoCandidatoPage() {
         </div>
       </div>
 
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-destructive">Corrija os campos abaixo para continuar:</p>
+          <ul className="mt-2 list-inside list-disc text-sm text-destructive/80">
+            {Object.values(errors).map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* 1. Dados Pessoais */}
       <Card>
         <CardContent className="space-y-4 p-6">
           <h3 className="text-base font-semibold">1. Dados Pessoais</h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.nome || undefined}>
               <Label htmlFor="nome">Nome *</Label>
               <Input
                 id="nome"
                 placeholder="Nome completo"
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
+                onChange={(e) => {
+                  setNome(e.target.value);
+                  setErrors((prev) => {
+                    const { nome: _nome, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.nome ? "border-destructive" : ""}
               />
+              <FieldError error={errors.nome} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.email || undefined}>
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="email@exemplo.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((prev) => {
+                    const { email: _email, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.email ? "border-destructive" : ""}
               />
+              <FieldError error={errors.email} />
             </div>
           </div>
 
@@ -335,12 +391,13 @@ export default function NovoCandidatoPage() {
               <Label htmlFor="telefone">Telefone</Label>
               <Input
                 id="telefone"
-                placeholder="(11) 99999-9999"
+                placeholder="5511999999999"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
+                onBlur={(e) => setTelefone(normalizePhoneBR(e.target.value) || "")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.jobType || undefined}>
               <Label htmlFor="cidade">Cidade</Label>
               <Input
                 id="cidade"
@@ -358,9 +415,16 @@ export default function NovoCandidatoPage() {
                 id="jobType"
                 placeholder="ex: Desenvolvedor, Motorista, Doméstica"
                 value={jobType}
-                onChange={(e) => setJobType(e.target.value)}
-                required
+                onChange={(e) => {
+                  setJobType(e.target.value);
+                  setErrors((prev) => {
+                    const { jobType: _jobType, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.jobType ? "border-destructive" : ""}
               />
+              <FieldError error={errors.jobType} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="genero">Gênero</Label>

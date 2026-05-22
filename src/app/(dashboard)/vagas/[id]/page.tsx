@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { VagaAgendaSection } from "@/components/entrevistas/vaga-agenda-section";
 import { cn } from "@/lib/utils";
 import { ETAPA_STATUS_LABEL, ETAPA_TIPO_LABEL } from "@/lib/vaga-etapas";
 import {
@@ -41,6 +42,7 @@ import {
   ChevronUp,
   Loader2,
   History,
+  CalendarDays,
 } from "lucide-react";
 
 interface Requisito {
@@ -221,7 +223,7 @@ export default function DetalheVagaPage() {
     if (!res.ok) {
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
-      toast.error(data?.error || "Nao foi possivel atualizar o status da vaga.");
+      toast.error(data?.error || "Não foi possível atualizar o status da vaga.");
       return;
     }
     setVaga((v) => (v ? { ...v, status } : v));
@@ -407,6 +409,13 @@ export default function DetalheVagaPage() {
                   <Users className="h-3.5 w-3.5" />
                   Triagem
                 </Link>
+                <Link
+                  href={`/vagas/${vagaId}/entrevistas`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Agenda completa
+                </Link>
               </div>
             </div>
           </CardContent>
@@ -460,6 +469,8 @@ export default function DetalheVagaPage() {
           </CardContent>
         </Card>
       </div>
+
+      <VagaAgendaSection vagaId={vagaId} />
 
       {/* ═══ Body: 2 cols ═══ */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -596,7 +607,7 @@ export default function DetalheVagaPage() {
                       <div className="border-t bg-muted/20 px-3 py-3">
                         {(triagensPorEtapa[etapa.id] ?? []).length === 0 ? (
                           <p className="text-sm text-muted-foreground">
-                            Nenhum candidato estÃ¡ nesta etapa.
+                            Nenhum candidato está nesta etapa.
                           </p>
                         ) : (
                           <div className="space-y-2">
@@ -646,7 +657,7 @@ export default function DetalheVagaPage() {
 
               {eventosRecentes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Ainda nao ha eventos registrados para esta vaga.
+                  Ainda não há eventos registrados para esta vaga.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -843,12 +854,12 @@ export default function DetalheVagaPage() {
 
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Selecione os candidatos contratados para esta vaga. Ao confirmar, a vaga serÃ¡ fechada e os candidatos selecionados ficarÃ£o vinculados como empregados desta vaga.
+              Selecione os candidatos contratados para esta vaga. Ao confirmar, a vaga será fechada e os candidatos selecionados ficarão vinculados como empregados desta vaga.
             </p>
 
             {vaga.triagens.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                NÃ£o hÃ¡ candidatos vinculados para contratar.
+                Não há candidatos vinculados para contratar.
               </p>
             ) : (
               <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">

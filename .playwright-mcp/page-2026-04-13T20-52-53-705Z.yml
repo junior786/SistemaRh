@@ -1,0 +1,325 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Perfil do Candidato" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - heading "Ricardo Fracassi" [level=2] [ref=e81]
+                - generic [ref=e82]: Desenvolvedor
+                - generic [ref=e83]: Disponível
+              - generic [ref=e84]:
+                - generic [ref=e85]:
+                  - img [ref=e86]
+                  - text: ricardo.jr1999@hotmail.com
+                - generic [ref=e89]:
+                  - img [ref=e90]
+                  - text: "5551984735359"
+                - generic [ref=e92]:
+                  - img [ref=e93]
+                  - text: Porto Alegre
+            - generic [ref=e96]:
+              - link "WhatsApp" [ref=e97] [cursor=pointer]:
+                - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+                - img
+                - text: WhatsApp
+              - link "Editar" [ref=e98] [cursor=pointer]:
+                - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/editar
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - heading "Centro operacional" [level=3] [ref=e103]
+                - paragraph [ref=e104]: Mensagens, entrevistas e vagas em andamento reunidas em um ponto de acao.
+              - generic [ref=e105]:
+                - link "WhatsApp" [ref=e106] [cursor=pointer]:
+                  - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+                  - img
+                  - text: WhatsApp
+                - link "Editar cadastro" [ref=e107] [cursor=pointer]:
+                  - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/editar
+            - generic [ref=e108]:
+              - generic [ref=e109]:
+                - paragraph [ref=e110]: Mensagens
+                - paragraph [ref=e111]: "6"
+              - generic [ref=e112]:
+                - paragraph [ref=e113]: Entrevistas
+                - paragraph [ref=e114]: "1"
+              - generic [ref=e115]:
+                - paragraph [ref=e116]: Triagens ativas
+                - paragraph [ref=e117]: "1"
+              - generic [ref=e118]:
+                - paragraph [ref=e119]: Ultima atividade
+                - paragraph [ref=e120]: Entrevista
+                - paragraph [ref=e121]: 20/04/2026, 10:30
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - generic [ref=e126]:
+                  - paragraph [ref=e127]: Vaga Kenai
+                  - generic [ref=e128]: Residencial
+                - paragraph [ref=e129]: Analise pendente
+              - generic [ref=e130]:
+                - link "Abrir triagem" [ref=e131] [cursor=pointer]:
+                  - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+                  - img
+                  - text: Abrir triagem
+                - link "Agendar entrevista" [ref=e132] [cursor=pointer]:
+                  - /url: /vagas/cmnootwf800006sun58yew9u6/triagem/cmnooug2w00046sunfg1l1rgs/entrevistas
+                  - img
+                  - text: Agendar entrevista
+                - link "Agenda da vaga" [ref=e133] [cursor=pointer]:
+                  - /url: /vagas/cmnootwf800006sun58yew9u6/entrevistas
+                  - text: Agenda da vaga
+                  - img
+          - generic [ref=e134]:
+            - generic [ref=e135]: Java
+            - generic [ref=e136]: Spring Framework
+            - generic [ref=e137]: JavaScript
+            - generic [ref=e138]: TypeScript
+            - generic [ref=e139]: Angular
+            - generic [ref=e140]: Git
+            - generic [ref=e141]: Redis
+            - generic [ref=e142]: MySQL
+            - generic [ref=e143]: MongoDB
+            - generic [ref=e144]: Kafka
+            - generic [ref=e145]: Kubernetes
+            - generic [ref=e146]: Docker
+            - generic [ref=e147]: GitLab
+            - generic [ref=e148]: Micro serviços
+            - generic [ref=e149]: Micro frontend
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - heading "Observações do RH" [level=3] [ref=e153]:
+                - img [ref=e154]
+                - text: Observações do RH
+              - button "Editar" [ref=e157] [cursor=pointer]
+            - paragraph [ref=e158]: Nenhuma observação registrada.
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - heading "Historico unificado" [level=3] [ref=e163]
+                - paragraph [ref=e164]: Mensagens, triagens, entrevistas e observacoes do RH em uma unica linha do tempo.
+              - generic [ref=e165]: 8 itens
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - img [ref=e169]
+                - generic [ref=e172]:
+                  - generic [ref=e173]:
+                    - generic [ref=e174]: Entrevista
+                    - paragraph [ref=e175]: Entrevista agendada
+                    - generic [ref=e176]: 20/04/2026, 10:30
+                  - paragraph [ref=e177]: Vaga Kenai • Entrevista RH • Ana RH
+                  - generic [ref=e178]:
+                    - generic [ref=e179]: AGENDADA
+                    - generic [ref=e180]: Vaga Kenai
+                  - link "Abrir contexto" [ref=e182] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem/cmnooug2w00046sunfg1l1rgs/entrevistas
+              - generic [ref=e183]:
+                - img [ref=e185]
+                - generic [ref=e188]:
+                  - generic [ref=e189]:
+                    - generic [ref=e190]: Triagem
+                    - paragraph [ref=e191]: TRIAGEM VINCULADA
+                    - generic [ref=e192]: 13/04/2026, 15:12
+                  - paragraph [ref=e193]: Candidato vinculado a vaga e triagem iniciada.
+                  - generic [ref=e195]: Vaga Kenai
+                  - link "Abrir contexto" [ref=e197] [cursor=pointer]:
+                    - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+              - generic [ref=e198]:
+                - img [ref=e200]
+                - generic [ref=e203]:
+                  - generic [ref=e204]:
+                    - generic [ref=e205]: Mensagem
+                    - paragraph [ref=e206]: Mensagem enviada
+                    - generic [ref=e207]: 08/04/2026, 15:44
+                  - paragraph [ref=e208]: teste
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: ENVIADA
+                    - generic [ref=e211]: Enviada
+                  - link "Abrir contexto" [ref=e213] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+              - generic [ref=e214]:
+                - img [ref=e216]
+                - generic [ref=e219]:
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: Mensagem
+                    - paragraph [ref=e222]: Mensagem enviada
+                    - generic [ref=e223]: 08/04/2026, 15:44
+                  - paragraph [ref=e224]: teste
+                  - generic [ref=e225]:
+                    - generic [ref=e226]: ENVIADA
+                    - generic [ref=e227]: Enviada
+                  - link "Abrir contexto" [ref=e229] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+              - generic [ref=e230]:
+                - img [ref=e232]
+                - generic [ref=e235]:
+                  - generic [ref=e236]:
+                    - generic [ref=e237]: Mensagem
+                    - paragraph [ref=e238]: Mensagem enviada
+                    - generic [ref=e239]: 07/04/2026, 15:33
+                  - paragraph [ref=e240]: "123"
+                  - generic [ref=e241]:
+                    - generic [ref=e242]: ENVIADA
+                    - generic [ref=e243]: Enviada
+                  - link "Abrir contexto" [ref=e245] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+              - generic [ref=e246]:
+                - img [ref=e248]
+                - generic [ref=e251]:
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: Mensagem
+                    - paragraph [ref=e254]: Mensagem enviada
+                    - generic [ref=e255]: 07/04/2026, 15:31
+                  - paragraph [ref=e256]: teste
+                  - generic [ref=e257]:
+                    - generic [ref=e258]: ENVIADA
+                    - generic [ref=e259]: Enviada
+                  - link "Abrir contexto" [ref=e261] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+              - generic [ref=e262]:
+                - img [ref=e264]
+                - generic [ref=e267]:
+                  - generic [ref=e268]:
+                    - generic [ref=e269]: Mensagem
+                    - paragraph [ref=e270]: Mensagem enviada
+                    - generic [ref=e271]: 07/04/2026, 15:31
+                  - paragraph [ref=e272]: teste
+                  - generic [ref=e273]:
+                    - generic [ref=e274]: ENVIADA
+                    - generic [ref=e275]: Enviada
+                  - link "Abrir contexto" [ref=e277] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+              - generic [ref=e278]:
+                - img [ref=e280]
+                - generic [ref=e283]:
+                  - generic [ref=e284]:
+                    - generic [ref=e285]: Mensagem
+                    - paragraph [ref=e286]: Mensagem enviada
+                    - generic [ref=e287]: 07/04/2026, 15:29
+                  - paragraph [ref=e288]: teste
+                  - generic [ref=e289]:
+                    - generic [ref=e290]: ENVIADA
+                    - generic [ref=e291]: Enviada
+                  - link "Abrir contexto" [ref=e293] [cursor=pointer]:
+                    - /url: /candidatos/cmnooug2w00046sunfg1l1rgs/mensagens
+          - generic [ref=e294]:
+            - generic [ref=e296]:
+              - heading "Experiências (3)" [level=3] [ref=e297]:
+                - img [ref=e298]
+                - text: Experiências (3)
+              - generic [ref=e301]:
+                - generic [ref=e302]:
+                  - paragraph [ref=e303]: Líder técnico
+                  - paragraph [ref=e304]: Panvel
+                  - generic [ref=e305]:
+                    - img [ref=e306]
+                    - text: dez. de 2023 — Presente
+                    - generic [ref=e308]: (2 anos e 4 meses)
+                  - paragraph [ref=e309]: Atualmente lidero equipes e projetos, tomando decisões estratégicas sobre arquitetura e implementação. Minhas principais ferramentas de trabalho incluem Java, Spring, JavaScript, TypeScript, Redis, MySQL, MongoDB, Kafka, Kubernetes, Docker e GitLab, focando em entregar soluções escaláveis e eficientes para os desafios técnicos e de negócio.
+                - generic [ref=e310]:
+                  - paragraph [ref=e311]: Desenvolvedor Pleno
+                  - paragraph [ref=e312]: Forttiori
+                  - generic [ref=e313]:
+                    - img [ref=e314]
+                    - text: dez. de 2022 — dez. de 2023
+                    - generic [ref=e316]: (1 ano)
+                  - paragraph [ref=e317]: Evoluí minha expertise, assumindo responsabilidades maiores no desenvolvimento e manutenção de sistemas complexos, utilizando Java, Spring, JavaScript, TypeScript, Redis, MySQL, MongoDB, Kafka e Git, garantindo a entrega de soluções robustas e de alta performance.
+                - generic [ref=e318]:
+                  - paragraph [ref=e319]: Desenvolvedor júnior
+                  - paragraph [ref=e320]: Forttiori
+                  - generic [ref=e321]:
+                    - img [ref=e322]
+                    - text: dez. de 2020 — dez. de 2022
+                    - generic [ref=e324]: (2 anos)
+                  - paragraph [ref=e325]: Atuei no desenvolvimento de soluções utilizando uma stack moderna de tecnologias, como Java, Spring, JavaScript, TypeScript, Angular e Git, contribuindo para a construção de aplicações eficientes e escaláveis.
+            - generic [ref=e327]:
+              - heading "Formação (2)" [level=3] [ref=e328]:
+                - img [ref=e329]
+                - text: Formação (2)
+              - generic [ref=e332]:
+                - generic [ref=e333]:
+                  - paragraph [ref=e334]: Arquitetura de software
+                  - paragraph [ref=e335]: PUC · Pós-graduação
+                  - generic [ref=e336]:
+                    - img [ref=e337]
+                    - text: dez. de 2022 — Cursando
+                - generic [ref=e339]:
+                  - paragraph [ref=e340]: Analista de sistemas
+                  - paragraph [ref=e341]: Instituto federal do rio grande do sul · Graduação
+                  - generic [ref=e342]:
+                    - img [ref=e343]
+                    - text: dez. de 2018 — dez. de 2022
+          - generic [ref=e346]:
+            - heading "Vagas vinculadas (1)" [level=3] [ref=e347]
+            - link "Vaga Kenai Residencial Análise pendente" [ref=e349] [cursor=pointer]:
+              - /url: /vagas/cmnootwf800006sun58yew9u6/triagem
+              - generic [ref=e350]:
+                - paragraph [ref=e351]: Vaga Kenai
+                - generic [ref=e352]:
+                  - generic [ref=e353]: Residencial
+                  - generic [ref=e354]: Análise pendente
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e74] [cursor=pointer]:
+    - img [ref=e75]
+  - alert [ref=e355]

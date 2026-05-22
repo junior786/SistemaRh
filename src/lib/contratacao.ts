@@ -91,7 +91,7 @@ async function validarCandidatosDaVaga(vagaId: string, candidatoIds: string[]) {
 
   const idsValidos = new Set(triagens.map((triagem) => triagem.candidatoId));
   if (idsValidos.size !== candidatoIds.length) {
-    throw new Error("So e permitido contratar candidatos vinculados a esta vaga.");
+    throw new Error("Só é permitido contratar candidatos vinculados a esta vaga.");
   }
 }
 
@@ -119,7 +119,7 @@ async function validarDisponibilidadeContratacao(vagaId: string, candidatoIds: s
 
   if (conflitos.length > 0) {
     throw new Error(
-      `Ja existe candidato contratado em outra vaga: ${conflitos.map((candidato) => candidato.nome).join(", ")}.`,
+      `Já existe candidato contratado em outra vaga: ${conflitos.map((candidato) => candidato.nome).join(", ")}.`,
     );
   }
 }
@@ -154,6 +154,8 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
     .filter((candidato) => candidato.statusEmprego !== "EMPREGADO" || candidato.vagaEmpregadoId !== vagaId)
     .map((candidato) => candidato.id);
 
+  const agora = new Date();
+
   await prisma.$transaction([
     prisma.candidato.updateMany({
       where: {
@@ -163,6 +165,7 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
       data: {
         statusEmprego: "DISPONIVEL",
         vagaEmpregadoId: null,
+        contratadoEm: null,
       },
     }),
     prisma.candidato.updateMany({
@@ -172,6 +175,7 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
       data: {
         statusEmprego: "EMPREGADO",
         vagaEmpregadoId: vagaId,
+        contratadoEm: agora,
       },
     }),
   ]);
@@ -229,6 +233,7 @@ export async function contratarCandidatoNaVaga(vagaId: string, candidatoId: stri
     data: {
       statusEmprego: "EMPREGADO",
       vagaEmpregadoId: vagaId,
+      contratadoEm: new Date(),
     },
   });
 

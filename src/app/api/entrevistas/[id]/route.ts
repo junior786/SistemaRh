@@ -21,7 +21,7 @@ export async function PUT(
   });
 
   if (!entrevistaAtual) {
-    return Response.json({ error: "Entrevista nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Entrevista não encontrada" }, { status: 404 });
   }
 
   if (resultado === "APROVADO") {
@@ -29,7 +29,7 @@ export async function PUT(
       await validarContratacaoNaVaga(entrevistaAtual.triagem.vagaId, [entrevistaAtual.triagem.candidatoId]);
     } catch (error) {
       return Response.json(
-        { error: error instanceof Error ? error.message : "Nao foi possivel contratar o candidato" },
+        { error: error instanceof Error ? error.message : "Não foi possível contratar o candidato" },
         { status: 409 },
       );
     }

@@ -74,7 +74,7 @@ export async function registrarEventoTriagem({
   const snapshot = snapshots.get(triagemId);
 
   if (!snapshot) {
-    throw new Error(`Nao foi possivel registrar evento. Triagem ${triagemId} nao encontrada.`);
+    throw new Error(`Não foi possível registrar evento. Triagem ${triagemId} não encontrada.`);
   }
 
   try {

@@ -182,6 +182,7 @@ export default function EntrevistasPage() {
   }
 
   const etapasEntrevista = triagem.etapas.filter((etapa) => etapa.vagaEtapa.tipo === "ENTREVISTA");
+  const etapaSelecionada = etapasEntrevista.find((etapa) => etapa.vagaEtapa.id === vagaEtapaId) ?? null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -239,7 +240,11 @@ export default function EntrevistasPage() {
                   <Label>Etapa vinculada</Label>
                   <Select value={vagaEtapaId} onValueChange={(value) => setVagaEtapaId(value ?? "")}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a etapa" />
+                      <SelectValue placeholder="Selecione a etapa">
+                        {etapaSelecionada
+                          ? `${etapaSelecionada.vagaEtapa.nome} · ${ETAPA_STATUS_LABEL[etapaSelecionada.status]}`
+                          : undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {etapasEntrevista.map((etapa) => (

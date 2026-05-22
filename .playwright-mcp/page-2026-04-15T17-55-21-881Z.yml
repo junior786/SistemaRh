@@ -1,0 +1,194 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "RH Selector" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - heading "Calendário de Entrevistas" [level=2] [ref=e72]:
+              - img [ref=e73]
+              - text: Calendário de Entrevistas
+            - paragraph [ref=e75]: Visualize e gerencie todas as entrevistas agendadas
+          - generic [ref=e70]:
+            - generic [ref=e77]:
+              - paragraph [ref=e78]: "0"
+              - paragraph [ref=e79]: Hoje
+            - generic [ref=e81]:
+              - paragraph [ref=e82]: "1"
+              - paragraph [ref=e83]: Próximos 7 dias
+            - generic [ref=e85]:
+              - paragraph [ref=e86]: "1"
+              - paragraph [ref=e87]: Agendadas
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: "1"
+              - paragraph [ref=e91]: Total no período
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - button [ref=e97] [cursor=pointer]:
+                  - img
+                - button "Hoje" [ref=e98] [cursor=pointer]
+                - button [ref=e99] [cursor=pointer]:
+                  - img
+                - heading "abril 2026" [level=2] [ref=e100]
+              - generic [ref=e101]:
+                - button "Mês" [ref=e102] [cursor=pointer]
+                - button "Semana" [ref=e103] [cursor=pointer]
+                - button "Dia" [ref=e104] [cursor=pointer]
+                - button "Lista" [ref=e105] [cursor=pointer]
+            - table "Month View" [ref=e106]:
+              - row "domingo segunda terça quarta quinta sexta sábado" [ref=e107]:
+                - columnheader "domingo" [ref=e109]
+                - columnheader "segunda" [ref=e111]
+                - columnheader "terça" [ref=e113]
+                - columnheader "quarta" [ref=e115]
+                - columnheader "quinta" [ref=e117]
+                - columnheader "sexta" [ref=e119]
+                - columnheader "sábado" [ref=e121]
+              - rowgroup [ref=e122]:
+                - row "29 30 31 01 02 03 04" [ref=e131]:
+                  - generic [ref=e132]:
+                    - cell "29" [ref=e133]:
+                      - button "29" [ref=e134] [cursor=pointer]
+                    - cell "30" [ref=e135]:
+                      - button "30" [ref=e136] [cursor=pointer]
+                    - cell "31" [ref=e137]:
+                      - button "31" [ref=e138] [cursor=pointer]
+                    - cell "01" [ref=e139]:
+                      - button "01" [ref=e140] [cursor=pointer]
+                    - cell "02" [ref=e141]:
+                      - button "02" [ref=e142] [cursor=pointer]
+                    - cell "03" [ref=e143]:
+                      - button "03" [ref=e144] [cursor=pointer]
+                    - cell "04" [ref=e145]:
+                      - button "04" [ref=e146] [cursor=pointer]
+              - rowgroup [ref=e147]:
+                - row "05 06 07 08 09 10 11" [ref=e156]:
+                  - generic [ref=e157]:
+                    - cell "05" [ref=e158]:
+                      - button "05" [ref=e159] [cursor=pointer]
+                    - cell "06" [ref=e160]:
+                      - button "06" [ref=e161] [cursor=pointer]
+                    - cell "07" [ref=e162]:
+                      - button "07" [ref=e163] [cursor=pointer]
+                    - cell "08" [ref=e164]:
+                      - button "08" [ref=e165] [cursor=pointer]
+                    - cell "09" [ref=e166]:
+                      - button "09" [ref=e167] [cursor=pointer]
+                    - cell "10" [ref=e168]:
+                      - button "10" [ref=e169] [cursor=pointer]
+                    - cell "11" [ref=e170]:
+                      - button "11" [ref=e171] [cursor=pointer]
+              - rowgroup [ref=e172]:
+                - row "12 13 14 15 16 17 18 Ricardo Fracassi — Vaga Kenai" [ref=e181]:
+                  - generic [ref=e182]:
+                    - cell "12" [ref=e183]:
+                      - button "12" [ref=e184] [cursor=pointer]
+                    - cell "13" [ref=e185]:
+                      - button "13" [ref=e186] [cursor=pointer]
+                    - cell "14" [ref=e187]:
+                      - button "14" [ref=e188] [cursor=pointer]
+                    - cell "15" [ref=e189]:
+                      - button "15" [ref=e190] [cursor=pointer]
+                    - cell "16" [ref=e191]:
+                      - button "16" [ref=e192] [cursor=pointer]
+                    - cell "17" [ref=e193]:
+                      - button "17" [ref=e194] [cursor=pointer]
+                    - cell "18" [ref=e195]:
+                      - button "18" [ref=e196] [cursor=pointer]
+                  - generic "Ricardo Fracassi — Vaga Kenai" [ref=e201] [cursor=pointer]
+              - rowgroup [ref=e202]:
+                - row "19 20 21 22 23 24 25" [ref=e211]:
+                  - generic [ref=e212]:
+                    - cell "19" [ref=e213]:
+                      - button "19" [ref=e214] [cursor=pointer]
+                    - cell "20" [ref=e215]:
+                      - button "20" [ref=e216] [cursor=pointer]
+                    - cell "21" [ref=e217]:
+                      - button "21" [ref=e218] [cursor=pointer]
+                    - cell "22" [ref=e219]:
+                      - button "22" [ref=e220] [cursor=pointer]
+                    - cell "23" [ref=e221]:
+                      - button "23" [ref=e222] [cursor=pointer]
+                    - cell "24" [ref=e223]:
+                      - button "24" [ref=e224] [cursor=pointer]
+                    - cell "25" [ref=e225]:
+                      - button "25" [ref=e226] [cursor=pointer]
+              - rowgroup [ref=e227]:
+                - row "26 27 28 29 30 01 02" [ref=e236]:
+                  - generic [ref=e237]:
+                    - cell "26" [ref=e238]:
+                      - button "26" [ref=e239] [cursor=pointer]
+                    - cell "27" [ref=e240]:
+                      - button "27" [ref=e241] [cursor=pointer]
+                    - cell "28" [ref=e242]:
+                      - button "28" [ref=e243] [cursor=pointer]
+                    - cell "29" [ref=e244]:
+                      - button "29" [ref=e245] [cursor=pointer]
+                    - cell "30" [ref=e246]:
+                      - button "30" [ref=e247] [cursor=pointer]
+                    - cell "01" [ref=e248]:
+                      - button "01" [ref=e249] [cursor=pointer]
+                    - cell "02" [ref=e250]:
+                      - button "02" [ref=e251] [cursor=pointer]
+  - region "Notifications alt+T"
+  - alert [ref=e71]

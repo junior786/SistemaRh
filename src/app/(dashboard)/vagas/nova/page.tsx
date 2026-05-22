@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, X, Save, Clock, Check } from "lucide-react";
 import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
+import { toast } from "sonner";
 
 interface Requisito {
   descricao: string;
@@ -26,9 +27,34 @@ interface Requisito {
   tempoMeses: number | null;
 }
 
+type FormErrors = Record<string, string>;
+
+function validarVaga(fields: {
+  titulo: string; area: string; jobType: string; regime: string;
+  modalidade: string; localizacao: string; descricao: string;
+  cep: string; exigeCep: boolean;
+}): FormErrors {
+  const errors: FormErrors = {};
+  if (!fields.titulo.trim()) errors.titulo = "Título é obrigatório";
+  if (!fields.area.trim()) errors.area = "Área é obrigatória";
+  if (!fields.jobType.trim()) errors.jobType = "Tipo de trabalho é obrigatório";
+  if (!fields.regime) errors.regime = "Regime é obrigatório";
+  if (!fields.modalidade) errors.modalidade = "Modalidade é obrigatória";
+  if (!fields.localizacao.trim()) errors.localizacao = "Localização é obrigatória";
+  if (!fields.descricao.trim()) errors.descricao = "Descrição é obrigatória";
+  if (fields.exigeCep && !fields.cep.trim()) errors.cep = "CEP é obrigatório para vagas presenciais/híbridas";
+  return errors;
+}
+
+function FieldError({ error }: { error?: string }) {
+  if (!error) return null;
+  return <p className="text-xs text-destructive mt-1">{error}</p>;
+}
+
 export default function NovaVagaPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
   const [areasVaga, setAreasVaga] = useState<string[]>([]);
 
@@ -90,6 +116,16 @@ export default function NovaVagaPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const validationErrors = validarVaga({ titulo, area, jobType, regime, modalidade, localizacao, descricao, cep, exigeCep });
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      const firstErrorField = document.querySelector("[data-error='true']");
+      firstErrorField?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setSaving(true);
 
     // Auto-add pending requisito text before submitting
@@ -123,14 +159,17 @@ export default function NovaVagaPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Erro ao salvar vaga");
+        if (err.fieldErrors) {
+          setErrors(err.fieldErrors as FormErrors);
+        }
+        toast.error(err.error || "Erro ao salvar vaga");
         return;
       }
 
       const vaga = await res.json();
       router.push(`/vagas/${vaga.id}`);
     } catch {
-      alert("Erro ao salvar vaga");
+      toast.error("Erro ao salvar vaga");
     } finally {
       setSaving(false);
     }
@@ -145,50 +184,64 @@ export default function NovaVagaPage() {
         </p>
       </div>
 
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-destructive">Corrija os campos abaixo para continuar:</p>
+          <ul className="mt-2 list-inside list-disc text-sm text-destructive/80">
+            {Object.values(errors).map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* 1. Informações básicas */}
       <Card>
         <CardContent className="space-y-4 p-6">
           <h3 className="text-base font-semibold">1. Informações Básicas</h3>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-error={!!errors.titulo || undefined}>
             <Label htmlFor="titulo">Título da Vaga *</Label>
             <Input
               id="titulo"
               placeholder="ex: Desenvolvedor Frontend Sênior"
               value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              required
+              onChange={(e) => { setTitulo(e.target.value); setErrors((prev) => { const { titulo: _, ...rest } = prev; return rest; }); }}
+              className={errors.titulo ? "border-destructive" : ""}
             />
+            <FieldError error={errors.titulo} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.area || undefined}>
               <Label htmlFor="area">Área *</Label>
               <Input
                 id="area"
                 placeholder="ex: Engenharia"
                 value={area}
-                onChange={(e) => setArea(e.target.value)}
-                required
+                onChange={(e) => { setArea(e.target.value); setErrors((prev) => { const { area: _, ...rest } = prev; return rest; }); }}
+                className={errors.area ? "border-destructive" : ""}
               />
+              <FieldError error={errors.area} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.jobType || undefined}>
               <Label htmlFor="jobType">Tipo de Trabalho *</Label>
               <Input
                 id="jobType"
                 placeholder="ex: Desenvolvedor, Motorista, Doméstica"
                 value={jobType}
-                onChange={(e) => setJobType(e.target.value)}
-                required
+                onChange={(e) => { setJobType(e.target.value); setErrors((prev) => { const { jobType: _, ...rest } = prev; return rest; }); }}
+                className={errors.jobType ? "border-destructive" : ""}
               />
+              <FieldError error={errors.jobType} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.regime || undefined}>
               <Label htmlFor="regime">Regime *</Label>
-              <Select value={regime} onValueChange={(v) => setRegime(v ?? "")} required>
-                <SelectTrigger>
+              <Select value={regime} onValueChange={(v) => { setRegime(v ?? ""); setErrors((prev) => { const { regime: _, ...rest } = prev; return rest; }); }}>
+                <SelectTrigger className={errors.regime ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecione o regime" />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,14 +251,15 @@ export default function NovaVagaPage() {
                   <SelectItem value="FREELANCER">Freelancer</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError error={errors.regime} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.modalidade || undefined}>
               <Label htmlFor="modalidade">Modalidade *</Label>
-              <Select value={modalidade} onValueChange={(v) => setModalidade(v ?? "")} required>
-                <SelectTrigger>
+              <Select value={modalidade} onValueChange={(v) => { setModalidade(v ?? ""); setErrors((prev) => { const { modalidade: _, ...rest } = prev; return rest; }); }}>
+                <SelectTrigger className={errors.modalidade ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecione a modalidade" />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,30 +268,33 @@ export default function NovaVagaPage() {
                   <SelectItem value="HIBRIDO">Híbrido</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError error={errors.modalidade} />
             </div>
             {exigeCep && (
-              <div className="space-y-2">
+              <div className="space-y-2" data-error={!!errors.cep || undefined}>
                 <Label htmlFor="cep">CEP da Vaga *</Label>
                 <Input
                   id="cep"
                   placeholder="ex: 01001-000"
                   value={cep}
-                  onChange={(e) => setCep(e.target.value)}
-                  required={exigeCep}
+                  onChange={(e) => { setCep(e.target.value); setErrors((prev) => { const { cep: _, ...rest } = prev; return rest; }); }}
+                  className={errors.cep ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.cep} />
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-error={!!errors.localizacao || undefined}>
             <Label htmlFor="localizacao">Localização *</Label>
             <Input
               id="localizacao"
               placeholder="ex: São Paulo, SP"
               value={localizacao}
-              onChange={(e) => setLocalizacao(e.target.value)}
-              required
+              onChange={(e) => { setLocalizacao(e.target.value); setErrors((prev) => { const { localizacao: _, ...rest } = prev; return rest; }); }}
+              className={errors.localizacao ? "border-destructive" : ""}
             />
+            <FieldError error={errors.localizacao} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -263,16 +320,17 @@ export default function NovaVagaPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-error={!!errors.descricao || undefined}>
             <Label htmlFor="descricao">Descrição da Vaga *</Label>
             <Textarea
               id="descricao"
               placeholder="Descreva as responsabilidades e o que o candidato vai fazer..."
               rows={5}
               value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              required
+              onChange={(e) => { setDescricao(e.target.value); setErrors((prev) => { const { descricao: _, ...rest } = prev; return rest; }); }}
+              className={errors.descricao ? "border-destructive" : ""}
             />
+            <FieldError error={errors.descricao} />
           </div>
           <div className="space-y-2">
             <Label>Areas de Atuacao</Label>

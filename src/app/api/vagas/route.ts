@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
+import { validateVagaFields } from "@/lib/form-validations";
 
 // GET /api/vagas — listar vagas com contagem de candidatos
 export async function GET(request: NextRequest) {
@@ -51,6 +52,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, areas, requisitos, etapas } = body;
+  const fieldErrors = validateVagaFields({ titulo, area, jobType, regime, modalidade, localizacao, descricao, cep });
+  if (Object.keys(fieldErrors).length > 0) {
+    return Response.json({ error: "Campos obrigatorios faltando", fieldErrors }, { status: 400 });
+  }
 
   if (!titulo || !area || !regime || !modalidade || !localizacao || !descricao) {
     return Response.json({ error: "Campos obrigatórios faltando" }, { status: 400 });

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, X, Save, Loader2, AlertTriangle, Check } from "lucide-react";
 import { AREAS_ATUACAO_PADRAO } from "@/lib/areas";
+import { normalizePhoneBR } from "@/lib/phone";
+import { type FormErrors, validateCandidatoFields } from "@/lib/form-validations";
 
 interface Experiencia {
   empresa: string;
@@ -52,6 +55,11 @@ function formatDateForInput(d: string | null): string {
   return new Date(d).toISOString().split("T")[0];
 }
 
+function FieldError({ error }: { error?: string }) {
+  if (!error) return null;
+  return <p className="text-xs text-destructive mt-1">{error}</p>;
+}
+
 export default function EditarCandidatoPage() {
   const params = useParams();
   const router = useRouter();
@@ -59,6 +67,7 @@ export default function EditarCandidatoPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
 
   useEffect(() => {
@@ -108,7 +117,7 @@ export default function EditarCandidatoPage() {
       .then((data) => {
         setNome(data.nome || "");
         setEmail(data.email || "");
-        setTelefone(data.telefone || "");
+        setTelefone(normalizePhoneBR(data.telefone) || "");
         setCidade(data.cidade || "");
         setCep(data.cep || "");
         setGenero(data.genero || "");
@@ -215,6 +224,15 @@ export default function EditarCandidatoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const validationErrors = validateCandidatoFields({ nome, email, jobType });
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      const firstErrorField = document.querySelector("[data-error='true']");
+      firstErrorField?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setSaving(true);
 
     // Auto-add pending items before submitting
@@ -236,7 +254,7 @@ export default function EditarCandidatoPage() {
         body: JSON.stringify({
           nome,
           email,
-          telefone: telefone || null,
+          telefone: normalizePhoneBR(telefone),
           cidade: cidade || null,
           cep: cep || null,
           genero: genero || null,
@@ -255,13 +273,16 @@ export default function EditarCandidatoPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Erro ao salvar candidato");
+        if (err.fieldErrors) {
+          setErrors(err.fieldErrors as FormErrors);
+        }
+        toast.error(err.error || "Erro ao salvar candidato");
         return;
       }
 
       router.push(`/candidatos/${candidatoId}`);
     } catch {
-      alert("Erro ao salvar candidato");
+      toast.error("Erro ao salvar candidato");
     } finally {
       setSaving(false);
     }
@@ -284,32 +305,57 @@ export default function EditarCandidatoPage() {
         </p>
       </div>
 
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-destructive">Corrija os campos abaixo para continuar:</p>
+          <ul className="mt-2 list-inside list-disc text-sm text-destructive/80">
+            {Object.values(errors).map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* 1. Dados Pessoais */}
       <Card>
         <CardContent className="space-y-4 p-6">
           <h3 className="text-base font-semibold">1. Dados Pessoais</h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.nome || undefined}>
               <Label htmlFor="nome">Nome *</Label>
               <Input
                 id="nome"
                 placeholder="Nome completo"
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
+                onChange={(e) => {
+                  setNome(e.target.value);
+                  setErrors((prev) => {
+                    const { nome: _nome, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.nome ? "border-destructive" : ""}
               />
+              <FieldError error={errors.nome} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.email || undefined}>
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="email@exemplo.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((prev) => {
+                    const { email: _email, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.email ? "border-destructive" : ""}
               />
+              <FieldError error={errors.email} />
             </div>
           </div>
 
@@ -318,12 +364,13 @@ export default function EditarCandidatoPage() {
               <Label htmlFor="telefone">Telefone</Label>
               <Input
                 id="telefone"
-                placeholder="(11) 99999-9999"
+                placeholder="5511999999999"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
+                onBlur={(e) => setTelefone(normalizePhoneBR(e.target.value) || "")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-error={!!errors.jobType || undefined}>
               <Label htmlFor="cidade">Cidade</Label>
               <Input
                 id="cidade"
@@ -341,9 +388,16 @@ export default function EditarCandidatoPage() {
                 id="jobType"
                 placeholder="ex: Desenvolvedor, Motorista, Doméstica"
                 value={jobType}
-                onChange={(e) => setJobType(e.target.value)}
-                required
+                onChange={(e) => {
+                  setJobType(e.target.value);
+                  setErrors((prev) => {
+                    const { jobType: _jobType, ...rest } = prev;
+                    return rest;
+                  });
+                }}
+                className={errors.jobType ? "border-destructive" : ""}
               />
+              <FieldError error={errors.jobType} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="genero">Gênero</Label>

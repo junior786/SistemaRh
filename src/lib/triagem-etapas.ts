@@ -89,7 +89,7 @@ export async function reprovarEtapaAtualTriagem(triagemId: string) {
     ?? etapas.find((etapa) => etapa.status === "PENDENTE");
 
   if (!etapaAtual) {
-    throw new Error("Nao ha etapa ativa ou pendente para reprovar.");
+    throw new Error("Não há etapa ativa ou pendente para reprovar.");
   }
 
   const etapasPosteriores = etapas.filter((etapa) => etapa.vagaEtapa.ordem > etapaAtual.vagaEtapa.ordem);
@@ -136,7 +136,7 @@ export async function voltarParaEtapaAnteriorTriagem(triagemId: string) {
       ["CONCLUIDO", "REPROVADO", "DISPENSADO"].includes(etapa.status));
 
   if (!etapaReferencia) {
-    throw new Error("Nao ha etapa valida para retornar.");
+    throw new Error("Não há etapa válida para retornar.");
   }
 
   const etapaAnterior = [...etapas]
@@ -187,7 +187,7 @@ export async function reabrirEtapaTriagem(triagemId: string, vagaEtapaId: string
 
   const etapaDestino = etapas.find((etapa) => etapa.vagaEtapaId === vagaEtapaId);
   if (!etapaDestino) {
-    throw new Error("Etapa nao encontrada para esta triagem.");
+    throw new Error("Etapa não encontrada para esta triagem.");
   }
 
   if (!["CONCLUIDO", "REPROVADO", "DISPENSADO"].includes(etapaDestino.status)) {
@@ -251,7 +251,7 @@ export async function pularParaEtapaTriagem(triagemId: string, vagaEtapaDestinoI
 
   const etapaDestino = etapas.find((etapa) => etapa.vagaEtapaId === vagaEtapaDestinoId);
   if (!etapaDestino) {
-    throw new Error("Etapa de destino nao encontrada para esta triagem.");
+    throw new Error("Etapa de destino não encontrada para esta triagem.");
   }
 
   const etapaAtual = etapas.find((etapa) => etapa.status === "EM_ANDAMENTO")
@@ -259,11 +259,11 @@ export async function pularParaEtapaTriagem(triagemId: string, vagaEtapaDestinoI
     ?? null;
 
   if (!etapaAtual) {
-    throw new Error("Nao ha etapa ativa ou pendente para mover.");
+    throw new Error("Não há etapa ativa ou pendente para mover.");
   }
 
   if (etapaDestino.vagaEtapa.ordem <= etapaAtual.vagaEtapa.ordem) {
-    throw new Error("So e possivel pular para etapas futuras.");
+    throw new Error("Só é possível pular para etapas futuras.");
   }
 
   await prisma.$transaction(async (tx) => {

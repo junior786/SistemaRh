@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]
+        - generic [ref=e41]
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Detalhe da Vaga" [level=1] [ref=e57]
+        - generic [ref=e58]
+      - main [ref=e67]:
+        - generic [ref=e68]
+  - region "Notifications alt+T"
+  - alert [ref=e75]

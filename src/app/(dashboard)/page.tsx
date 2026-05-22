@@ -21,6 +21,7 @@ import {
   Clock3,
   BrainCircuit,
   History,
+  Filter,
 } from "lucide-react";
 
 interface Metricas {
@@ -30,7 +31,7 @@ interface Metricas {
   totalCandidatos: number;
   candidatosDisponiveis: number;
   candidatosContratados: number;
-  analisesConcluidas: number;
+  analisesConcluídas: number;
   mediaScore: number | null;
 }
 
@@ -66,12 +67,23 @@ interface VagaDestaque {
   melhorScore: number | null;
 }
 
+interface FunilEtapa {
+  nome: string;
+  total: number;
+  concluidos: number;
+  reprovados: number;
+  dispensados: number;
+  taxaConversao: number;
+  tempoMedioDias: number | null;
+}
+
 interface DashboardData {
   metricas: Metricas;
   pipeline: Pipeline;
   statusVagas: StatusVaga[];
   seriesMensal: SerieMensal[];
   vagasDestaque: VagaDestaque[];
+  funil: FunilEtapa[];
   atividadesRecentes: {
     id: string;
     tipo: string;
@@ -87,7 +99,7 @@ interface DashboardData {
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   ABERTA: { label: "Aberta", variant: "default" },
-  EM_REVISAO: { label: "Em revisao", variant: "secondary" },
+  EM_REVISAO: { label: "Em revisão", variant: "secondary" },
   FECHADA: { label: "Fechada", variant: "destructive" },
 };
 
@@ -96,7 +108,7 @@ const chartConfig = {
   candidatos: { label: "Candidatos", color: "var(--color-chart-3)" },
   triagens: { label: "Triagens", color: "var(--color-chart-5)" },
   abertas: { label: "Abertas", color: "var(--color-chart-1)" },
-  revisao: { label: "Em revisao", color: "var(--color-chart-5)" },
+  revisao: { label: "Em revisão", color: "var(--color-chart-5)" },
   fechadas: { label: "Fechadas", color: "var(--color-chart-4)" },
 } as const;
 
@@ -121,7 +133,7 @@ export default function DashboardPage() {
     totalCandidatos: 0,
     candidatosDisponiveis: 0,
     candidatosContratados: 0,
-    analisesConcluidas: 0,
+    analisesConcluídas: 0,
     mediaScore: null,
   };
 
@@ -133,7 +145,7 @@ export default function DashboardPage() {
     {
       label: "Vagas abertas",
       value: metricas.vagasAbertas,
-      helper: `${metricas.vagasEmRevisao} em revisao`,
+      helper: `${metricas.vagasEmRevisao} em revisão`,
       icon: Briefcase,
       tone: "text-primary",
       shell: "from-primary/15 via-primary/5 to-transparent",
@@ -155,9 +167,9 @@ export default function DashboardPage() {
       shell: "from-success/15 via-success/5 to-transparent",
     },
     {
-      label: "Analises concluidas",
-      value: metricas.analisesConcluidas,
-      helper: metricas.mediaScore != null ? `score medio ${metricas.mediaScore}%` : "sem score medio ainda",
+      label: "Análises concluídas",
+      value: metricas.analisesConcluídas,
+      helper: metricas.mediaScore != null ? `score médio ${metricas.mediaScore}%` : "sem score médio ainda",
       icon: BrainCircuit,
       tone: "text-warning",
       shell: "from-warning/15 via-warning/5 to-transparent",
@@ -176,15 +188,15 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <Badge variant="secondary" className="w-fit gap-1.5 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
               <Sparkles className="h-3 w-3" />
-              Visao executiva
+              Visão executiva
             </Badge>
             <div className="space-y-2">
               <h1 className="max-w-2xl text-3xl font-semibold tracking-tight lg:text-4xl">
-                Panorama do recrutamento com foco em conversao, volume e ritmo de operacao.
+                Panorama do recrutamento com foco em conversão, volume e ritmo de operação.
               </h1>
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground lg:text-base">
-                Acompanhe vagas abertas, contratacoes e andamento das triagens em uma visao unica,
-                desenhada para leitura rapida e tomada de decisao.
+                Acompanhe vagas abertas, contratações e andamento das triagens em uma visão única,
+                desenhada para leitura rápida e tomada de decisão.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -212,7 +224,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{data?.pipeline.concluidas ?? 0}</p>
-                  <p className="text-[11px] text-muted-foreground">Concluidas</p>
+                  <p className="text-[11px] text-muted-foreground">Concluídas</p>
                 </div>
               </div>
             </div>
@@ -225,7 +237,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground">em andamento agora</p>
                 </div>
                 <div className="text-right text-xs text-muted-foreground">
-                  <p>{metricas.vagasEmRevisao} em revisao</p>
+                  <p>{metricas.vagasEmRevisao} em revisão</p>
                   <p>{metricas.vagasFechadas} fechadas</p>
                 </div>
               </div>
@@ -237,7 +249,7 @@ export default function DashboardPage() {
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Destaque</p>
               </div>
               <p className="mt-3 text-3xl font-semibold">{metricas.mediaScore ?? 0}%</p>
-              <p className="text-sm text-muted-foreground">score medio das triagens concluidas</p>
+              <p className="text-sm text-muted-foreground">score médio das triagens concluídas</p>
             </div>
           </div>
         </div>
@@ -268,7 +280,7 @@ export default function DashboardPage() {
           <CardContent className="p-0">
             <div className="flex items-center justify-between border-b px-6 py-5">
               <div>
-                <h2 className="text-base font-semibold">Ritmo dos ultimos 6 meses</h2>
+                <h2 className="text-base font-semibold">Ritmo dos últimos 6 meses</h2>
                 <p className="text-sm text-muted-foreground">Vagas, candidatos e triagens ao longo do tempo</p>
               </div>
             </div>
@@ -370,14 +382,14 @@ export default function DashboardPage() {
                   config={{
                     pendentes: { label: "Pendentes", color: "var(--color-chart-5)" },
                     processando: { label: "Processando", color: "var(--color-chart-3)" },
-                    concluidas: { label: "Concluidas", color: "var(--color-chart-4)" },
+                    concluidas: { label: "Concluídas", color: "var(--color-chart-4)" },
                   }}
                 >
                   <BarChart
                     data={[
                       { etapa: "Pendentes", total: data?.pipeline.pendentes ?? 0, fill: "var(--color-pendentes)" },
                       { etapa: "Processando", total: data?.pipeline.processando ?? 0, fill: "var(--color-processando)" },
-                      { etapa: "Concluidas", total: data?.pipeline.concluidas ?? 0, fill: "var(--color-concluidas)" },
+                      { etapa: "Concluídas", total: data?.pipeline.concluidas ?? 0, fill: "var(--color-concluidas)" },
                     ]}
                     margin={{ left: 0, right: 0, top: 12 }}
                   >
@@ -398,7 +410,7 @@ export default function DashboardPage() {
                   <History className="h-4 w-4 text-primary" />
                   <h2 className="text-base font-semibold">Atividade recente</h2>
                 </div>
-                <p className="text-sm text-muted-foreground">Ultimos movimentos do funil e operacao do RH</p>
+                <p className="text-sm text-muted-foreground">Últimos movimentos do funil e operação do RH</p>
               </div>
 
               <div className="divide-y">
@@ -441,6 +453,59 @@ export default function DashboardPage() {
           </Card>
         </div>
       </section>
+
+      {/* Funil de conversão por etapa */}
+      {(data?.funil ?? []).length > 0 && (
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="border-b px-6 py-5">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                <h2 className="text-base font-semibold">Funil de conversão por etapa</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">Taxa de aprovação e tempo médio em cada fase do processo seletivo</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="px-6 py-3 font-medium">Etapa</th>
+                    <th className="px-4 py-3 font-medium text-center">Total</th>
+                    <th className="px-4 py-3 font-medium text-center">Aprovados</th>
+                    <th className="px-4 py-3 font-medium text-center">Reprovados</th>
+                    <th className="px-4 py-3 font-medium text-center">Dispensados</th>
+                    <th className="px-4 py-3 font-medium text-center">Conversão</th>
+                    <th className="px-4 py-3 font-medium text-center">Tempo médio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {data!.funil.map((etapa) => (
+                    <tr key={etapa.nome} className="hover:bg-muted/30">
+                      <td className="px-6 py-3 font-medium">{etapa.nome}</td>
+                      <td className="px-4 py-3 text-center">{etapa.total}</td>
+                      <td className="px-4 py-3 text-center text-success">{etapa.concluidos}</td>
+                      <td className="px-4 py-3 text-center text-destructive">{etapa.reprovados}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground">{etapa.dispensados}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={cn(
+                          "font-semibold",
+                          etapa.taxaConversao >= 70 ? "text-success" :
+                          etapa.taxaConversao >= 40 ? "text-warning" : "text-destructive"
+                        )}>
+                          {etapa.taxaConversao}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-muted-foreground">
+                        {etapa.tempoMedioDias != null ? `${etapa.tempoMedioDias}d` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">

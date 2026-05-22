@@ -48,7 +48,7 @@ export async function GET(
   });
 
   if (!triagem) {
-    return Response.json({ error: "Triagem nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
   }
 
   return Response.json(triagem);
@@ -69,7 +69,7 @@ export async function PUT(
   });
 
   if (!triagem) {
-    return Response.json({ error: "Triagem nao encontrada" }, { status: 404 });
+    return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
   }
 
   try {

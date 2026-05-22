@@ -1,0 +1,178 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e9]: RH Selector
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: RECRUTAMENTO
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - link "Dashboard" [ref=e15] [cursor=pointer]:
+                - /url: /
+                - img [ref=e16]
+                - text: Dashboard
+            - listitem [ref=e21]:
+              - link "Vagas" [ref=e22] [cursor=pointer]:
+                - /url: /vagas
+                - img [ref=e23]
+                - text: Vagas
+            - listitem [ref=e26]:
+              - link "Nova Vaga" [ref=e27] [cursor=pointer]:
+                - /url: /vagas/nova
+                - img [ref=e28]
+                - text: Nova Vaga
+            - listitem [ref=e30]:
+              - link "Candidatos" [ref=e31] [cursor=pointer]:
+                - /url: /candidatos
+                - img [ref=e32]
+                - text: Candidatos
+            - listitem [ref=e37]:
+              - link "Entrevistas" [ref=e38] [cursor=pointer]:
+                - /url: /entrevistas
+                - img [ref=e39]
+                - text: Entrevistas
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: SISTEMA
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - link "Configurações" [ref=e45] [cursor=pointer]:
+                - /url: /configuracoes
+                - img [ref=e46]
+                - text: Configurações
+      - generic [ref=e50]:
+        - generic [ref=e51]: RH
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Admin
+          - paragraph [ref=e54]: RH Manager
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - heading "Novo Candidato" [level=1] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Buscar..." [ref=e63]
+          - button [ref=e64] [cursor=pointer]:
+            - img
+          - button "Alterar tema" [ref=e65] [cursor=pointer]:
+            - img
+          - link "Nova Vaga" [ref=e66] [cursor=pointer]:
+            - /url: /vagas/nova
+            - img
+            - text: Nova Vaga
+      - main [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Novo Candidato" [level=2] [ref=e71]
+              - paragraph [ref=e72]: Preencha manualmente ou importe um PDF de currículo.
+            - generic [ref=e74] [cursor=pointer]:
+              - img [ref=e75]
+              - text: Importar PDF
+          - generic [ref=e79]:
+            - heading "1. Dados Pessoais" [level=3] [ref=e80]
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: Nome *
+                - textbox "Nome *" [active] [ref=e84]:
+                  - /placeholder: Nome completo
+              - generic [ref=e85]:
+                - generic [ref=e86]: Email *
+                - textbox "Email *" [ref=e87]:
+                  - /placeholder: email@exemplo.com
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - generic [ref=e90]: Telefone
+                - textbox "Telefone" [ref=e91]:
+                  - /placeholder: "5511999999999"
+              - generic [ref=e92]:
+                - generic [ref=e93]: Cidade
+                - textbox "Cidade" [ref=e94]:
+                  - /placeholder: São Paulo, SP
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - generic [ref=e97]: Tipo de Trabalho *
+                - textbox "Tipo de Trabalho *" [ref=e98]:
+                  - /placeholder: "ex: Desenvolvedor, Motorista, Doméstica"
+              - generic [ref=e99]:
+                - generic [ref=e100]: Gênero
+                - textbox "Gênero" [ref=e101]:
+                  - /placeholder: "ex: Masculino, Feminino, Não-binário"
+            - generic [ref=e102]:
+              - generic [ref=e103]: Áreas de Atuação
+              - paragraph [ref=e104]: Selecione uma ou mais áreas em que o candidato atua
+              - generic [ref=e158]:
+                - button "Desenvolvimento" [ref=e159] [cursor=pointer]
+                - button "Líder Técnico" [ref=e160] [cursor=pointer]
+                - button "Arquitetura de Software" [ref=e161] [cursor=pointer]
+                - button "DevOps / Infra" [ref=e162] [cursor=pointer]
+                - button "QA / Testes" [ref=e163] [cursor=pointer]
+                - button "Dados / Analytics" [ref=e164] [cursor=pointer]
+                - button "Produto / PM" [ref=e165] [cursor=pointer]
+                - button "Design / UX" [ref=e166] [cursor=pointer]
+                - button "Suporte / Helpdesk" [ref=e167] [cursor=pointer]
+                - button "Administração" [ref=e168] [cursor=pointer]
+                - button "Financeiro" [ref=e169] [cursor=pointer]
+                - button "RH / Pessoas" [ref=e170] [cursor=pointer]
+                - button "Comercial / Vendas" [ref=e171] [cursor=pointer]
+                - button "Marketing" [ref=e172] [cursor=pointer]
+                - button "Logística" [ref=e173] [cursor=pointer]
+                - button "Operações" [ref=e174] [cursor=pointer]
+                - button "Jurídico" [ref=e175] [cursor=pointer]
+                - button "Saúde" [ref=e176] [cursor=pointer]
+                - button "Educação" [ref=e177] [cursor=pointer]
+                - button "Engenharia" [ref=e178] [cursor=pointer]
+                - button "Serviços Gerais" [ref=e179] [cursor=pointer]
+                - button "Motorista / Transporte" [ref=e180] [cursor=pointer]
+                - button "Outro" [ref=e181] [cursor=pointer]
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - generic [ref=e107]: CEP
+                - textbox "CEP" [ref=e108]:
+                  - /placeholder: "ex: 01001-000"
+              - generic [ref=e109]:
+                - generic [ref=e110]: Pretensão Salarial
+                - spinbutton "Pretensão Salarial" [ref=e111]
+            - generic [ref=e112]:
+              - generic [ref=e113]: Resumo Profissional
+              - textbox "Resumo Profissional" [ref=e114]:
+                - /placeholder: Breve resumo da carreira...
+          - generic [ref=e116]:
+            - heading "2. Skills" [level=3] [ref=e117]
+            - generic [ref=e118]:
+              - textbox "Adicionar skill e pressione Enter..." [ref=e119]
+              - button [ref=e120] [cursor=pointer]:
+                - img
+          - generic [ref=e123]:
+            - heading "3. Experiências Profissionais" [level=3] [ref=e124]
+            - button "Adicionar" [ref=e125] [cursor=pointer]:
+              - img
+              - text: Adicionar
+          - generic [ref=e128]:
+            - heading "4. Formação Acadêmica" [level=3] [ref=e129]
+            - button "Adicionar" [ref=e130] [cursor=pointer]:
+              - img
+              - text: Adicionar
+          - generic [ref=e132]:
+            - generic [ref=e133]:
+              - img [ref=e134]
+              - heading "5. Restrições / Informações Relevantes" [level=3] [ref=e136]
+            - paragraph [ref=e137]: "Informações pessoais que podem influenciar na compatibilidade com vagas (ex: \"Tem 2 filhos\", \"Não possui CNH\", \"Disponível apenas manhã\")."
+            - generic [ref=e138]:
+              - textbox "Adicionar restrição e pressione Enter..." [ref=e139]
+              - button [ref=e140] [cursor=pointer]:
+                - img
+          - generic [ref=e142]:
+            - heading "6. Observações" [level=3] [ref=e143]
+            - paragraph [ref=e144]: Notas internas do RH sobre este candidato. Este campo pode ser editado a qualquer momento.
+            - textbox "Observações internas sobre o candidato..." [ref=e145]
+          - generic [ref=e146]:
+            - button "Cancelar" [ref=e147] [cursor=pointer]
+            - button "Salvar Candidato" [ref=e148] [cursor=pointer]:
+              - img
+              - text: Salvar Candidato
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e154] [cursor=pointer]:
+    - img [ref=e155]
+  - alert [ref=e182]
