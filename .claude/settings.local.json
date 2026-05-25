@@ -7,7 +7,11 @@
       "mcp__trello__list_boards",
       "mcp__trello__get_lists",
       "PowerShell($r = Invoke-RestMethod -Uri \"https://api.trello.com/1/boards/6a10bb2533bdab51f4e33010/lists?key=8f5629e9166614d6f3c8523260c55877&token=ATTAb9b7077174a7c2780524f18afdecdef44de0a0fd1a8674008061368ee09870ab16E64E8D&filter=open&fields=name,id,pos\" -Method Get; $r | ForEach-Object { \"$\\($_.id\\) | $\\($_.name\\) | pos=$\\($_.pos\\)\" })",
-      "PowerShell($r = Invoke-RestMethod -Method Post -Uri \"https://api.trello.com/1/lists?name=Motor%20WhatsApp&idBoard=6a10bb2533bdab51f4e33010&pos=bottom&key=8f5629e9166614d6f3c8523260c55877&token=ATTAb9b7077174a7c2780524f18afdecdef44de0a0fd1a8674008061368ee09870ab16E64E8D\"; \"$\\($r.id\\) | $\\($r.name\\)\")"
+      "PowerShell($r = Invoke-RestMethod -Method Post -Uri \"https://api.trello.com/1/lists?name=Motor%20WhatsApp&idBoard=6a10bb2533bdab51f4e33010&pos=bottom&key=8f5629e9166614d6f3c8523260c55877&token=ATTAb9b7077174a7c2780524f18afdecdef44de0a0fd1a8674008061368ee09870ab16E64E8D\"; \"$\\($r.id\\) | $\\($r.name\\)\")",
+      "mcp__trello__trello_get_list_cards",
+      "mcp__trello__trello_get_board_cards",
+      "mcp__trello__get_board_details",
+      "mcp__plugin_context-mode_context-mode__ctx_execute"
     ]
   }
 }

@@ -14,6 +14,8 @@ Apply these conventions when creating, updating, labeling, or reorganizing cards
 
 - `boardId`: `6a10bb2533bdab51f4e33010`
 - `activeListId`: `6a10beefe1c3ba7ad81c50a7`
+- `devListId`: `6a10c0a994fbc837b1272487`
+- `qaListId`: `6a10c0a9a3c307d570fc5261`
 
 ## Labels
 
@@ -33,6 +35,10 @@ Apply these conventions when creating, updating, labeling, or reorganizing cards
 4. Use concise Portuguese in titles and descriptions to match the current board style.
 5. Apply the correct label after creating or updating the card.
 6. Keep all new cards in the current active list unless the user asks for a different list.
+7. When starting development from an existing card, move it to `Dev`.
+8. When implementation is finished and ready for validation, move it to `QA`.
+9. Prefer `Trello MCP` when available.
+10. If `Trello MCP` fails because of auth, connection, or server issues, fall back to the direct Trello API via `PowerShell` + `Invoke-RestMethod`.
 
 ## Card description standard
 
@@ -58,3 +64,4 @@ Use this structure for implementation cards:
 - Do not persist Trello secrets in repository files.
 - Avoid destructive bulk moves or deletions unless explicitly requested.
 - If board IDs, list IDs, or labels change, update this file and the Codex skill reference together.
+- If `Trello MCP` is down, do not block the task when direct API access is available.

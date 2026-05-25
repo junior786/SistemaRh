@@ -16,21 +16,84 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model Empresa {
-  id                String   @id @default(cuid())
+  id                String         @id @default(cuid())
   nome              String
-  iaWhatsappAtivo   Boolean  @default(false)
-  iaPersona         String?  // texto livre da persona (ex: "Sou Ana, assistente de RH...")
-  iaTomVoz          String?  // "formal" | "informal" | etc.
-  iaFAQ             String?  // markdown com perguntas e respostas frequentes
-  iaBlocklist       String?  // topicos proibidos (markdown ou csv)
-  iaModoDraft       Boolean  @default(false) // se true, IA so gera rascunho — RH aprova antes do envio
-  twilioAccountSid  String?  @unique // criptografar em produção
+  slug              String         @unique
+  dominioCustom     String?        @unique
+  status            EmpresaStatus  @default(ATIVA)
+  timezone          String         @default("America/Sao_Paulo")
+  logoUrl           String?
+  corPrimaria       String?
+  iaWhatsappAtivo   Boolean        @default(false)
+  iaPersona         String?
+  iaTomVoz          String?
+  iaFAQ             String?
+  iaBlocklist       String?
+  iaModoDraft       Boolean        @default(false)
+  twilioAccountSid  String?        @unique
   twilioAuthToken   String?
-  twilioFromNumber  String?  // formato whatsapp:+E164 (ex: whatsapp:+14155238886)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  twilioFromNumber  String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  templatesWhats TwilioTemplate[]
+  templatesWhats    TwilioTemplate[]
+  usuarios          EmpresaUsuario[]
+  vagas             Vaga[]
+  candidatos        Candidato[]
+  categorias        Categoria[]
+  triagens          Triagem[]
+  triagemEventos    TriagemEvento[]
+  mensagens         Mensagem[]
+  controlesConversa ControleConversa[]
+}
+
+enum EmpresaStatus {
+  ATIVA
+  SUSPENSA
+  INATIVA
+}
+
+// ─────────────────────────────────────────────
+// USUÁRIOS E AUTORIZAÇÃO
+// ─────────────────────────────────────────────
+
+// Identidade local espelha usuário do Firebase Auth.
+// firebaseUid é a chave de junção com o token validado pelo backend.
+model Usuario {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique
+  nome        String
+  email       String   @unique
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empresas EmpresaUsuario[]
+}
+
+// Vínculo entre usuário e empresa com papel de autorização.
+// Um usuário pode pertencer a várias empresas com papéis distintos.
+model EmpresaUsuario {
+  id         String   @id @default(cuid())
+  empresaId  String
+  usuarioId  String
+  role       Role     @default(RECRUITER)
+  ativo      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, usuarioId])
+  @@index([usuarioId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  RECRUITER
+  VIEWER
 }
 
 // Templates aprovados no Twilio Content Builder
@@ -59,6 +122,7 @@ model TwilioTemplate {
 // Categorias configuráveis (áreas de atuação, tipos de trabalho, etc.)
 model Categoria {
   id        String   @id @default(cuid())
+  empresaId String
   tipo      String   // "AREA_ATUACAO" | "TIPO_TRABALHO" etc.
   nome      String
   ordem     Int      @default(0)
@@ -66,7 +130,10 @@ model Categoria {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([tipo, nome])
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, tipo, nome])
+  @@index([empresaId])
 }
 
 // ─────────────────────────────────────────────
@@ -75,27 +142,31 @@ model Categoria {
 
 model Vaga {
   id          String      @id @default(cuid())
+  empresaId   String
   titulo      String
   area        String
-  jobType     String      // tipo de trabalho: Desenvolvedor, Motorista, Doméstica etc.
+  jobType     String
   regime      Regime
   modalidade  Modalidade
   localizacao String
-  cep         String?     // obrigatório se presencial ou híbrido
+  cep         String?
   salarioMin  Float?
   salarioMax  Float?
   descricao   String
-  status          VagaStatus  @default(ABERTA)
-  preTriagemIds   String?     // JSON: IDs de candidatos selecionados pela pré-triagem IA
-  preTriagemMotivo String?    // motivo/critério usado pela IA
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  status           VagaStatus @default(ABERTA)
+  preTriagemIds    String?
+  preTriagemMotivo String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
+  empresa     Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   areas       VagaArea[]
   requisitos  Requisito[]
   etapas      VagaEtapa[]
   triagens    Triagem[]
   empregados  Candidato[] @relation("empregados")
+
+  @@index([empresaId])
 }
 
 enum Regime {
@@ -180,22 +251,24 @@ enum VagaEtapaTipo {
 
 model Candidato {
   id                String          @id @default(cuid())
+  empresaId         String
   nome              String
-  email             String          @unique
+  email             String
   telefone          String?
   cidade            String?
   cep               String?
-  genero            String?         // texto livre: Masculino, Feminino, Não-binário, etc.
+  genero            String?
   resumo            String?
-  jobType           String          // tipo de trabalho pretendido
+  jobType           String
   pretensaoSalarial Float?
-  observacao        String?         // notas internas editáveis pelo RH
+  observacao        String?
   statusEmprego     StatusEmprego   @default(DISPONIVEL)
-  vagaEmpregadoId   String?         // vaga em que foi contratado
-  contratadoEm      DateTime?       // data da contratação
+  vagaEmpregadoId   String?
+  contratadoEm      DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  empresa      Empresa          @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   areas        CandidatoArea[]
   skills       CandidatoSkill[]
   experiencias Experiencia[]
@@ -204,7 +277,10 @@ model Candidato {
   restricoes   Restricao[]
   mensagens    Mensagem[]
   controleConversa ControleConversa?
-  vagaEmpregado Vaga?  @relation("empregados", fields: [vagaEmpregadoId], references: [id], onDelete: SetNull)
+  vagaEmpregado    Vaga? @relation("empregados", fields: [vagaEmpregadoId], references: [id], onDelete: SetNull)
+
+  @@unique([empresaId, email])
+  @@index([empresaId])
 }
 
 enum StatusEmprego {
@@ -296,6 +372,7 @@ enum NivelFormacao {
 // Representa a análise de um candidato para uma vaga específica
 model Triagem {
   id          String        @id @default(cuid())
+  empresaId   String
   vagaId      String
   candidatoId String
   status      TriagemStatus @default(PENDENTE)
@@ -322,11 +399,13 @@ model Triagem {
   etapas      TriagemEtapa[]
   eventos     TriagemEvento[]
 
+  empresa   Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   vaga      Vaga      @relation(fields: [vagaId], references: [id], onDelete: Cascade)
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
 
   // Um candidato só pode ter uma triagem por vaga
   @@unique([vagaId, candidatoId])
+  @@index([empresaId])
 }
 
 enum TriagemStatus {
@@ -341,19 +420,23 @@ enum TriagemStatus {
 // ─────────────────────────────────────────────
 
 model TriagemEvento {
-  id        String   @id @default(cuid())
-  triagemId String?
-  vagaId    String
-  vagaTitulo String
-  candidatoId String
+  id            String   @id @default(cuid())
+  empresaId     String
+  triagemId     String?
+  vagaId        String
+  vagaTitulo    String
+  candidatoId   String
   candidatoNome String
-  tipo      String
-  descricao String
-  origem    String   @default("SISTEMA")
-  metadados String?
-  createdAt DateTime @default(now())
+  tipo          String
+  descricao     String
+  origem        String   @default("SISTEMA")
+  metadados     String?
+  createdAt     DateTime @default(now())
 
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   triagem Triagem? @relation(fields: [triagemId], references: [id], onDelete: SetNull)
+
+  @@index([empresaId])
 }
 
 model TriagemEtapa {
@@ -418,6 +501,7 @@ enum EntrevistaResultado {
 
 model Mensagem {
   id                 String          @id @default(cuid())
+  empresaId          String
   candidatoId        String
   providerMessageSid String?         @unique
   direcao            MensagemDirecao
@@ -426,24 +510,31 @@ model Mensagem {
   tipo               MensagemTipo    @default(LIVRE)
   templateId         String?
   geradaPorIA        Boolean         @default(false)
-  iaRascunho         Boolean         @default(false) // rascunho gerado pela IA aguardando aprovacao do RH
-  iaAprovadaEm       DateTime?       // quando o RH aprovou e a mensagem foi enviada
+  iaRascunho         Boolean         @default(false)
+  iaAprovadaEm       DateTime?
   criadoEm           DateTime        @default(now())
   atualizadoEm       DateTime        @updatedAt
 
+  empresa   Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
 }
 
 // Estado de controle por candidato
 // iaAtiva = false → RH assumiu, IA não responde
 model ControleConversa {
   id          String    @id @default(cuid())
+  empresaId   String
   candidatoId String    @unique
   iaAtiva     Boolean   @default(true)
   assumidoEm  DateTime?
   updatedAt   DateTime  @updatedAt
 
+  empresa   Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
 }
 
 enum MensagemDirecao {
