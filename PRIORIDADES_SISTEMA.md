@@ -16,6 +16,26 @@
 4. Remover `alert` de fluxos criticos
    Substituir por feedback consistente com `toast` e tratamento visual de erro/sucesso.
 
+5. Isolamento multi-tenant
+   Hoje o sistema e implicitamente single-tenant: nenhum dos models de dominio
+   (Vaga, Candidato, Categoria, Triagem, Entrevista, Mensagem, ControleConversa,
+   VagaArea, Requisito, VagaEtapa, CandidatoArea, CandidatoSkill, Experiencia,
+   Formacao, Restricao, TriagemEvento, TriagemEtapa) possui `empresaId`.
+   `getSingleTenantEmpresa()` apenas devolve o primeiro registro de Empresa e
+   todas as queries operam sobre o pool global. A IA do WhatsApp tambem cita
+   qualquer vaga aberta independentemente da empresa. Antes de subir uma segunda
+   empresa em producao, este gap precisa ser endereçado (ver item 19 do Backlog
+   Tecnico).
+
+6. Substituir login admin/admin por Firebase Auth
+   Login hoje e uma credencial fixa global. Em producao isso e inaceitavel:
+   nao ha conceito de usuario, sem rastro de quem fez o que, sem recuperacao
+   de senha, sem MFA, sem revogacao. Decisao arquitetural ja tomada (ver
+   docs/MOTOR_WHATSAPP.md §4): adotar Firebase Auth como IdP unico para
+   usuarios e para o service-to-service com o Motor WhatsApp. Pre-requisito
+   para subir o Motor em producao e para abrir o produto para mais de uma
+   empresa. Ver item 20 do Backlog Tecnico.
+
 ## Importante
 
 1. Completar a operacao manual do pipeline (CONCLUIDO)
@@ -406,6 +426,82 @@
   - visualização tipo kanban com colunas: novo, em análise, entrevista RH, aguardando retorno, aprovado, reprovado
   - drag and drop entre colunas
   - contadores e filtros por coluna
+
+### 20. Migrar login para Firebase Auth
+
+- Prioridade: Critico
+- Esforco: Medio
+- Status: Pendente
+- Dependencias: nenhuma (mas e pre-requisito para 21. Motor WhatsApp em
+  producao)
+- Objetivo:
+  Substituir o login admin/admin atual por Firebase Auth, dando suporte a
+  usuarios reais, auditoria, recuperacao de senha e MFA. Usar o mesmo Firebase
+  Project que sera usado pelo Motor WhatsApp para auth service-to-service
+  (ver docs/MOTOR_WHATSAPP.md §4).
+- Arquivos impactados:
+  - src/app/login/* (substituir form atual)
+  - src/middleware.ts ou equivalente (validar Firebase ID token em vez de
+    cookie de sessao)
+  - src/lib/auth.ts (novo: getServerSession via verifyIdToken)
+  - src/lib/firebase-admin.ts (novo: inicializa Admin SDK server-side)
+  - src/lib/firebase-client.ts (novo: SDK client com config publica)
+  - .env (FIREBASE_ADMIN_CREDENTIALS server-side, NEXT_PUBLIC_FIREBASE_* client)
+  - prisma/schema.prisma (novo model Usuario { firebaseUid, empresaId, role })
+  - migration de backfill: criar usuario admin inicial atrelado ao
+    firebaseServiceUid existente
+  - todas as rotas API: passar a usar getServerSession do novo modulo
+- Entregas:
+  - Firebase Project provisionado, providers ativos (Email/Password e Google
+    no minimo)
+  - Service Account JSON em env var, NUNCA no bundle client
+  - login funcional via Firebase JS SDK
+  - middleware valida ID token em cada request, popula contexto com usuario
+  - model Usuario com vinculo a Empresa (preparando o multi-tenant)
+  - logout, esqueci-minha-senha, change password funcionando
+  - documentacao de onboarding de novo usuario
+- Notas:
+  - Config publica do Firebase (apiKey, authDomain) pode estar em
+    NEXT_PUBLIC_*; sao identificadores, nao credenciais
+  - Service Account JSON e o segredo real, equivalente a "root" — proteger
+    como tal (scrubbing em telemetria, nunca em log)
+  - Recomendado fazer antes do Motor WhatsApp ir pra producao, pois o Motor
+    depende desse mesmo IdP para autenticar o rh-selector como servico
+
+### 19. Isolamento multi-tenant
+
+- Prioridade: Critico
+- Esforco: Alto
+- Status: Pendente
+- Dependencias: nenhuma
+- Objetivo:
+  Tornar o sistema verdadeiramente multi-tenant: cada Empresa enxerga apenas
+  seus proprios dados. Pre-requisito para abrir o produto para mais de um
+  cliente em producao.
+- Arquivos impactados:
+  - prisma/schema.prisma (adicionar `empresaId` + FK em todos os models de dominio)
+  - prisma/migrations/<nova> (backfill: associar dados existentes a empresa unica)
+  - src/lib/whatsapp-config.ts (substituir `getSingleTenantEmpresa` por resolver
+    baseado em sessao do usuario e por `To` no webhook Twilio)
+  - todas as rotas em src/app/api/* (filtrar por `empresaId` em GET/POST/PUT/DELETE)
+  - src/app/api/whatsapp/webhook/route.ts (resolver empresa pelo numero `To` recebido)
+  - autenticacao (model Usuario com `empresaId`, sessao carrega contexto)
+- Models que precisam de `empresaId`:
+  Vaga, Candidato, Categoria, Triagem, Entrevista, Mensagem, ControleConversa,
+  VagaArea, Requisito, VagaEtapa, CandidatoArea, CandidatoSkill, Experiencia,
+  Formacao, Restricao, TriagemEvento, TriagemEtapa
+  (TwilioTemplate ja possui)
+- Entregas:
+  - schema com `empresaId` + index em todos os models acima
+  - migration com backfill seguro para dados existentes (sem perder)
+  - servico/middleware que injeta `empresaId` em todas as queries
+  - webhook Twilio resolve empresa pelo `twilioFromNumber` (`To`)
+  - testes garantindo isolamento (empresa A nao ve dado de B)
+  - revisao da IA: ela so cita vagas/dados da propria empresa
+- Notas:
+  - Mudanca grande e arriscada. Recomendado fazer em sprint propria.
+  - Considerar feature flag para permitir rollback rapido.
+  - Apos migracao, validar com 2 empresas seed e teste E2E.
 
 ### 18. Estados vazios com próxima ação
 

@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Loader2, Tags, MessageCircle, Save, FileText } from "lucide-react";
+import { Plus, X, Loader2, Tags, MessageCircle, Save, FileText, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +43,14 @@ interface WhatsAppConfig {
   twilioAccountSid: string | null;
   twilioAuthToken: string | null;
   twilioFromNumber: string | null;
+  iaPersona: string | null;
+  iaTomVoz: string | null;
+  iaFAQ: string | null;
+  iaBlocklist: string | null;
+  iaModoDraft: boolean;
 }
+
+const TOM_OPCOES = ["formal", "informal", "amigável", "técnico"] as const;
 
 interface TwilioTemplate {
   id: string;
@@ -84,14 +92,26 @@ export default function ConfiguracoesPage() {
     twilioAccountSid: null,
     twilioAuthToken: null,
     twilioFromNumber: null,
+    iaPersona: null,
+    iaTomVoz: null,
+    iaFAQ: null,
+    iaBlocklist: null,
+    iaModoDraft: false,
   });
   const [waForm, setWaForm] = useState({
     twilioAccountSid: "",
     twilioAuthToken: "",
     twilioFromNumber: "",
   });
+  const [iaForm, setIaForm] = useState({
+    iaPersona: "",
+    iaTomVoz: "",
+    iaFAQ: "",
+    iaBlocklist: "",
+  });
   const [waSaving, setWaSaving] = useState(false);
   const [waLoading, setWaLoading] = useState(true);
+  const [iaSaving, setIaSaving] = useState(false);
 
   // Templates Twilio
   const [templates, setTemplates] = useState<TwilioTemplate[]>([]);
@@ -130,6 +150,12 @@ export default function ConfiguracoesPage() {
           twilioAuthToken: "",
           twilioFromNumber: data.twilioFromNumber || "",
         });
+        setIaForm({
+          iaPersona: data.iaPersona || "",
+          iaTomVoz: data.iaTomVoz || "",
+          iaFAQ: data.iaFAQ || "",
+          iaBlocklist: data.iaBlocklist || "",
+        });
       })
       .catch(console.error)
       .finally(() => setWaLoading(false));
@@ -165,6 +191,34 @@ export default function ConfiguracoesPage() {
       toast.error("Erro ao salvar configurações Twilio");
     } finally {
       setWaSaving(false);
+    }
+  }
+
+  async function salvarComportamentoIA() {
+    setIaSaving(true);
+    try {
+      const res = await fetch("/api/configuracoes/whatsapp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          iaPersona: iaForm.iaPersona || null,
+          iaTomVoz: iaForm.iaTomVoz || null,
+          iaFAQ: iaForm.iaFAQ || null,
+          iaBlocklist: iaForm.iaBlocklist || null,
+          iaModoDraft: waConfig.iaModoDraft,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWaConfig(data);
+        toast.success("Comportamento da IA salvo");
+      } else {
+        toast.error("Erro ao salvar comportamento da IA");
+      }
+    } catch {
+      toast.error("Erro ao salvar comportamento da IA");
+    } finally {
+      setIaSaving(false);
     }
   }
 
@@ -472,6 +526,97 @@ export default function ConfiguracoesPage() {
                 <code>X-Twilio-Signature</code> é validada em produção usando{" "}
                 <code>WHATSAPP_WEBHOOK_BASE_URL</code>.
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Comportamento da IA */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3 mb-6">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10">
+              <Bot className="h-4 w-4 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold">Comportamento da IA</h3>
+              <p className="text-xs text-muted-foreground">
+                Define persona, tom, FAQ e tópicos proibidos usados pela IA nas respostas WhatsApp
+              </p>
+            </div>
+          </div>
+
+          {waLoading ? (
+            <div className="h-32 animate-pulse rounded-lg bg-muted" />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Modo rascunho</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando ativo, a IA apenas sugere a resposta. O RH precisa aprovar antes do envio.
+                  </p>
+                </div>
+                <Switch
+                  checked={waConfig.iaModoDraft}
+                  onCheckedChange={(checked) =>
+                    setWaConfig((prev) => ({ ...prev, iaModoDraft: checked }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Persona</Label>
+                <Textarea
+                  rows={3}
+                  value={iaForm.iaPersona}
+                  onChange={(e) => setIaForm((prev) => ({ ...prev, iaPersona: e.target.value }))}
+                  placeholder='Ex: "Sou Ana, assistente virtual de RH da Acme. Ajudo candidatos com dúvidas sobre vagas e entrevistas."'
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Tom de voz</Label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={iaForm.iaTomVoz}
+                  onChange={(e) => setIaForm((prev) => ({ ...prev, iaTomVoz: e.target.value }))}
+                >
+                  <option value="">(usar padrão)</option>
+                  {TOM_OPCOES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">FAQ (markdown)</Label>
+                <Textarea
+                  rows={6}
+                  value={iaForm.iaFAQ}
+                  onChange={(e) => setIaForm((prev) => ({ ...prev, iaFAQ: e.target.value }))}
+                  placeholder={"Ex:\n- Qual o horário de trabalho? Segunda a sexta, 9h às 18h.\n- Tem vale-refeição? Sim, R$ 35/dia."}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Tópicos proibidos</Label>
+                <Textarea
+                  rows={3}
+                  value={iaForm.iaBlocklist}
+                  onChange={(e) => setIaForm((prev) => ({ ...prev, iaBlocklist: e.target.value }))}
+                  placeholder={"Ex:\n- política e religião\n- valor de salário (encaminhar pro RH)"}
+                />
+              </div>
+
+              <Button
+                className="gap-1.5"
+                disabled={iaSaving}
+                onClick={salvarComportamentoIA}
+              >
+                {iaSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar comportamento da IA
+              </Button>
             </div>
           )}
         </CardContent>

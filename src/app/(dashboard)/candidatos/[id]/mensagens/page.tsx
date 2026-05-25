@@ -15,6 +15,11 @@ import {
   CheckCheck,
   AlertCircle,
   FileText,
+  PencilLine,
+  Trash2,
+  CheckCircle2,
+  X,
+  Loader2,
 } from "lucide-react";
 import { normalizePhoneBR } from "@/lib/phone";
 
@@ -25,6 +30,7 @@ interface Mensagem {
   status: "ENVIADA" | "ENTREGUE" | "LIDA" | "FALHA";
   tipo: "LIVRE" | "TEMPLATE";
   geradaPorIA: boolean;
+  iaRascunho: boolean;
   criadoEm: string;
 }
 
@@ -60,6 +66,11 @@ export default function MensagensPage() {
   const [enviando, setEnviando] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Edicao de rascunho IA
+  const [rascunhoEditandoId, setRascunhoEditandoId] = useState<string | null>(null);
+  const [rascunhoTexto, setRascunhoTexto] = useState("");
+  const [rascunhoAcao, setRascunhoAcao] = useState<string | null>(null); // id em processamento
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +136,61 @@ export default function MensagensPage() {
       toast.error("Erro ao enviar mensagem");
     } finally {
       setEnviando(false);
+    }
+  }
+
+  async function recarregar() {
+    try {
+      const data = await fetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json());
+      setMensagens(data.mensagens);
+      setIaAtiva(data.controle?.iaAtiva ?? true);
+    } catch {
+      // silenciar
+    }
+  }
+
+  async function aprovarRascunho(id: string, conteudoOverride?: string) {
+    setRascunhoAcao(id);
+    try {
+      const res = await fetch(`/api/whatsapp/mensagens/${id}/aprovar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(conteudoOverride !== undefined ? { conteudo: conteudoOverride } : {}),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Erro ao aprovar rascunho");
+        return;
+      }
+      setRascunhoEditandoId(null);
+      setRascunhoTexto("");
+      await recarregar();
+    } finally {
+      setRascunhoAcao(null);
+    }
+  }
+
+  function iniciarEdicaoRascunho(msg: Mensagem) {
+    setRascunhoEditandoId(msg.id);
+    setRascunhoTexto(msg.conteudo);
+  }
+
+  function cancelarEdicaoRascunho() {
+    setRascunhoEditandoId(null);
+    setRascunhoTexto("");
+  }
+
+  async function descartarRascunho(id: string) {
+    setRascunhoAcao(id);
+    try {
+      const res = await fetch(`/api/whatsapp/mensagens/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Erro ao descartar rascunho");
+        return;
+      }
+      await recarregar();
+    } finally {
+      setRascunhoAcao(null);
     }
   }
 
@@ -200,43 +266,123 @@ export default function MensagensPage() {
                   {dia}
                 </span>
               </div>
-              {msgs.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex mb-2 ${msg.direcao === "ENVIADA" ? "justify-end" : "justify-start"}`}
-                >
+              {msgs.map((msg) => {
+                const emEdicao = rascunhoEditandoId === msg.id;
+                const processando = rascunhoAcao === msg.id;
+                const bolhaClasses = msg.iaRascunho
+                  ? "max-w-[70%] rounded-xl px-4 py-2.5 border-2 border-dashed border-amber-400 bg-amber-50 text-amber-900"
+                  : msg.direcao === "ENVIADA"
+                    ? "max-w-[70%] rounded-xl px-4 py-2.5 bg-primary text-primary-foreground"
+                    : "max-w-[70%] rounded-xl px-4 py-2.5 bg-muted";
+                return (
                   <div
-                    className={`max-w-[70%] rounded-xl px-4 py-2.5 ${
-                      msg.direcao === "ENVIADA"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
+                    key={msg.id}
+                    className={`flex mb-2 ${msg.direcao === "ENVIADA" ? "justify-end" : "justify-start"}`}
                   >
-                    {/* Indicador de IA */}
-                    {msg.geradaPorIA && (
-                      <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
-                        <Bot className="h-3 w-3" />
-                        <span>IA</span>
+                    <div className={bolhaClasses}>
+                      {msg.iaRascunho && (
+                        <div className="flex items-center gap-1 mb-1 text-xs font-medium">
+                          <Bot className="h-3 w-3" />
+                          <span>Rascunho da IA — aguardando aprovação</span>
+                        </div>
+                      )}
+
+                      {!msg.iaRascunho && msg.geradaPorIA && (
+                        <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
+                          <Bot className="h-3 w-3" />
+                          <span>IA</span>
+                        </div>
+                      )}
+
+                      {msg.tipo === "TEMPLATE" && (
+                        <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
+                          <FileText className="h-3 w-3" />
+                          <span>Template</span>
+                        </div>
+                      )}
+
+                      {emEdicao ? (
+                        <Textarea
+                          value={rascunhoTexto}
+                          onChange={(e) => setRascunhoTexto(e.target.value)}
+                          rows={3}
+                          className="text-sm bg-white text-foreground"
+                          autoFocus
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{msg.conteudo}</p>
+                      )}
+
+                      {msg.iaRascunho && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {emEdicao ? (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={processando || !rascunhoTexto.trim()}
+                                onClick={() => aprovarRascunho(msg.id, rascunhoTexto.trim())}
+                              >
+                                {processando ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                )}
+                                Enviar editada
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={processando}
+                                onClick={cancelarEdicaoRascunho}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={processando}
+                                onClick={() => aprovarRascunho(msg.id)}
+                              >
+                                {processando ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                )}
+                                Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={processando}
+                                onClick={() => iniciarEdicaoRascunho(msg)}
+                              >
+                                <PencilLine className="h-3 w-3" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={processando}
+                                onClick={() => descartarRascunho(msg.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Descartar
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        <span className="text-[10px] opacity-60">{formatHora(msg.criadoEm)}</span>
+                        {msg.direcao === "ENVIADA" && !msg.iaRascunho && statusIcon[msg.status]}
                       </div>
-                    )}
-
-                    {/* Indicador de template */}
-                    {msg.tipo === "TEMPLATE" && (
-                      <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
-                        <FileText className="h-3 w-3" />
-                        <span>Template</span>
-                      </div>
-                    )}
-
-                    <p className="text-sm whitespace-pre-wrap">{msg.conteudo}</p>
-
-                    <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[10px] opacity-60">{formatHora(msg.criadoEm)}</span>
-                      {msg.direcao === "ENVIADA" && statusIcon[msg.status]}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ))
         )}

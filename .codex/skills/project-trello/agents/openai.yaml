@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Trello"
+  short_description: "Manage this project's Trello board."
+  default_prompt: "Use $project-trello to manage RH Selector Trello cards with the project's current IDs, labels, and naming conventions."

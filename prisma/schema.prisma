@@ -19,6 +19,11 @@ model Empresa {
   id                String   @id @default(cuid())
   nome              String
   iaWhatsappAtivo   Boolean  @default(false)
+  iaPersona         String?  // texto livre da persona (ex: "Sou Ana, assistente de RH...")
+  iaTomVoz          String?  // "formal" | "informal" | etc.
+  iaFAQ             String?  // markdown com perguntas e respostas frequentes
+  iaBlocklist       String?  // topicos proibidos (markdown ou csv)
+  iaModoDraft       Boolean  @default(false) // se true, IA so gera rascunho — RH aprova antes do envio
   twilioAccountSid  String?  @unique // criptografar em produção
   twilioAuthToken   String?
   twilioFromNumber  String?  // formato whatsapp:+E164 (ex: whatsapp:+14155238886)
@@ -421,6 +426,8 @@ model Mensagem {
   tipo               MensagemTipo    @default(LIVRE)
   templateId         String?
   geradaPorIA        Boolean         @default(false)
+  iaRascunho         Boolean         @default(false) // rascunho gerado pela IA aguardando aprovacao do RH
+  iaAprovadaEm       DateTime?       // quando o RH aprovou e a mensagem foi enviada
   criadoEm           DateTime        @default(now())
   atualizadoEm       DateTime        @updatedAt
 

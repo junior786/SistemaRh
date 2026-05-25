@@ -12,7 +12,7 @@ import {
   sendTextMessage,
   validateTwilioSignature,
 } from "@/lib/whatsapp";
-import { gerarRespostaIA } from "@/lib/whatsapp-ia";
+import { ContextoIA, gerarRespostaIA } from "@/lib/whatsapp-ia";
 import { getSingleTenantWhatsappEmpresa } from "@/lib/whatsapp-config";
 import { getPhoneMatchVariations } from "@/lib/phone";
 
@@ -98,11 +98,23 @@ export async function POST(request: NextRequest) {
   const candidato = await prisma.candidato.findUnique({
     where: { id: matches[0].id },
     include: {
+      skills: true,
+      areas: true,
+      restricoes: true,
+      experiencias: { orderBy: { dataInicio: "desc" }, take: 1 },
       triagens: {
-        where: { status: "CONCLUIDO" },
+        where: { status: { in: ["PENDENTE", "PROCESSANDO", "CONCLUIDO"] } },
         orderBy: { updatedAt: "desc" },
         take: 1,
-        include: { vaga: true },
+        include: {
+          vaga: true,
+          etapas: {
+            where: { status: { in: ["EM_ANDAMENTO", "PENDENTE"] } },
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            include: { vagaEtapa: true },
+          },
+        },
       },
     },
   });
@@ -122,7 +134,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  if (!empresa.iaWhatsappAtivo || !inbound.body) {
+  if (!empresa.iaWhatsappAtivo) {
+    console.log("IA nao respondera: empresa.iaWhatsappAtivo=false");
+    return Response.json({ ok: true });
+  }
+  if (!inbound.body) {
+    console.log("IA nao respondera: mensagem sem body");
     return Response.json({ ok: true });
   }
 
@@ -130,35 +147,116 @@ export async function POST(request: NextRequest) {
     where: { candidatoId: candidato.id },
   });
   if (controle && !controle.iaAtiva) {
+    console.log("IA nao respondera: controle.iaAtiva=false (RH no controle)", {
+      candidatoId: candidato.id,
+      assumidoEm: controle.assumidoEm,
+    });
     return Response.json({ ok: true });
   }
 
-  const historico = await prisma.mensagem.findMany({
+  const historicoRaw = await prisma.mensagem.findMany({
     where: { candidatoId: candidato.id },
     orderBy: { criadoEm: "desc" },
     take: 10,
     select: { direcao: true, conteudo: true },
   });
 
-  const vaga = candidato.triagens[0]?.vaga ?? null;
+  // Vagas abertas (top 5 mais recentes) para a IA conseguir recomendar.
+  const vagasAbertas = await prisma.vaga.findMany({
+    where: { status: "ABERTA" },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      titulo: true,
+      area: true,
+      modalidade: true,
+      localizacao: true,
+      salarioMin: true,
+      salarioMax: true,
+    },
+  });
 
-  try {
-    const resposta = await gerarRespostaIA(
-      { nome: empresa.nome },
-      vaga
+  const triagem = candidato.triagens[0] ?? null;
+  const vagaAtual = triagem?.vaga ?? null;
+
+  // Proxima entrevista agendada do candidato em qualquer triagem ativa.
+  const proximaEntrevista = triagem
+    ? await prisma.entrevista.findFirst({
+        where: {
+          triagemId: triagem.id,
+          status: "AGENDADA",
+          dataHora: { gte: new Date() },
+        },
+        orderBy: { dataHora: "asc" },
+        include: { triagem: { include: { vaga: { select: { titulo: true } } } } },
+      })
+    : null;
+
+  const ctx: ContextoIA = {
+    empresa: {
+      nome: empresa.nome,
+      iaPersona: empresa.iaPersona,
+      iaTomVoz: empresa.iaTomVoz,
+      iaFAQ: empresa.iaFAQ,
+      iaBlocklist: empresa.iaBlocklist,
+    },
+    candidato: {
+      nome: candidato.nome,
+      jobType: candidato.jobType,
+      cidade: candidato.cidade,
+      resumo: candidato.resumo,
+      skills: candidato.skills.map((s) => s.nome),
+      areas: candidato.areas.map((a) => a.nome),
+      restricoes: candidato.restricoes.map((r) => r.descricao),
+      ultimaExperiencia: candidato.experiencias[0]
         ? {
-            titulo: vaga.titulo,
-            regime: vaga.regime,
-            modalidade: vaga.modalidade,
-            localizacao: vaga.localizacao,
-            salarioMin: vaga.salarioMin,
-            salarioMax: vaga.salarioMax,
-            descricao: vaga.descricao,
+            empresa: candidato.experiencias[0].empresa,
+            cargo: candidato.experiencias[0].cargo,
           }
         : null,
-      historico.reverse(),
-      inbound.body,
-    );
+    },
+    vagaAtual: vagaAtual
+      ? {
+          titulo: vagaAtual.titulo,
+          area: vagaAtual.area,
+          regime: vagaAtual.regime,
+          modalidade: vagaAtual.modalidade,
+          localizacao: vagaAtual.localizacao,
+          salarioMin: vagaAtual.salarioMin,
+          salarioMax: vagaAtual.salarioMax,
+          descricao: vagaAtual.descricao,
+          etapaAtual: triagem?.etapas[0]?.vagaEtapa.nome ?? null,
+        }
+      : null,
+    vagasAbertas,
+    proximaEntrevista: proximaEntrevista
+      ? {
+          dataHora: proximaEntrevista.dataHora,
+          entrevistador: proximaEntrevista.entrevistador,
+          vagaTitulo: proximaEntrevista.triagem.vaga.titulo,
+        }
+      : null,
+    historico: historicoRaw.reverse(),
+    mensagemAtual: inbound.body,
+  };
+
+  try {
+    const resposta = await gerarRespostaIA(ctx);
+
+    // Modo draft: persiste rascunho e nao envia. RH aprova/edita/descarta pela UI.
+    if (empresa.iaModoDraft) {
+      await prisma.mensagem.create({
+        data: {
+          candidatoId: candidato.id,
+          direcao: "ENVIADA",
+          conteudo: resposta,
+          geradaPorIA: true,
+          iaRascunho: true,
+        },
+      });
+      console.log("IA gerou rascunho aguardando aprovacao do RH", { candidatoId: candidato.id });
+      return Response.json({ ok: true });
+    }
 
     const client = getTwilioClient(empresa.twilioAccountSid!, empresa.twilioAuthToken!);
     const sid = await sendTextMessage(client, empresa.twilioFromNumber!, inbound.from, resposta);
