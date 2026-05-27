@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -96,7 +97,7 @@ export default function EntrevistasPage() {
 
   const carregarDados = useCallback(async () => {
     // Buscar triagem pelo par vagaId + candidatoId
-    const resTriagens = await fetch(`/api/triagens?vagaId=${vagaId}`);
+    const resTriagens = await apiFetch(`/api/triagens?vagaId=${vagaId}`);
     const triagens = await resTriagens.json();
     const t = triagens.find(
       (x: { candidato: { id: string } }) => x.candidato.id === candidatoId,
@@ -104,7 +105,7 @@ export default function EntrevistasPage() {
 
     if (t) {
       // Buscar detalhe da triagem
-      const resDetalhe = await fetch(`/api/triagens/${t.id}`);
+      const resDetalhe = await apiFetch(`/api/triagens/${t.id}`);
       const detalhe = await resDetalhe.json();
       setTriagem({
         id: detalhe.id,
@@ -134,7 +135,7 @@ export default function EntrevistasPage() {
   async function criarEntrevista() {
     if (!triagem || !dataHora || !entrevistador) return;
 
-    await fetch("/api/entrevistas", {
+    await apiFetch("/api/entrevistas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -153,7 +154,7 @@ export default function EntrevistasPage() {
   }
 
   async function atualizarEntrevista(id: string) {
-    await fetch(`/api/entrevistas/${id}`, {
+    await apiFetch(`/api/entrevistas/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -169,7 +170,7 @@ export default function EntrevistasPage() {
 
   async function excluirEntrevista(id: string) {
     if (!confirm("Excluir esta entrevista?")) return;
-    await fetch(`/api/entrevistas/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/entrevistas/${id}`, { method: "DELETE" });
     carregarDados();
   }
 

@@ -1,12 +1,16 @@
 // PUT/DELETE /api/configuracoes/whatsapp/templates/[id]
 
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+
   const { id } = await params;
   const body = await request.json();
   const { slug, nome, contentSid, variaveis, descricao, ativo } = body;
@@ -34,6 +38,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+
   const { id } = await params;
   await prisma.twilioTemplate.delete({ where: { id } });
   return new Response(null, { status: 204 });

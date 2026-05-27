@@ -4,11 +4,12 @@ import { definirContratadosDaVaga } from "@/lib/contratacao";
 import { registrarEventosTriagemLote, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 import { validateVagaFields } from "@/lib/form-validations";
+import { resolveRequestContext } from "@/lib/request-context";
 
-async function carregarEventosVaga(vagaId: string) {
+async function carregarEventosVaga(empresaId: string, vagaId: string) {
   try {
     return await prisma.triagemEvento.findMany({
-      where: { vagaId },
+      where: { empresaId, vagaId },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
@@ -26,9 +27,9 @@ async function carregarEventosVaga(vagaId: string) {
   }
 }
 
-async function carregarVagaComHistorico(id: string) {
-  const vaga = await prisma.vaga.findUnique({
-    where: { id },
+async function carregarVagaComHistorico(id: string, empresaId: string) {
+  const vaga = await prisma.vaga.findFirst({
+    where: { id, empresaId },
     include: {
       areas: true,
       requisitos: true,
@@ -61,7 +62,7 @@ async function carregarVagaComHistorico(id: string) {
     return null;
   }
 
-  const eventos = await carregarEventosVaga(id);
+  const eventos = await carregarEventosVaga(empresaId, id);
 
   return { ...vaga, eventos };
 }
@@ -71,8 +72,12 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
-  const vaga = await carregarVagaComHistorico(id);
+  const vaga = await carregarVagaComHistorico(id, empresa.id);
 
   if (!vaga) {
     return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
@@ -86,6 +91,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const body = await request.json();
   const {
@@ -111,9 +120,14 @@ export async function PUT(
     return Response.json({ error: "Campos obrigatorios faltando", fieldErrors }, { status: 400 });
   }
 
+  const vagaExiste = await prisma.vaga.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
+  if (!vagaExiste) {
+    return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
+  }
+
   try {
     if (etapas !== undefined) {
-      const triagensCount = await prisma.triagem.count({ where: { vagaId: id } });
+      const triagensCount = await prisma.triagem.count({ where: { empresaId: empresa.id, vagaId: id } });
       if (triagensCount > 0) {
         return Response.json(
           { error: "Não é possível alterar as etapas de uma vaga que já possui candidatos vinculados." },
@@ -141,10 +155,10 @@ export async function PUT(
 
     if (contratadoIds !== undefined) {
       const ids = Array.isArray(contratadoIds) ? contratadoIds : [];
-      await definirContratadosDaVaga(id, ids);
+      await definirContratadosDaVaga(empresa.id, id, ids);
 
       const triagensFinalizadas = await prisma.triagem.findMany({
-        where: { vagaId: id, candidatoId: { in: ids } },
+        where: { empresaId: empresa.id, vagaId: id, candidatoId: { in: ids } },
         select: { id: true, candidatoId: true },
       });
 
@@ -186,7 +200,7 @@ export async function PUT(
       }
 
       await prisma.triagem.updateMany({
-        where: { vagaId: id, status: "CONCLUIDO" },
+        where: { empresaId: empresa.id, vagaId: id, status: "CONCLUIDO" },
         data: { desatualizado: true },
       });
     }
@@ -205,7 +219,7 @@ export async function PUT(
       });
     }
 
-    const vagaAtualizada = await carregarVagaComHistorico(id);
+    const vagaAtualizada = await carregarVagaComHistorico(id, empresa.id);
     return Response.json(vagaAtualizada);
   } catch (err) {
     console.error("Erro ao atualizar vaga:", err);
@@ -218,7 +232,14 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
+  const vaga = await prisma.vaga.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
+  if (!vaga) return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
+
   await prisma.vaga.delete({ where: { id } });
   return Response.json({ ok: true });
 }

@@ -51,17 +51,15 @@ BEGIN
   ORDER BY "createdAt" ASC
   LIMIT 1;
 
-  IF default_empresa_id IS NULL THEN
-    RAISE EXCEPTION 'Nenhuma empresa cadastrada — backfill multi-tenant abortado';
+  IF default_empresa_id IS NOT NULL THEN
+    UPDATE "Vaga"             SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "Candidato"        SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "Categoria"        SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "Triagem"          SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "TriagemEvento"    SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "Mensagem"         SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
+    UPDATE "ControleConversa" SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
   END IF;
-
-  UPDATE "Vaga"             SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "Candidato"        SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "Categoria"        SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "Triagem"          SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "TriagemEvento"    SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "Mensagem"         SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
-  UPDATE "ControleConversa" SET "empresaId" = default_empresa_id WHERE "empresaId" IS NULL;
 END $$;
 
 ALTER TABLE "Vaga"             ALTER COLUMN "empresaId" SET NOT NULL;

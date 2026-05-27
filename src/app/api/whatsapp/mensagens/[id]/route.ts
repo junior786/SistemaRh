@@ -1,12 +1,17 @@
 // PUT/DELETE /api/whatsapp/mensagens/[id] — editar conteudo ou descartar rascunho IA
 
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const { conteudo } = await request.json();
 
@@ -14,7 +19,7 @@ export async function PUT(
     return Response.json({ error: "conteudo é obrigatório" }, { status: 400 });
   }
 
-  const mensagem = await prisma.mensagem.findUnique({ where: { id } });
+  const mensagem = await prisma.mensagem.findFirst({ where: { id, empresaId: empresa.id } });
   if (!mensagem) {
     return Response.json({ error: "Mensagem não encontrada" }, { status: 404 });
   }
@@ -37,9 +42,13 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
 
-  const mensagem = await prisma.mensagem.findUnique({ where: { id } });
+  const mensagem = await prisma.mensagem.findFirst({ where: { id, empresaId: empresa.id } });
   if (!mensagem) {
     return Response.json({ error: "Mensagem não encontrada" }, { status: 404 });
   }

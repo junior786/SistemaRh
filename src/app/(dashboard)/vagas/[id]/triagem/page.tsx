@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { Fragment, useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
@@ -226,7 +227,7 @@ export default function TriagemPage() {
   // ── Data fetching ──
 
   const carregarTriagens = useCallback(() => {
-    fetch(`/api/triagens?vagaId=${vagaId}`)
+    apiFetch(`/api/triagens?vagaId=${vagaId}`)
       .then((r) => r.json())
       .then(setTriagens)
       .catch(console.error)
@@ -239,8 +240,8 @@ export default function TriagemPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
-      fetch("/api/candidatos/filtros").then((r) => r.json()),
+      apiFetch(`/api/vagas/${vagaId}`).then((r) => r.json()),
+      apiFetch("/api/candidatos/filtros").then((r) => r.json()),
     ])
       .then(([vagaData, filtrosData]) => {
         setVaga(vagaData);
@@ -264,7 +265,7 @@ export default function TriagemPage() {
     const timeoutId = window.setTimeout(() => {
       setLoadingSugeridos(true);
 
-      fetch(`/api/vagas/${vagaId}/sugestoes?${params}`)
+      apiFetch(`/api/vagas/${vagaId}/sugestoes?${params}`)
         .then(async (r) => {
           const text = await r.text();
           const data = text ? JSON.parse(text) : null;
@@ -318,7 +319,7 @@ export default function TriagemPage() {
     const timeoutId = window.setTimeout(() => {
       setModalLoading(true);
 
-      fetch(`/api/candidatos?${params}`)
+      apiFetch(`/api/candidatos?${params}`)
         .then(async (r) => {
           const text = await r.text();
           const data = text ? JSON.parse(text) : null;
@@ -400,7 +401,7 @@ export default function TriagemPage() {
   async function vincularCandidato(candidatoId: string) {
     setVinculando(candidatoId);
     try {
-      const res = await fetch("/api/triagens", {
+      const res = await apiFetch("/api/triagens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vagaId, candidatoId }),
@@ -412,12 +413,12 @@ export default function TriagemPage() {
   }
 
   async function analisar(triagemId: string) {
-    await fetch(`/api/triagens/${triagemId}/analisar`, { method: "POST" });
+    await apiFetch(`/api/triagens/${triagemId}/analisar`, { method: "POST" });
     setTriagens((prev) =>
       prev.map((t) => (t.id === triagemId ? { ...t, status: "PROCESSANDO" } : t)),
     );
     const interval = setInterval(async () => {
-      const res = await fetch(`/api/triagens?vagaId=${vagaId}`);
+      const res = await apiFetch(`/api/triagens?vagaId=${vagaId}`);
       const data: Triagem[] = await res.json();
       const t = data.find((x) => x.id === triagemId);
       if (t && (t.status === "CONCLUIDO" || t.status === "ERRO")) {
@@ -430,7 +431,7 @@ export default function TriagemPage() {
   async function moverParaEtapa(triagem: Triagem, vagaEtapaId: string) {
     setMovendoTriagemId(triagem.id);
     try {
-      const res = await fetch(`/api/triagens/${triagem.id}`, {
+      const res = await apiFetch(`/api/triagens/${triagem.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -458,7 +459,7 @@ export default function TriagemPage() {
   async function voltarEtapa(triagem: Triagem) {
     setVoltandoTriagemId(triagem.id);
     try {
-      const res = await fetch(`/api/triagens/${triagem.id}`, {
+      const res = await apiFetch(`/api/triagens/${triagem.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -485,7 +486,7 @@ export default function TriagemPage() {
   async function reabrirEtapa(triagem: Triagem, vagaEtapaId: string) {
     setReabrindoTriagemId(triagem.id);
     try {
-      const res = await fetch(`/api/triagens/${triagem.id}`, {
+      const res = await apiFetch(`/api/triagens/${triagem.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -513,7 +514,7 @@ export default function TriagemPage() {
   async function reprovarEtapa(triagem: Triagem) {
     setReprovandoTriagemId(triagem.id);
     try {
-      const res = await fetch(`/api/triagens/${triagem.id}`, {
+      const res = await apiFetch(`/api/triagens/${triagem.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -540,7 +541,7 @@ export default function TriagemPage() {
   async function removerTriagem(triagem: Triagem) {
     setRemovendoTriagemId(triagem.id);
     try {
-      const res = await fetch(`/api/triagens/${triagem.id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/triagens/${triagem.id}`, { method: "DELETE" });
       if (!res.ok) {
         throw new Error("Erro ao remover candidato da triagem");
       }
@@ -563,7 +564,7 @@ export default function TriagemPage() {
     setPreTriagemLoading(true);
     setPreTriagemResult(null);
     try {
-      const res = await fetch(`/api/vagas/${vagaId}/pre-triagem`, { method: "POST" });
+      const res = await apiFetch(`/api/vagas/${vagaId}/pre-triagem`, { method: "POST" });
       const data = await res.json();
 
       if (!res.ok) {

@@ -1,11 +1,12 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Loader2, Tags, MessageCircle, Save, FileText, Bot } from "lucide-react";
+import { Plus, X, Loader2, Tags, MessageCircle, Save, FileText, Bot, UserPlus, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,43 @@ interface Categoria {
   ordem: number;
   ativa: boolean;
 }
+
+type Role = "OWNER" | "ADMIN" | "RECRUITER";
+
+interface EmpresaUsuario {
+  id: string;
+  role: Role | string;
+  ativo: boolean;
+  createdAt: string;
+  usuario: {
+    id: string;
+    nome: string;
+    email: string;
+    ativo: boolean;
+  };
+}
+
+interface AuthMe {
+  membership: {
+    role: Role | string;
+    ativo: boolean;
+  };
+}
+
+const ROLE_LABELS: Record<Role, string> = {
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  RECRUITER: "Recrutador",
+};
+
+const ROLE_OPTIONS = Object.entries(ROLE_LABELS) as Array<[Role, string]>;
+
+const USUARIO_FORM_VAZIO = {
+  nome: "",
+  email: "",
+  senha: "",
+  role: "RECRUITER" as Role,
+};
 
 const SECOES = [
   {
@@ -79,6 +117,14 @@ const TEMPLATE_FORM_VAZIO: TemplateForm = {
 };
 
 export default function ConfiguracoesPage() {
+  const [currentRole, setCurrentRole] = useState<Role | string | null>(null);
+  const [usuarios, setUsuarios] = useState<EmpresaUsuario[]>([]);
+  const [usuariosLoading, setUsuariosLoading] = useState(true);
+  const [usuarioForm, setUsuarioForm] = useState(USUARIO_FORM_VAZIO);
+  const [salvandoUsuario, setSalvandoUsuario] = useState(false);
+  const [removendoUsuarioId, setRemovendoUsuarioId] = useState<string | null>(null);
+  const [usuarioParaRemover, setUsuarioParaRemover] = useState<EmpresaUsuario | null>(null);
+
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [novoNome, setNovoNome] = useState<Record<string, string>>({});
@@ -122,17 +168,63 @@ export default function ConfiguracoesPage() {
   const [removendoTemplateId, setRemovendoTemplateId] = useState<string | null>(null);
   const [templateParaRemover, setTemplateParaRemover] = useState<TwilioTemplate | null>(null);
 
+  const canManageUsers = currentRole === "OWNER" || currentRole === "ADMIN";
+
+  const carregarUsuarioAtual = useCallback(() => {
+    apiFetch("/api/auth/me")
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(data?.error ?? "Erro ao carregar acesso atual");
+        }
+        setCurrentRole((data as AuthMe).membership.role);
+      })
+      .catch(() => setCurrentRole(null));
+  }, []);
+
+  const carregarUsuarios = useCallback(() => {
+    if (!canManageUsers) {
+      setUsuarios([]);
+      setUsuariosLoading(false);
+      return;
+    }
+
+    setUsuariosLoading(true);
+    apiFetch("/api/configuracoes/usuarios")
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(data?.error ?? "Erro ao carregar usuarios");
+        }
+        setUsuarios(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setUsuarios([]);
+        toast.error(err instanceof Error ? err.message : "Erro ao carregar usuarios");
+      })
+      .finally(() => setUsuariosLoading(false));
+  }, [canManageUsers]);
+
   const carregar = useCallback(() => {
-    fetch("/api/categorias")
-      .then((r) => r.json())
-      .then(setCategorias)
-      .catch(console.error)
+    setLoading(true);
+    apiFetch("/api/categorias")
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(data?.error ?? "Erro ao carregar categorias");
+        }
+        setCategorias(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setCategorias([]);
+        toast.error(err instanceof Error ? err.message : "Erro ao carregar categorias");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const carregarTemplates = useCallback(() => {
     setTemplatesLoading(true);
-    fetch("/api/configuracoes/whatsapp/templates")
+    apiFetch("/api/configuracoes/whatsapp/templates")
       .then((r) => r.json())
       .then((data) => setTemplates(Array.isArray(data) ? data : []))
       .catch(console.error)
@@ -140,8 +232,9 @@ export default function ConfiguracoesPage() {
   }, []);
 
   useEffect(() => {
+    carregarUsuarioAtual();
     carregar();
-    fetch("/api/configuracoes/whatsapp")
+    apiFetch("/api/configuracoes/whatsapp")
       .then((r) => r.json())
       .then((data: WhatsAppConfig) => {
         setWaConfig(data);
@@ -160,7 +253,12 @@ export default function ConfiguracoesPage() {
       .catch(console.error)
       .finally(() => setWaLoading(false));
     carregarTemplates();
-  }, [carregar, carregarTemplates]);
+  }, [carregar, carregarTemplates, carregarUsuarioAtual]);
+
+  useEffect(() => {
+    if (currentRole === null) return;
+    carregarUsuarios();
+  }, [currentRole, carregarUsuarios]);
 
   async function salvarWhatsApp() {
     setWaSaving(true);
@@ -172,7 +270,7 @@ export default function ConfiguracoesPage() {
       if (waForm.twilioFromNumber) payload.twilioFromNumber = waForm.twilioFromNumber;
       if (waForm.twilioAuthToken) payload.twilioAuthToken = waForm.twilioAuthToken;
 
-      const res = await fetch("/api/configuracoes/whatsapp", {
+      const res = await apiFetch("/api/configuracoes/whatsapp", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -197,7 +295,7 @@ export default function ConfiguracoesPage() {
   async function salvarComportamentoIA() {
     setIaSaving(true);
     try {
-      const res = await fetch("/api/configuracoes/whatsapp", {
+      const res = await apiFetch("/api/configuracoes/whatsapp", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -252,7 +350,7 @@ export default function ConfiguracoesPage() {
         : "/api/configuracoes/whatsapp/templates";
       const method = isEdicao ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -281,7 +379,7 @@ export default function ConfiguracoesPage() {
   async function removerTemplate(template: TwilioTemplate) {
     setRemovendoTemplateId(template.id);
     try {
-      const res = await fetch(`/api/configuracoes/whatsapp/templates/${template.id}`, {
+      const res = await apiFetch(`/api/configuracoes/whatsapp/templates/${template.id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -296,13 +394,66 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  async function adicionarUsuario() {
+    if (!usuarioForm.nome.trim() || !usuarioForm.email.trim() || !usuarioForm.senha.trim()) {
+      toast.error("Nome, e-mail e senha são obrigatórios");
+      return;
+    }
+
+    setSalvandoUsuario(true);
+    try {
+      const res = await apiFetch("/api/configuracoes/usuarios", {
+        method: "POST",
+        body: JSON.stringify({
+          nome: usuarioForm.nome.trim(),
+          email: usuarioForm.email.trim(),
+          senha: usuarioForm.senha,
+          role: usuarioForm.role,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error || "Erro ao adicionar usuário");
+        return;
+      }
+
+      toast.success("Usuário adicionado");
+      setUsuarioForm(USUARIO_FORM_VAZIO);
+      carregarUsuarios();
+    } finally {
+      setSalvandoUsuario(false);
+    }
+  }
+
+  async function removerUsuario(membership: EmpresaUsuario) {
+    setRemovendoUsuarioId(membership.id);
+    try {
+      const res = await apiFetch(`/api/configuracoes/usuarios?id=${membership.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error || "Erro ao remover usuário");
+        return;
+      }
+
+      setUsuarios((prev) => prev.filter((item) => item.id !== membership.id));
+      setUsuarioParaRemover(null);
+      toast.success("Usuário removido da empresa");
+    } finally {
+      setRemovendoUsuarioId(null);
+    }
+  }
+
   async function adicionar(tipo: string) {
     const nome = novoNome[tipo]?.trim();
     if (!nome) return;
 
     setAdicionando(tipo);
     try {
-      const res = await fetch("/api/categorias", {
+      const res = await apiFetch("/api/categorias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tipo, nome }),
@@ -324,7 +475,7 @@ export default function ConfiguracoesPage() {
   async function remover(categoria: Categoria) {
     setRemovendo(categoria.id);
     try {
-      const res = await fetch(`/api/categorias?id=${categoria.id}`, {
+      const res = await apiFetch(`/api/categorias?id=${categoria.id}`, {
         method: "DELETE",
       });
 
@@ -349,6 +500,129 @@ export default function ConfiguracoesPage() {
           Gerencie as categorias e opções do sistema
         </p>
       </div>
+
+      {canManageUsers && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3 mb-6">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold">Usuários da empresa</h3>
+                <p className="text-xs text-muted-foreground">
+                  Adicione e remova acessos somente desta empresa
+                </p>
+              </div>
+              <Badge variant="secondary" className="ml-auto">
+                {usuarios.length} {usuarios.length === 1 ? "usuário" : "usuários"}
+              </Badge>
+            </div>
+
+            {usuariosLoading ? (
+              <div className="h-32 animate-pulse rounded-lg bg-muted" />
+            ) : (
+              <div className="space-y-6">
+                <div className="overflow-hidden rounded-lg border">
+                  {usuarios.length === 0 ? (
+                    <div className="p-6 text-sm text-muted-foreground">
+                      Nenhum usuário vinculado a esta empresa.
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {usuarios.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between gap-4 p-4">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate text-sm font-medium">{item.usuario.nome}</p>
+                              <Badge variant={item.ativo && item.usuario.ativo ? "secondary" : "outline"}>
+                                {ROLE_LABELS[item.role as Role] ?? item.role}
+                              </Badge>
+                              {(!item.ativo || !item.usuario.ativo) && (
+                                <Badge variant="outline">inativo</Badge>
+                              )}
+                            </div>
+                            <p className="truncate text-xs text-muted-foreground">{item.usuario.email}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={removendoUsuarioId === item.id}
+                            onClick={() => setUsuarioParaRemover(item)}
+                          >
+                            {removendoUsuarioId === item.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 rounded-lg border border-dashed p-4">
+                  <div className="text-sm font-medium">Adicionar usuário</div>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_160px_160px]">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Nome</Label>
+                      <Input
+                        value={usuarioForm.nome}
+                        onChange={(e) => setUsuarioForm((prev) => ({ ...prev, nome: e.target.value }))}
+                        placeholder="Nome completo"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">E-mail</Label>
+                      <Input
+                        type="email"
+                        value={usuarioForm.email}
+                        onChange={(e) => setUsuarioForm((prev) => ({ ...prev, email: e.target.value }))}
+                        placeholder="usuario@empresa.com"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Senha inicial</Label>
+                      <Input
+                        type="password"
+                        value={usuarioForm.senha}
+                        onChange={(e) => setUsuarioForm((prev) => ({ ...prev, senha: e.target.value }))}
+                        placeholder="mín. 6"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Perfil</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={usuarioForm.role}
+                        onChange={(e) => setUsuarioForm((prev) => ({ ...prev, role: e.target.value as Role }))}
+                      >
+                        {ROLE_OPTIONS.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={salvandoUsuario}
+                    onClick={adicionarUsuario}
+                  >
+                    {salvandoUsuario ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+                    Adicionar usuário
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="space-y-4">
@@ -773,6 +1047,49 @@ export default function ConfiguracoesPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={usuarioParaRemover !== null}
+        onOpenChange={(open) => {
+          if (!open && removendoUsuarioId === null) {
+            setUsuarioParaRemover(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover usuário da empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {usuarioParaRemover
+                ? `Isso remove o acesso de "${usuarioParaRemover.usuario.nome}" somente desta empresa. O usuário não será apagado globalmente.`
+                : "Confirme a remoção."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removendoUsuarioId !== null}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={!usuarioParaRemover || removendoUsuarioId !== null}
+              onClick={() => {
+                if (usuarioParaRemover) {
+                  void removerUsuario(usuarioParaRemover);
+                }
+              }}
+            >
+              {removendoUsuarioId ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Removendo...
+                </>
+              ) : (
+                "Remover"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={categoriaParaRemover !== null}

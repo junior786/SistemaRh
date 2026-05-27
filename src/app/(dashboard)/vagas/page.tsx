@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -76,7 +77,7 @@ export default function VagasPage() {
     const timeoutId = window.setTimeout(() => {
       setLoading(true);
 
-      fetch(`/api/vagas?${params}`)
+      apiFetch(`/api/vagas?${params}`)
         .then(async (r) => {
           const text = await r.text();
           const data = text ? JSON.parse(text) : null;

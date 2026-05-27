@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -67,8 +68,12 @@ export default function EditarVagaPage() {
   const [novoReqTempoUnidade, setNovoReqTempoUnidade] = useState<"meses" | "anos">("anos");
 
   useEffect(() => {
-    fetch("/api/categorias?tipo=AREA_ATUACAO")
-      .then((r) => r.json())
+    apiFetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then(async (r) => {
+        const data = await r.json().catch(() => []);
+        if (!r.ok || !Array.isArray(data)) return [];
+        return data;
+      })
       .then((data) => {
         const nomes = data.map((c: { nome: string }) => c.nome);
         setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
@@ -78,7 +83,7 @@ export default function EditarVagaPage() {
 
   // Carregar dados existentes
   useEffect(() => {
-    fetch(`/api/vagas/${vagaId}`)
+    apiFetch(`/api/vagas/${vagaId}`)
       .then((r) => r.json())
       .then((data) => {
         setTitulo(data.titulo || "");
@@ -161,7 +166,7 @@ export default function EditarVagaPage() {
     }
 
     try {
-      const res = await fetch(`/api/vagas/${vagaId}`, {
+      const res = await apiFetch(`/api/vagas/${vagaId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

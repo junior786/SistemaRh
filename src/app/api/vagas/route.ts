@@ -3,9 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 import { normalizeEtapasInput } from "@/lib/vaga-etapas";
 import { validateVagaFields } from "@/lib/form-validations";
+import { resolveRequestContext } from "@/lib/request-context";
 
 // GET /api/vagas — listar vagas com contagem de candidatos
 export async function GET(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
   const area = searchParams.get("area");
@@ -13,7 +18,7 @@ export async function GET(request: NextRequest) {
   const page = parsePage(searchParams.get("page"));
   const pageSize = parsePageSize(searchParams.get("pageSize"));
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { empresaId: empresa.id };
   if (status) where.status = status;
   if (area) where.area = area;
   if (busca) {
@@ -50,6 +55,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/vagas — criar vaga com requisitos
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const { titulo, area, jobType, regime, modalidade, localizacao, cep, salarioMin, salarioMax, descricao, areas, requisitos, etapas } = body;
   const fieldErrors = validateVagaFields({ titulo, area, jobType, regime, modalidade, localizacao, descricao, cep });
@@ -69,6 +78,7 @@ export async function POST(request: NextRequest) {
     const etapasNormalizadas = normalizeEtapasInput(etapas);
     const vaga = await prisma.vaga.create({
       data: {
+        empresaId: empresa.id,
         titulo,
         area,
         jobType,

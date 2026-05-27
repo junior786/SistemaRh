@@ -5,7 +5,7 @@ import {
   TRIAGEM_EVENTO_TIPO,
 } from "@/lib/triagem-eventos";
 
-async function encerrarOutrasTriagensDosCandidatos(vagaId: string, candidatoIds: string[]) {
+async function encerrarOutrasTriagensDosCandidatos(empresaId: string, vagaId: string, candidatoIds: string[]) {
   if (candidatoIds.length === 0) {
     return [];
   }
@@ -14,6 +14,7 @@ async function encerrarOutrasTriagensDosCandidatos(vagaId: string, candidatoIds:
 
   const outrasTriagens = await prisma.triagem.findMany({
     where: {
+      empresaId,
       candidatoId: { in: candidatoIds },
       vagaId: { not: vagaId },
     },
@@ -76,13 +77,14 @@ async function encerrarOutrasTriagensDosCandidatos(vagaId: string, candidatoIds:
   return outrasTriagens;
 }
 
-async function validarCandidatosDaVaga(vagaId: string, candidatoIds: string[]) {
+async function validarCandidatosDaVaga(empresaId: string, vagaId: string, candidatoIds: string[]) {
   if (candidatoIds.length === 0) {
     return;
   }
 
   const triagens = await prisma.triagem.findMany({
     where: {
+      empresaId,
       vagaId,
       candidatoId: { in: candidatoIds },
     },
@@ -95,13 +97,13 @@ async function validarCandidatosDaVaga(vagaId: string, candidatoIds: string[]) {
   }
 }
 
-async function validarDisponibilidadeContratacao(vagaId: string, candidatoIds: string[]) {
+async function validarDisponibilidadeContratacao(empresaId: string, vagaId: string, candidatoIds: string[]) {
   if (candidatoIds.length === 0) {
     return;
   }
 
   const candidatos = await prisma.candidato.findMany({
-    where: { id: { in: candidatoIds } },
+    where: { empresaId, id: { in: candidatoIds } },
     select: {
       id: true,
       nome: true,
@@ -124,25 +126,25 @@ async function validarDisponibilidadeContratacao(vagaId: string, candidatoIds: s
   }
 }
 
-export async function validarContratacaoNaVaga(vagaId: string, candidatoIds: string[]) {
+export async function validarContratacaoNaVaga(empresaId: string, vagaId: string, candidatoIds: string[]) {
   const idsUnicos = Array.from(
     new Set(candidatoIds.filter((value): value is string => typeof value === "string" && value.length > 0)),
   );
 
-  await validarCandidatosDaVaga(vagaId, idsUnicos);
-  await validarDisponibilidadeContratacao(vagaId, idsUnicos);
+  await validarCandidatosDaVaga(empresaId, vagaId, idsUnicos);
+  await validarDisponibilidadeContratacao(empresaId, vagaId, idsUnicos);
 }
 
-export async function definirContratadosDaVaga(vagaId: string, candidatoIds: string[]) {
+export async function definirContratadosDaVaga(empresaId: string, vagaId: string, candidatoIds: string[]) {
   const idsUnicos = Array.from(
     new Set(candidatoIds.filter((value): value is string => typeof value === "string" && value.length > 0)),
   );
 
-  await validarContratacaoNaVaga(vagaId, idsUnicos);
+  await validarContratacaoNaVaga(empresaId, vagaId, idsUnicos);
 
   const candidatosAntes = idsUnicos.length > 0
     ? await prisma.candidato.findMany({
-      where: { id: { in: idsUnicos } },
+      where: { empresaId, id: { in: idsUnicos } },
       select: {
         id: true,
         statusEmprego: true,
@@ -160,6 +162,7 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
     prisma.candidato.updateMany({
       where: {
         vagaEmpregadoId: vagaId,
+        empresaId,
         id: { notIn: idsUnicos },
       },
       data: {
@@ -170,6 +173,7 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
     }),
     prisma.candidato.updateMany({
       where: {
+        empresaId,
         id: { in: idsUnicos },
       },
       data: {
@@ -184,6 +188,7 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
     ? await prisma.triagem.findMany({
       where: {
         vagaId,
+        empresaId,
         candidatoId: { in: idsUnicos },
       },
       include: {
@@ -214,14 +219,14 @@ export async function definirContratadosDaVaga(vagaId: string, candidatoIds: str
     );
   }
 
-  return encerrarOutrasTriagensDosCandidatos(vagaId, idsUnicos);
+  return encerrarOutrasTriagensDosCandidatos(empresaId, vagaId, idsUnicos);
 }
 
-export async function contratarCandidatoNaVaga(vagaId: string, candidatoId: string) {
-  await validarContratacaoNaVaga(vagaId, [candidatoId]);
+export async function contratarCandidatoNaVaga(empresaId: string, vagaId: string, candidatoId: string) {
+  await validarContratacaoNaVaga(empresaId, vagaId, [candidatoId]);
 
-  const candidatoAntes = await prisma.candidato.findUnique({
-    where: { id: candidatoId },
+  const candidatoAntes = await prisma.candidato.findFirst({
+    where: { id: candidatoId, empresaId },
     select: {
       statusEmprego: true,
       vagaEmpregadoId: true,
@@ -269,5 +274,5 @@ export async function contratarCandidatoNaVaga(vagaId: string, candidatoId: stri
     });
   }
 
-  return encerrarOutrasTriagensDosCandidatos(vagaId, [candidatoId]);
+  return encerrarOutrasTriagensDosCandidatos(empresaId, vagaId, [candidatoId]);
 }

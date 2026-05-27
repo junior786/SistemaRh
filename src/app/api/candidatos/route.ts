@@ -3,9 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getPaginationMeta, parsePage, parsePageSize } from "@/lib/pagination";
 import { normalizePhoneBR } from "@/lib/phone";
 import { validateCandidatoFields } from "@/lib/form-validations";
+import { resolveRequestContext } from "@/lib/request-context";
 
 // GET /api/candidatos - listar candidatos
 export async function GET(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { searchParams } = request.nextUrl;
   const busca = searchParams.get("busca");
   const jobType = searchParams.get("jobType");
@@ -14,7 +19,7 @@ export async function GET(request: NextRequest) {
   const page = parsePage(searchParams.get("page"));
   const pageSize = parsePageSize(searchParams.get("pageSize"));
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { empresaId: empresa.id };
   if (busca) {
     where.OR = [
       { nome: { contains: busca, mode: "insensitive" } },
@@ -61,6 +66,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/candidatos - criar candidato com skills, experiencias, formacoes
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const {
     nome, email, telefone, cidade, cep, genero, resumo, jobType, pretensaoSalarial,
@@ -73,7 +82,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Campos obrigatorios faltando", fieldErrors }, { status: 400 });
   }
 
-  const existente = await prisma.candidato.findUnique({ where: { email } });
+  const existente = await prisma.candidato.findUnique({ where: { empresaId_email: { empresaId: empresa.id, email } } });
   if (existente) {
     return Response.json({
       error: "Ja existe candidato com este email",
@@ -84,6 +93,7 @@ export async function POST(request: NextRequest) {
   try {
     const candidato = await prisma.candidato.create({
       data: {
+        empresaId: empresa.id,
         nome,
         email,
         telefone: normalizePhoneBR(telefone),

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -112,21 +113,8 @@ const chartConfig = {
   fechadas: { label: "Fechadas", color: "var(--color-chart-4)" },
 } as const;
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const atividadesRecentes = data?.atividadesRecentes ?? [];
-
-  const metricas = data?.metricas ?? {
+const emptyDashboardData: DashboardData = {
+  metricas: {
     vagasAbertas: 0,
     vagasEmRevisao: 0,
     vagasFechadas: 0,
@@ -135,7 +123,45 @@ export default function DashboardPage() {
     candidatosContratados: 0,
     analisesConcluídas: 0,
     mediaScore: null,
-  };
+  },
+  pipeline: {
+    pendentes: 0,
+    processando: 0,
+    concluidas: 0,
+  },
+  statusVagas: [],
+  seriesMensal: [],
+  vagasDestaque: [],
+  funil: [],
+  atividadesRecentes: [],
+};
+
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiFetch("/api/dashboard")
+      .then(async (r) => {
+        const payload = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(payload?.error ?? "Nao foi possivel carregar o dashboard.");
+        }
+        setData(payload);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Nao foi possivel carregar o dashboard.");
+        setData(emptyDashboardData);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dashboard = data ?? emptyDashboardData;
+  const atividadesRecentes = dashboard.atividadesRecentes;
+
+  const metricas = dashboard.metricas;
+  const pipeline = dashboard.pipeline;
 
   const taxaContratacao = metricas.totalCandidatos
     ? Math.round((metricas.candidatosContratados / metricas.totalCandidatos) * 100)
@@ -182,6 +208,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       <section className="relative overflow-hidden rounded-3xl border bg-card">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_28%)]" />
         <div className="relative grid gap-6 p-6 lg:grid-cols-[1.4fr_0.9fr] lg:p-8">
@@ -215,15 +247,15 @@ export default function DashboardPage() {
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Pipeline</p>
               <div className="mt-3 grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-2xl font-semibold">{data?.pipeline.pendentes ?? 0}</p>
+                  <p className="text-2xl font-semibold">{pipeline.pendentes}</p>
                   <p className="text-[11px] text-muted-foreground">Pendentes</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold">{data?.pipeline.processando ?? 0}</p>
+                  <p className="text-2xl font-semibold">{pipeline.processando}</p>
                   <p className="text-[11px] text-muted-foreground">Processando</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold">{data?.pipeline.concluidas ?? 0}</p>
+                  <p className="text-2xl font-semibold">{pipeline.concluidas}</p>
                   <p className="text-[11px] text-muted-foreground">Concluídas</p>
                 </div>
               </div>
@@ -289,7 +321,7 @@ export default function DashboardPage() {
                 className="h-[320px] w-full"
                 config={chartConfig}
               >
-                <AreaChart data={data?.seriesMensal ?? []} margin={{ left: 8, right: 8, top: 16 }}>
+                <AreaChart data={dashboard.seriesMensal} margin={{ left: 8, right: 8, top: 16 }}>
                   <defs>
                     <linearGradient id="fillVagas" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-vagas)" stopOpacity={0.4} />
@@ -343,7 +375,7 @@ export default function DashboardPage() {
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="label" />} />
                     <Pie
-                      data={data?.statusVagas ?? []}
+                      data={dashboard.statusVagas}
                       dataKey="total"
                       nameKey="label"
                       innerRadius={55}
@@ -354,7 +386,7 @@ export default function DashboardPage() {
                 </ChartContainer>
 
                 <div className="space-y-3">
-                  {(data?.statusVagas ?? []).map((item) => (
+                  {dashboard.statusVagas.map((item) => (
                     <div key={item.status} className="rounded-2xl border bg-muted/20 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
@@ -387,9 +419,9 @@ export default function DashboardPage() {
                 >
                   <BarChart
                     data={[
-                      { etapa: "Pendentes", total: data?.pipeline.pendentes ?? 0, fill: "var(--color-pendentes)" },
-                      { etapa: "Processando", total: data?.pipeline.processando ?? 0, fill: "var(--color-processando)" },
-                      { etapa: "Concluídas", total: data?.pipeline.concluidas ?? 0, fill: "var(--color-concluidas)" },
+                      { etapa: "Pendentes", total: pipeline.pendentes, fill: "var(--color-pendentes)" },
+                      { etapa: "Processando", total: pipeline.processando, fill: "var(--color-processando)" },
+                      { etapa: "Concluídas", total: pipeline.concluidas, fill: "var(--color-concluidas)" },
                     ]}
                     margin={{ left: 0, right: 0, top: 12 }}
                   >
@@ -455,7 +487,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Funil de conversão por etapa */}
-      {(data?.funil ?? []).length > 0 && (
+      {dashboard.funil.length > 0 && (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="border-b px-6 py-5">
@@ -479,7 +511,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {data!.funil.map((etapa) => (
+                  {dashboard.funil.map((etapa) => (
                     <tr key={etapa.nome} className="hover:bg-muted/30">
                       <td className="px-6 py-3 font-medium">{etapa.nome}</td>
                       <td className="px-4 py-3 text-center">{etapa.total}</td>
@@ -520,12 +552,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 p-4 lg:grid-cols-2">
-            {(data?.vagasDestaque ?? []).length === 0 ? (
+            {dashboard.vagasDestaque.length === 0 ? (
               <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground lg:col-span-2">
                 Nenhuma vaga cadastrada ainda.
               </div>
             ) : (
-              data!.vagasDestaque.map((vaga) => {
+              dashboard.vagasDestaque.map((vaga) => {
                 const st = statusMap[vaga.status] ?? { label: vaga.status, variant: "outline" as const };
                 return (
                   <Link

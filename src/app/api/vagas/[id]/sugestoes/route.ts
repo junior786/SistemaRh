@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 import {
   atendeCorteMinimoPreTriagem,
@@ -13,14 +14,18 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id: vagaId } = await params;
   const { searchParams } = request.nextUrl;
   const busca = searchParams.get("busca")?.trim() ?? "";
   const page = parsePage(searchParams.get("page"));
   const pageSize = parsePageSize(searchParams.get("pageSize"));
 
-  const vaga = await prisma.vaga.findUnique({
-    where: { id: vagaId },
+  const vaga = await prisma.vaga.findFirst({
+    where: { id: vagaId, empresaId: empresa.id },
     include: {
       requisitos: true,
       areas: true,
@@ -44,6 +49,7 @@ export async function GET(
   const areasVaga = Array.from(new Set([vaga.area, ...vaga.areas.map((area) => area.nome)].filter(Boolean)));
 
   const where: Record<string, unknown> = {
+    empresaId: empresa.id,
     statusEmprego: "DISPONIVEL",
     triagens: {
       none: { vagaId },

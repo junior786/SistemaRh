@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveRequestContext } from "@/lib/request-context";
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -30,6 +31,10 @@ function buildMonthSeries(monthsBack: number) {
 
 // GET /api/dashboard
 export async function GET() {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const [
     vagasStatus,
     totalCandidatos,
@@ -49,22 +54,24 @@ export async function GET() {
   ] = await Promise.all([
     prisma.vaga.groupBy({
       by: ["status"],
+      where: { empresaId: empresa.id },
       _count: { status: true },
     }),
-    prisma.candidato.count(),
-    prisma.candidato.count({ where: { statusEmprego: "DISPONIVEL" } }),
-    prisma.candidato.count({ where: { statusEmprego: "EMPREGADO" } }),
-    prisma.triagem.count({ where: { status: "CONCLUIDO" } }),
-    prisma.triagem.count({ where: { status: "PENDENTE" } }),
-    prisma.triagem.count({ where: { status: "PROCESSANDO" } }),
-    prisma.triagem.count({ where: { status: "CONCLUIDO" } }),
+    prisma.candidato.count({ where: { empresaId: empresa.id } }),
+    prisma.candidato.count({ where: { empresaId: empresa.id, statusEmprego: "DISPONIVEL" } }),
+    prisma.candidato.count({ where: { empresaId: empresa.id, statusEmprego: "EMPREGADO" } }),
+    prisma.triagem.count({ where: { empresaId: empresa.id, status: "CONCLUIDO" } }),
+    prisma.triagem.count({ where: { empresaId: empresa.id, status: "PENDENTE" } }),
+    prisma.triagem.count({ where: { empresaId: empresa.id, status: "PROCESSANDO" } }),
+    prisma.triagem.count({ where: { empresaId: empresa.id, status: "CONCLUIDO" } }),
     prisma.triagem.aggregate({
       _avg: { score: true },
-      where: { score: { not: null } },
+      where: { empresaId: empresa.id, score: { not: null } },
     }),
     prisma.vaga.findMany({
       select: { createdAt: true },
       where: {
+        empresaId: empresa.id,
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1),
         },
@@ -73,6 +80,7 @@ export async function GET() {
     prisma.candidato.findMany({
       select: { createdAt: true },
       where: {
+        empresaId: empresa.id,
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1),
         },
@@ -81,12 +89,14 @@ export async function GET() {
     prisma.triagem.findMany({
       select: { createdAt: true },
       where: {
+        empresaId: empresa.id,
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1),
         },
       },
     }),
     prisma.vaga.findMany({
+      where: { empresaId: empresa.id },
       include: {
         _count: { select: { triagens: true, empregados: true } },
         triagens: {
@@ -103,6 +113,7 @@ export async function GET() {
       take: 8,
     }),
     prisma.triagemEvento.findMany({
+      where: { empresaId: empresa.id },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
@@ -120,6 +131,7 @@ export async function GET() {
     // Etapas para métricas de funil (conversão + tempo médio)
     prisma.triagemEtapa.findMany({
       where: {
+        triagem: { empresaId: empresa.id },
         status: { in: ["CONCLUIDO", "REPROVADO", "DISPENSADO", "EM_ANDAMENTO"] },
       },
       select: {

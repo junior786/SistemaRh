@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -178,7 +179,7 @@ export default function PerfilCandidatoPage() {
   const [obsSaving, setObsSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/candidatos/${candidatoId}`)
+    apiFetch(`/api/candidatos/${candidatoId}`)
       .then((r) => r.json())
       .then((data) => {
         setCandidato(data);
@@ -191,7 +192,7 @@ export default function PerfilCandidatoPage() {
   async function salvarObservacao() {
     setObsSaving(true);
     try {
-      await fetch(`/api/candidatos/${candidatoId}`, {
+      await apiFetch(`/api/candidatos/${candidatoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ observacao: obsEdit || null }),

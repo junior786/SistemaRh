@@ -3,8 +3,12 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveRequestContext } from "@/lib/request-context";
 
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
   const body = await request.json();
   const { candidatoId, iaAtiva } = body;
 
@@ -15,8 +19,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const candidato = await prisma.candidato.findUnique({
-    where: { id: candidatoId },
+  const candidato = await prisma.candidato.findFirst({
+    where: { id: candidatoId, empresaId: empresa.id },
+    select: { id: true, empresaId: true },
   });
 
   if (!candidato) {
@@ -26,6 +31,7 @@ export async function POST(request: NextRequest) {
   const controle = await prisma.controleConversa.upsert({
     where: { candidatoId },
     create: {
+      empresaId: candidato.empresaId,
       candidatoId,
       iaAtiva,
       assumidoEm: iaAtiva ? null : new Date(),

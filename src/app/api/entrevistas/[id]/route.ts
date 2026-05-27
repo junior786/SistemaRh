@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 import { contratarCandidatoNaVaga, validarContratacaoNaVaga } from "@/lib/contratacao";
 import { concluirEtapaEAvancar, reprovarEtapaTriagem } from "@/lib/triagem-etapas";
@@ -9,12 +10,16 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const body = await request.json();
   const { dataHora, entrevistador, status, observacoes, resultado } = body;
 
-  const entrevistaAtual = await prisma.entrevista.findUnique({
-    where: { id },
+  const entrevistaAtual = await prisma.entrevista.findFirst({
+    where: { id, triagem: { empresaId: empresa.id } },
     include: {
       triagem: { select: { id: true, candidatoId: true, vagaId: true } },
     },
@@ -26,7 +31,7 @@ export async function PUT(
 
   if (resultado === "APROVADO") {
     try {
-      await validarContratacaoNaVaga(entrevistaAtual.triagem.vagaId, [entrevistaAtual.triagem.candidatoId]);
+      await validarContratacaoNaVaga(empresa.id, entrevistaAtual.triagem.vagaId, [entrevistaAtual.triagem.candidatoId]);
     } catch (error) {
       return Response.json(
         { error: error instanceof Error ? error.message : "Não foi possível contratar o candidato" },
@@ -64,7 +69,7 @@ export async function PUT(
 
   // Quando resultado = APROVADO, marca candidato como EMPREGADO e vincula à vaga
   if (resultado === "APROVADO" && entrevista.triagem) {
-    await contratarCandidatoNaVaga(entrevista.triagem.vagaId, entrevista.triagem.candidatoId);
+    await contratarCandidatoNaVaga(empresa.id, entrevista.triagem.vagaId, entrevista.triagem.candidatoId);
   }
 
   if (resultado !== undefined) {
@@ -91,7 +96,20 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
+  const entrevista = await prisma.entrevista.findFirst({
+    where: { id, triagem: { empresaId: empresa.id } },
+    select: { id: true },
+  });
+
+  if (!entrevista) {
+    return Response.json({ error: "Entrevista nao encontrada" }, { status: 404 });
+  }
+
   await prisma.entrevista.delete({ where: { id } });
   return Response.json({ ok: true });
 }

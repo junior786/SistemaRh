@@ -2,9 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { inicializarEtapasTriagem } from "@/lib/triagem-etapas";
 import { registrarEventoTriagem, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
+import { resolveRequestContext } from "@/lib/request-context";
 
 // GET /api/triagens?vagaId=xxx — listar triagens de uma vaga
 export async function GET(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const vagaId = request.nextUrl.searchParams.get("vagaId");
 
   if (!vagaId) {
@@ -12,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   const triagens = await prisma.triagem.findMany({
-    where: { vagaId },
+    where: { vagaId, empresaId: empresa.id },
     include: {
       candidato: {
         include: { skills: true },
@@ -36,6 +41,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/triagens — vincular candidato à vaga (RN-04) e disparar análise
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const { vagaId, candidatoId } = body;
 
@@ -43,22 +52,31 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "vagaId e candidatoId são obrigatórios" }, { status: 400 });
   }
 
-  // Verifica se já existe triagem para esse par
-  const existente = await prisma.triagem.findUnique({
-    where: { vagaId_candidatoId: { vagaId, candidatoId } },
-  });
+  const [vaga, candidato, existente] = await Promise.all([
+    prisma.vaga.findFirst({
+      where: { id: vagaId, empresaId: empresa.id },
+      select: { id: true },
+    }),
+    prisma.candidato.findFirst({
+      where: { id: candidatoId, empresaId: empresa.id },
+      select: { statusEmprego: true },
+    }),
+    prisma.triagem.findFirst({
+      where: { vagaId, candidatoId, empresaId: empresa.id },
+      select: { id: true },
+    }),
+  ]);
 
-  if (existente) {
-    return Response.json({ error: "Candidato já vinculado a esta vaga" }, { status: 409 });
+  if (!vaga) {
+    return Response.json({ error: "Vaga não encontrada" }, { status: 404 });
   }
-
-  const candidato = await prisma.candidato.findUnique({
-    where: { id: candidatoId },
-    select: { statusEmprego: true },
-  });
 
   if (!candidato) {
     return Response.json({ error: "Candidato não encontrado" }, { status: 404 });
+  }
+
+  if (existente) {
+    return Response.json({ error: "Candidato já vinculado a esta vaga" }, { status: 409 });
   }
 
   if (candidato.statusEmprego === "EMPREGADO") {
@@ -69,7 +87,7 @@ export async function POST(request: NextRequest) {
   }
 
   const triagem = await prisma.triagem.create({
-    data: { vagaId, candidatoId, status: "PENDENTE" },
+    data: { empresaId: empresa.id, vagaId, candidatoId, status: "PENDENTE" },
     include: { candidato: true, vaga: true },
   });
 

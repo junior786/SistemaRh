@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 import { chatCompletion, parseAIResponse } from "@/lib/openrouter";
 import {
@@ -14,10 +15,14 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id: vagaId } = await params;
 
-  const vaga = await prisma.vaga.findUnique({
-    where: { id: vagaId },
+  const vaga = await prisma.vaga.findFirst({
+    where: { id: vagaId, empresaId: empresa.id },
     include: { requisitos: true, areas: true },
   });
 
@@ -33,6 +38,7 @@ export async function POST(
 
   const candidatos = await prisma.candidato.findMany({
     where: {
+      empresaId: empresa.id,
       statusEmprego: "DISPONIVEL",
       triagens: {
         none: { vagaId },

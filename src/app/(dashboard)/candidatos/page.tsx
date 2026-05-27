@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -61,7 +62,7 @@ export default function CandidatosPage() {
     const timeoutId = window.setTimeout(() => {
       setLoading(true);
 
-      fetch(`/api/candidatos?${params}`)
+      apiFetch(`/api/candidatos?${params}`)
         .then(async (r) => {
           const text = await r.text();
           const data = text ? JSON.parse(text) : null;

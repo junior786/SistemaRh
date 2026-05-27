@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -59,8 +60,12 @@ export default function NovaVagaPage() {
   const [areasVaga, setAreasVaga] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch("/api/categorias?tipo=AREA_ATUACAO")
-      .then((r) => r.json())
+    apiFetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then(async (r) => {
+        const data = await r.json().catch(() => []);
+        if (!r.ok || !Array.isArray(data)) return [];
+        return data;
+      })
       .then((data) => {
         const nomes = data.map((c: { nome: string }) => c.nome);
         setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
@@ -137,7 +142,7 @@ export default function NovaVagaPage() {
     }
 
     try {
-      const res = await fetch("/api/vagas", {
+      const res = await apiFetch("/api/vagas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

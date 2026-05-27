@@ -8,9 +8,13 @@ import {
   sendTextMessage,
   sendTemplateMessage,
 } from "@/lib/whatsapp";
-import { getSingleTenantWhatsappEmpresa } from "@/lib/whatsapp-config";
+import { resolveRequestContext } from "@/lib/request-context";
 
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const {
     candidatoId,
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "templateSlug é obrigatório para mensagem template" }, { status: 400 });
   }
 
-  const candidato = await prisma.candidato.findUnique({ where: { id: candidatoId } });
+  const candidato = await prisma.candidato.findFirst({ where: { id: candidatoId, empresaId: empresa.id } });
   if (!candidato) {
     return Response.json({ error: "Candidato não encontrado" }, { status: 404 });
   }
@@ -44,8 +48,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Candidato não possui telefone cadastrado" }, { status: 400 });
   }
 
-  const empresa = await getSingleTenantWhatsappEmpresa();
-  if (!empresa) {
+  if (!empresa.twilioAccountSid || !empresa.twilioAuthToken || !empresa.twilioFromNumber) {
     return Response.json({ error: "Credenciais Twilio não configuradas" }, { status: 400 });
   }
 
@@ -86,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     const mensagem = await prisma.mensagem.create({
       data: {
+        empresaId: empresa.id,
         candidatoId,
         providerMessageSid,
         direcao: "ENVIADA",

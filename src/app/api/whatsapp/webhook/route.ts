@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
 
   await prisma.mensagem.create({
     data: {
+      empresaId: empresa.id,
       candidatoId: candidato.id,
       providerMessageSid: inbound.messageSid,
       direcao: "RECEBIDA",
@@ -247,6 +248,7 @@ export async function POST(request: NextRequest) {
     if (empresa.iaModoDraft) {
       await prisma.mensagem.create({
         data: {
+          empresaId: empresa.id,
           candidatoId: candidato.id,
           direcao: "ENVIADA",
           conteudo: resposta,
@@ -263,6 +265,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.mensagem.create({
       data: {
+        empresaId: empresa.id,
         candidatoId: candidato.id,
         providerMessageSid: sid,
         direcao: "ENVIADA",

@@ -2,20 +2,24 @@
 // body opcional: { conteudo?: string }  — se enviado, sobrescreve antes do envio
 
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 import { getTwilioClient, sendTextMessage } from "@/lib/whatsapp";
-import { getSingleTenantWhatsappEmpresa } from "@/lib/whatsapp-config";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const conteudoOverride: string | undefined = body?.conteudo;
 
-  const mensagem = await prisma.mensagem.findUnique({
-    where: { id },
+  const mensagem = await prisma.mensagem.findFirst({
+    where: { id, empresaId: empresa.id },
     include: { candidato: true },
   });
   if (!mensagem) {
@@ -31,8 +35,7 @@ export async function POST(
     );
   }
 
-  const empresa = await getSingleTenantWhatsappEmpresa();
-  if (!empresa) {
+  if (!empresa.twilioAccountSid || !empresa.twilioAuthToken || !empresa.twilioFromNumber) {
     return Response.json({ error: "Credenciais Twilio não configuradas" }, { status: 400 });
   }
 

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
@@ -132,7 +133,7 @@ export default function EntrevistasCalendarioPage() {
     const to = endOfMonth(addMonths(date, 1)).toISOString();
 
     try {
-      const res = await fetch(`/api/entrevistas?from=${from}&to=${to}`);
+      const res = await apiFetch(`/api/entrevistas?from=${from}&to=${to}`);
       const data = await res.json();
       setEntrevistas(data);
     } catch (err) {

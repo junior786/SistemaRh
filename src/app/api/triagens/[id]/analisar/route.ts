@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { prisma } from "@/lib/prisma";
 import { concluirEtapaEAvancar } from "@/lib/triagem-etapas";
 import { registrarEventoTriagem, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
@@ -10,10 +11,14 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
 
-  const triagem = await prisma.triagem.findUnique({
-    where: { id },
+  const triagem = await prisma.triagem.findFirst({
+    where: { id, empresaId: empresa.id },
     include: {
       vaga: { include: { requisitos: true, areas: true } },
       etapas: {

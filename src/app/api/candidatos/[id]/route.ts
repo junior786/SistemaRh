@@ -2,16 +2,21 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizePhoneBR } from "@/lib/phone";
 import { validateCandidatoFields } from "@/lib/form-validations";
+import { resolveRequestContext } from "@/lib/request-context";
 
 // GET /api/candidatos/[id] - perfil completo do candidato
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
 
-  const candidato = await prisma.candidato.findUnique({
-    where: { id },
+  const candidato = await prisma.candidato.findFirst({
+    where: { id, empresaId: empresa.id },
     include: {
       areas: true,
       skills: true,
@@ -41,12 +46,12 @@ export async function GET(
 
   const [mensagens, entrevistas, eventosTriagem] = await Promise.all([
     prisma.mensagem.findMany({
-      where: { candidatoId: id },
+      where: { empresaId: empresa.id, candidatoId: id },
       orderBy: { criadoEm: "desc" },
       take: 50,
     }),
     prisma.entrevista.findMany({
-      where: { triagem: { candidatoId: id } },
+      where: { triagem: { empresaId: empresa.id, candidatoId: id } },
       include: {
         triagem: {
           select: {
@@ -63,7 +68,7 @@ export async function GET(
       take: 50,
     }),
     prisma.triagemEvento.findMany({
-      where: { candidatoId: id },
+      where: { empresaId: empresa.id, candidatoId: id },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
@@ -135,6 +140,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const body = await request.json();
   const {
@@ -148,7 +157,7 @@ export async function PUT(
     return Response.json({ error: "Campos obrigatorios faltando", fieldErrors }, { status: 400 });
   }
 
-  const existente = await prisma.candidato.findUnique({ where: { email } });
+  const existente = await prisma.candidato.findUnique({ where: { empresaId_email: { empresaId: empresa.id, email } } });
   if (existente && existente.id !== id) {
     return Response.json({
       error: "Ja existe candidato com este email",
@@ -157,6 +166,15 @@ export async function PUT(
   }
 
   try {
+    const candidatoExiste = await prisma.candidato.findFirst({
+      where: { id, empresaId: empresa.id },
+      select: { id: true },
+    });
+
+    if (!candidatoExiste) {
+      return Response.json({ error: "Candidato nao encontrado" }, { status: 404 });
+    }
+
     const candidato = await prisma.candidato.update({
       where: { id },
       data: {
@@ -245,7 +263,7 @@ export async function PUT(
     }
 
     await prisma.triagem.updateMany({
-      where: { candidatoId: id, status: "CONCLUIDO" },
+      where: { empresaId: empresa.id, candidatoId: id, status: "CONCLUIDO" },
       data: { desatualizado: true },
     });
 
@@ -261,7 +279,14 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
+  const candidato = await prisma.candidato.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
+  if (!candidato) return Response.json({ error: "Candidato nao encontrado" }, { status: 404 });
+
   await prisma.candidato.delete({ where: { id } });
   return Response.json({ ok: true });
 }

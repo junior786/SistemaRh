@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -77,8 +78,8 @@ export default function MensagensPage() {
   // Carregar candidato e mensagens
   useEffect(() => {
     Promise.all([
-      fetch(`/api/candidatos/${candidatoId}`).then((r) => r.json()),
-      fetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json()),
+      apiFetch(`/api/candidatos/${candidatoId}`).then((r) => r.json()),
+      apiFetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json()),
     ])
       .then(([cand, data]) => {
         setCandidato(cand);
@@ -100,7 +101,7 @@ export default function MensagensPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const data = await fetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json());
+        const data = await apiFetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json());
         setMensagens(data.mensagens);
         setIaAtiva(data.controle?.iaAtiva ?? true);
       } catch {
@@ -117,7 +118,7 @@ export default function MensagensPage() {
 
     setEnviando(true);
     try {
-      const res = await fetch("/api/whatsapp/send", {
+      const res = await apiFetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ candidatoId, conteudo: texto.trim() }),
@@ -141,7 +142,7 @@ export default function MensagensPage() {
 
   async function recarregar() {
     try {
-      const data = await fetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json());
+      const data = await apiFetch(`/api/whatsapp/mensagens?candidatoId=${candidatoId}`).then((r) => r.json());
       setMensagens(data.mensagens);
       setIaAtiva(data.controle?.iaAtiva ?? true);
     } catch {
@@ -152,7 +153,7 @@ export default function MensagensPage() {
   async function aprovarRascunho(id: string, conteudoOverride?: string) {
     setRascunhoAcao(id);
     try {
-      const res = await fetch(`/api/whatsapp/mensagens/${id}/aprovar`, {
+      const res = await apiFetch(`/api/whatsapp/mensagens/${id}/aprovar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(conteudoOverride !== undefined ? { conteudo: conteudoOverride } : {}),
@@ -183,7 +184,7 @@ export default function MensagensPage() {
   async function descartarRascunho(id: string) {
     setRascunhoAcao(id);
     try {
-      const res = await fetch(`/api/whatsapp/mensagens/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/whatsapp/mensagens/${id}`, { method: "DELETE" });
       if (!res.ok) {
         toast.error("Erro ao descartar rascunho");
         return;
@@ -197,7 +198,7 @@ export default function MensagensPage() {
   async function toggleIA() {
     setToggling(true);
     try {
-      await fetch("/api/whatsapp/controle", {
+      await apiFetch("/api/whatsapp/controle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ candidatoId, iaAtiva: !iaAtiva }),

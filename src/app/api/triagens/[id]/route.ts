@@ -7,16 +7,21 @@ import {
   voltarParaEtapaAnteriorTriagem,
 } from "@/lib/triagem-etapas";
 import { registrarEventoTriagem, TRIAGEM_EVENTO_TIPO } from "@/lib/triagem-eventos";
+import { resolveRequestContext } from "@/lib/request-context";
 
 // GET /api/triagens/[id]
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
 
-  const triagem = await prisma.triagem.findUnique({
-    where: { id },
+  const triagem = await prisma.triagem.findFirst({
+    where: { id, empresaId: empresa.id },
     include: {
       candidato: {
         include: { skills: true, experiencias: true, formacoes: true },
@@ -59,12 +64,16 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
   const body = await request.json();
   const { acao, vagaEtapaId } = body;
 
-  const triagem = await prisma.triagem.findUnique({
-    where: { id },
+  const triagem = await prisma.triagem.findFirst({
+    where: { id, empresaId: empresa.id },
     select: { id: true },
   });
 
@@ -196,7 +205,14 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const { id } = await params;
+  const triagem = await prisma.triagem.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
+  if (!triagem) return Response.json({ error: "Triagem nao encontrada" }, { status: 404 });
+
   await registrarEventoTriagem({
     triagemId: id,
     tipo: TRIAGEM_EVENTO_TIPO.TRIAGEM_REMOVIDA,

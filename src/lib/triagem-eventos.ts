@@ -35,6 +35,7 @@ async function carregarSnapshotsTriagem(triagemIds: string[]) {
     },
     select: {
       id: true,
+      empresaId: true,
       vagaId: true,
       candidatoId: true,
       vaga: {
@@ -54,6 +55,7 @@ async function carregarSnapshotsTriagem(triagemIds: string[]) {
     triagens.map((triagem) => [
       triagem.id,
       {
+        empresaId: triagem.empresaId,
         vagaId: triagem.vagaId,
         vagaTitulo: triagem.vaga.titulo,
         candidatoId: triagem.candidatoId,
@@ -80,6 +82,7 @@ export async function registrarEventoTriagem({
   try {
     await prisma.triagemEvento.create({
       data: {
+        empresaId: snapshot.empresaId,
         triagemId,
         vagaId: snapshot.vagaId,
         vagaTitulo: snapshot.vagaTitulo,
@@ -118,6 +121,7 @@ export async function registrarEventosTriagemLote(eventos: RegistrarEventoInput[
         }
 
         return [{
+          empresaId: snapshot.empresaId,
           triagemId: evento.triagemId,
           vagaId: snapshot.vagaId,
           vagaTitulo: snapshot.vagaTitulo,

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -190,7 +191,7 @@ export default function DetalheVagaPage() {
 
   const carregarVaga = useCallback(() => {
     setLoading(true);
-    fetch(`/api/vagas/${vagaId}`)
+    apiFetch(`/api/vagas/${vagaId}`)
       .then(async (r) => {
         const text = await r.text();
         const data = text ? JSON.parse(text) : null;
@@ -215,7 +216,7 @@ export default function DetalheVagaPage() {
   }, [vaga]);
 
   async function handleStatusChange(status: string) {
-    const res = await fetch(`/api/vagas/${vagaId}`, {
+    const res = await apiFetch(`/api/vagas/${vagaId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -233,7 +234,7 @@ export default function DetalheVagaPage() {
   async function finalizarVaga() {
     setFinalizando(true);
     try {
-      const res = await fetch(`/api/vagas/${vagaId}`, {
+      const res = await apiFetch(`/api/vagas/${vagaId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

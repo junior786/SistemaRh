@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api-fetch";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -71,8 +72,12 @@ export default function EditarCandidatoPage() {
   const [areasDisponiveis, setAreasDisponiveis] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch("/api/categorias?tipo=AREA_ATUACAO")
-      .then((r) => r.json())
+    apiFetch("/api/categorias?tipo=AREA_ATUACAO")
+      .then(async (r) => {
+        const data = await r.json().catch(() => []);
+        if (!r.ok || !Array.isArray(data)) return [];
+        return data;
+      })
       .then((data) => {
         const nomes = data.map((c: { nome: string }) => c.nome);
         setAreasDisponiveis(nomes.length > 0 ? nomes : AREAS_ATUACAO_PADRAO);
@@ -112,7 +117,7 @@ export default function EditarCandidatoPage() {
 
   // Carregar dados existentes
   useEffect(() => {
-    fetch(`/api/candidatos/${candidatoId}`)
+    apiFetch(`/api/candidatos/${candidatoId}`)
       .then((r) => r.json())
       .then((data) => {
         setNome(data.nome || "");
@@ -248,7 +253,7 @@ export default function EditarCandidatoPage() {
     }
 
     try {
-      const res = await fetch(`/api/candidatos/${candidatoId}`, {
+      const res = await apiFetch(`/api/candidatos/${candidatoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

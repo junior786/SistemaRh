@@ -2,7 +2,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSingleTenantEmpresa } from "@/lib/whatsapp-config";
+import { resolveRequestContext } from "@/lib/request-context";
 
 function maskToken(token: string | null): string | null {
   if (!token) return null;
@@ -34,26 +34,18 @@ function shape(empresa: {
 }
 
 export async function GET() {
-  const empresa = await getSingleTenantEmpresa();
-
-  if (!empresa) {
-    return Response.json({
-      iaWhatsappAtivo: false,
-      twilioAccountSid: null,
-      twilioAuthToken: null,
-      twilioFromNumber: null,
-      iaPersona: null,
-      iaTomVoz: null,
-      iaFAQ: null,
-      iaBlocklist: null,
-      iaModoDraft: false,
-    });
-  }
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
 
   return Response.json(shape(empresa));
 }
 
 export async function PUT(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  let { empresa } = ctx;
+
   const body = await request.json();
   const {
     iaWhatsappAtivo,
@@ -79,24 +71,7 @@ export async function PUT(request: NextRequest) {
     nome?: string;
   } = body;
 
-  let empresa = await getSingleTenantEmpresa();
-
-  if (!empresa) {
-    empresa = await prisma.empresa.create({
-      data: {
-        nome: nome || "Minha Empresa",
-        iaWhatsappAtivo: iaWhatsappAtivo ?? false,
-        twilioAccountSid: twilioAccountSid || null,
-        twilioAuthToken: twilioAuthToken || null,
-        twilioFromNumber: twilioFromNumber || null,
-        iaPersona: iaPersona || null,
-        iaTomVoz: iaTomVoz || null,
-        iaFAQ: iaFAQ || null,
-        iaBlocklist: iaBlocklist || null,
-        iaModoDraft: iaModoDraft ?? false,
-      },
-    });
-  } else {
+  {
     empresa = await prisma.empresa.update({
       where: { id: empresa.id },
       data: {

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTwilioClient, sendTemplateMessage } from "@/lib/whatsapp";
-import { getSingleTenantWhatsappEmpresa } from "@/lib/whatsapp-config";
+import { resolveRequestContext } from "@/lib/request-context";
 
 const TEMPLATE_SLUG_ENTREVISTA = "entrevista_agendada";
 
@@ -9,6 +9,10 @@ const TEMPLATE_SLUG_ENTREVISTA = "entrevista_agendada";
 // GET /api/entrevistas?from=ISO&to=ISO — entrevistas em um período (para calendário)
 // GET /api/entrevistas                 — todas as entrevistas
 export async function GET(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const triagemId = request.nextUrl.searchParams.get("triagemId");
   const vagaId = request.nextUrl.searchParams.get("vagaId");
   const from = request.nextUrl.searchParams.get("from");
@@ -17,7 +21,7 @@ export async function GET(request: NextRequest) {
   // Filtro por triagem específica (usado na página de entrevistas do candidato)
   if (triagemId) {
     const entrevistas = await prisma.entrevista.findMany({
-      where: { triagemId },
+      where: { triagemId, triagem: { empresaId: empresa.id } },
       include: { vagaEtapa: true },
       orderBy: { dataHora: "desc" },
     });
@@ -25,9 +29,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Listagem geral (calendário) — opcionalmente filtrada por período
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {
+    triagem: { empresaId: empresa.id },
+  };
   if (vagaId) {
-    where.triagem = { vagaId };
+    where.triagem = { empresaId: empresa.id, vagaId };
   }
   if (from || to) {
     where.dataHora = {
@@ -55,11 +61,35 @@ export async function GET(request: NextRequest) {
 
 // POST /api/entrevistas — agendar entrevista (RF-06)
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const { triagemId, vagaEtapaId, dataHora, entrevistador, notificarWhats = false } = body;
 
   if (!triagemId || !dataHora || !entrevistador) {
     return Response.json({ error: "triagemId, dataHora e entrevistador são obrigatórios" }, { status: 400 });
+  }
+
+  const triagem = await prisma.triagem.findFirst({
+    where: { id: triagemId, empresaId: empresa.id },
+    select: { id: true },
+  });
+
+  if (!triagem) {
+    return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
+  }
+
+  if (vagaEtapaId) {
+    const etapa = await prisma.vagaEtapa.findFirst({
+      where: { id: vagaEtapaId, vaga: { triagens: { some: { id: triagemId, empresaId: empresa.id } } } },
+      select: { id: true },
+    });
+
+    if (!etapa) {
+      return Response.json({ error: "Etapa nao encontrada para esta triagem" }, { status: 404 });
+    }
   }
 
   const entrevista = await prisma.entrevista.create({
@@ -82,9 +112,7 @@ export async function POST(request: NextRequest) {
 
   // RF-06 (parcial) — Notificação de entrevista via WhatsApp (opt-in, RN-08)
   if (notificarWhats && entrevista.triagem.candidato.telefone) {
-    const empresa = await getSingleTenantWhatsappEmpresa();
-
-    if (empresa) {
+    if (empresa.twilioAccountSid && empresa.twilioAuthToken && empresa.twilioFromNumber) {
       try {
         const template = await prisma.twilioTemplate.findUnique({
           where: {
@@ -109,6 +137,7 @@ export async function POST(request: NextRequest) {
 
           await prisma.mensagem.create({
             data: {
+              empresaId: empresa.id,
               candidatoId: entrevista.triagem.candidato.id,
               providerMessageSid: sid,
               direcao: "ENVIADA",
@@ -122,6 +151,8 @@ export async function POST(request: NextRequest) {
         console.error("Erro ao notificar via WhatsApp:", error);
         // Falha no envio não bloqueia a operação (RNF-07)
       }
+    } else {
+      console.warn("Credenciais Twilio ausentes para a empresa; notificação de entrevista ignorada.");
     }
   }
 

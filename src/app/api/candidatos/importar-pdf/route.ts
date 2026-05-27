@@ -1,10 +1,14 @@
 import { NextRequest } from "next/server";
+import { resolveRequestContext } from "@/lib/request-context";
 import { extrairDadosPDF } from "@/services/extracao-pdf";
 import { extractTextFromPDF } from "@/lib/pdf-extract";
 
 // POST /api/candidatos/importar-pdf — RN-02: extrai dados do PDF para revisão
 // Retorna o rascunho para o RH revisar antes de salvar
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+
   const formData = await request.formData();
   const file = formData.get("pdf") as File | null;
 

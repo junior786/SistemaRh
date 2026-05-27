@@ -2,11 +2,12 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSingleTenantEmpresa } from "@/lib/whatsapp-config";
+import { resolveRequestContext } from "@/lib/request-context";
 
 export async function GET() {
-  const empresa = await getSingleTenantEmpresa();
-  if (!empresa) return Response.json([]);
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
 
   const templates = await prisma.twilioTemplate.findMany({
     where: { empresaId: empresa.id },
@@ -16,6 +17,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = await resolveRequestContext();
+  if (ctx instanceof Response) return ctx;
+  const { empresa } = ctx;
+
   const body = await request.json();
   const { slug, nome, contentSid, variaveis, descricao, ativo } = body;
 
@@ -24,11 +29,6 @@ export async function POST(request: NextRequest) {
       { error: "slug, nome e contentSid são obrigatórios" },
       { status: 400 },
     );
-  }
-
-  let empresa = await getSingleTenantEmpresa();
-  if (!empresa) {
-    empresa = await prisma.empresa.create({ data: { nome: "Minha Empresa" } });
   }
 
   try {
