@@ -136,8 +136,8 @@ export async function PUT(
       }
     }
 
-    await prisma.vaga.update({
-      where: { id },
+    await prisma.vaga.updateMany({
+      where: { id, empresaId: empresa.id },
       data: {
         ...(titulo && { titulo }),
         ...(area && { area }),
@@ -178,7 +178,7 @@ export async function PUT(
     }
 
     if (areas) {
-      await prisma.vagaArea.deleteMany({ where: { vagaId: id } });
+      await prisma.vagaArea.deleteMany({ where: { vagaId: id, vaga: { empresaId: empresa.id } } });
       if (areas.length > 0) {
         await prisma.vagaArea.createMany({
           data: areas.map((nome: string) => ({ vagaId: id, nome })),
@@ -187,7 +187,7 @@ export async function PUT(
     }
 
     if (requisitos) {
-      await prisma.requisito.deleteMany({ where: { vagaId: id } });
+      await prisma.requisito.deleteMany({ where: { vagaId: id, vaga: { empresaId: empresa.id } } });
       if (requisitos.length > 0) {
         await prisma.requisito.createMany({
           data: requisitos.map((requisito: { descricao: string; tipo: string; tempoMeses?: number | null }) => ({
@@ -207,7 +207,7 @@ export async function PUT(
 
     if (etapas !== undefined) {
       const etapasNormalizadas = normalizeEtapasInput(etapas);
-      await prisma.vagaEtapa.deleteMany({ where: { vagaId: id } });
+      await prisma.vagaEtapa.deleteMany({ where: { vagaId: id, vaga: { empresaId: empresa.id } } });
       await prisma.vagaEtapa.createMany({
         data: etapasNormalizadas.map((etapa, index) => ({
           vagaId: id,
@@ -240,6 +240,6 @@ export async function DELETE(
   const vaga = await prisma.vaga.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
   if (!vaga) return Response.json({ error: "Vaga nao encontrada" }, { status: 404 });
 
-  await prisma.vaga.delete({ where: { id } });
+  await prisma.vaga.deleteMany({ where: { id, empresaId: empresa.id } });
   return Response.json({ ok: true });
 }

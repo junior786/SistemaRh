@@ -47,8 +47,8 @@ export async function POST(
     return Response.json({ error: "Triagem não encontrada" }, { status: 404 });
   }
 
-  await prisma.triagem.update({
-    where: { id },
+  await prisma.triagem.updateMany({
+    where: { id: triagem.id, empresaId: empresa.id },
     data: { status: "PROCESSANDO" },
   });
 
@@ -59,12 +59,13 @@ export async function POST(
     origem: "RH",
   });
 
-  processarAnalise(id, triagem).catch(console.error);
+  processarAnalise(empresa.id, id, triagem).catch(console.error);
 
   return Response.json({ status: "PROCESSANDO" }, { status: 202 });
 }
 
 async function processarAnalise(
+  empresaId: string,
   triagemId: string,
   triagem: {
     etapas: {
@@ -146,8 +147,8 @@ async function processarAnalise(
       },
     );
 
-    await prisma.triagem.update({
-      where: { id: triagemId },
+    await prisma.triagem.updateMany({
+      where: { id: triagemId, empresaId },
       data: {
         score: resultado.score,
         analise: resultado.analise,
@@ -168,7 +169,7 @@ async function processarAnalise(
 
     const etapaTriagem = triagem.etapas.find((etapa) => etapa.vagaEtapa.tipo === "TRIAGEM");
     if (etapaTriagem && etapaTriagem.status !== "CONCLUIDO") {
-      await concluirEtapaEAvancar(triagemId, etapaTriagem.vagaEtapa.id);
+      await concluirEtapaEAvancar(empresaId, triagemId, etapaTriagem.vagaEtapa.id);
     }
   } catch (error) {
     console.error("Erro na analise:", error);
@@ -181,8 +182,8 @@ async function processarAnalise(
         erro: error instanceof Error ? error.message : String(error),
       },
     });
-    await prisma.triagem.update({
-      where: { id: triagemId },
+    await prisma.triagem.updateMany({
+      where: { id: triagemId, empresaId },
       data: { status: "ERRO" },
     });
   }

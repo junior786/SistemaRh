@@ -7,9 +7,21 @@ import { apiFetch } from "@/lib/api-fetch";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
+type AuthMe = {
+  empresa: {
+    nome: string;
+    slug: string;
+  };
+  membership: {
+    role: string;
+    ativo: boolean;
+  };
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [session, setSession] = useState<AuthMe | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,6 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return;
       }
 
+      setSession(data as AuthMe);
       setCheckingAccess(false);
     }
 
@@ -62,9 +75,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar empresa={session?.empresa ?? null} role={session?.membership.role ?? null} />
       <div className="ml-[220px] flex flex-1 flex-col">
-        <Header />
+        <Header empresa={session?.empresa ?? null} />
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>

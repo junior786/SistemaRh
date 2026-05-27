@@ -82,8 +82,8 @@ export async function PUT(
   }
 
   try {
-    const triagemAntes = await prisma.triagem.findUnique({
-      where: { id },
+    const triagemAntes = await prisma.triagem.findFirst({
+      where: { id, empresaId: empresa.id },
       include: {
         etapas: {
           include: { vagaEtapa: true },
@@ -96,22 +96,22 @@ export async function PUT(
       if (!vagaEtapaId) {
         return Response.json({ error: "vagaEtapaId e obrigatorio" }, { status: 400 });
       }
-      await pularParaEtapaTriagem(id, vagaEtapaId);
+      await pularParaEtapaTriagem(empresa.id, id, vagaEtapaId);
     } else if (acao === "VOLTAR_ETAPA") {
-      await voltarParaEtapaAnteriorTriagem(id);
+      await voltarParaEtapaAnteriorTriagem(empresa.id, id);
     } else if (acao === "REABRIR_ETAPA") {
       if (!vagaEtapaId) {
         return Response.json({ error: "vagaEtapaId e obrigatorio" }, { status: 400 });
       }
-      await reabrirEtapaTriagem(id, vagaEtapaId);
+      await reabrirEtapaTriagem(empresa.id, id, vagaEtapaId);
     } else if (acao === "REPROVAR_ETAPA") {
-      await reprovarEtapaAtualTriagem(id);
+      await reprovarEtapaAtualTriagem(empresa.id, id);
     } else {
       return Response.json({ error: "Acao invalida" }, { status: 400 });
     }
 
-    const triagemAtualizada = await prisma.triagem.findUnique({
-      where: { id },
+    const triagemAtualizada = await prisma.triagem.findFirst({
+      where: { id, empresaId: empresa.id },
       include: {
         candidato: {
           include: { skills: true },
@@ -219,6 +219,6 @@ export async function DELETE(
     descricao: "Candidato removido da triagem da vaga.",
     origem: "RH",
   });
-  await prisma.triagem.delete({ where: { id } });
+  await prisma.triagem.deleteMany({ where: { id, empresaId: empresa.id } });
   return Response.json({ ok: true });
 }

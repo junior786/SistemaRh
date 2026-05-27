@@ -14,6 +14,11 @@ import {
   LogOut,
 } from "lucide-react";
 
+type SidebarEmpresa = {
+  nome: string;
+  slug: string;
+};
+
 const navItems = [
   {
     section: "RECRUTAMENTO",
@@ -33,10 +38,12 @@ const navItems = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ empresa, role }: { empresa: SidebarEmpresa | null; role: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const empresaNome = empresa?.nome ?? "Empresa";
+  const empresaInicial = empresaNome.trim().charAt(0).toUpperCase() || "E";
 
   async function handleSignOut() {
     await signOut();
@@ -50,9 +57,28 @@ export function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Briefcase className="h-4 w-4" />
         </div>
-        <span className="text-base font-semibold text-foreground">
-          RH Selector
-        </span>
+        <div className="min-w-0">
+          <span className="block text-base font-semibold leading-tight text-foreground">
+            RH Selector
+          </span>
+          {empresa && (
+            <span className="block truncate text-[11px] font-medium uppercase text-muted-foreground">
+              {empresa.slug}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="border-b border-sidebar-border px-4 py-3">
+        <div className="flex items-center gap-2 rounded-md bg-sidebar-accent px-2.5 py-2 text-sidebar-accent-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+            {empresaInicial}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{empresaNome}</p>
+            <p className="truncate text-[11px] text-muted-foreground">Empresa atual</p>
+          </div>
+        </div>
       </div>
 
       {/* Nav */}
@@ -104,7 +130,7 @@ export function Sidebar() {
               <p className="truncate font-medium text-foreground">
                 {user?.displayName || user?.email || "Usuario"}
               </p>
-              <p className="text-xs text-muted-foreground">RH Manager</p>
+              <p className="text-xs text-muted-foreground">{role ?? "Membro"}</p>
             </div>
           </div>
           <button

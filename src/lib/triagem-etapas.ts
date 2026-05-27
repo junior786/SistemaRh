@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
-export async function inicializarEtapasTriagem(triagemId: string, vagaId: string) {
+export async function inicializarEtapasTriagem(empresaId: string, triagemId: string, vagaId: string) {
   const etapas = await prisma.vagaEtapa.findMany({
-    where: { vagaId },
+    where: { vagaId, vaga: { empresaId } },
     orderBy: { ordem: "asc" },
   });
 
@@ -20,13 +20,15 @@ export async function inicializarEtapasTriagem(triagemId: string, vagaId: string
   });
 }
 
-export async function concluirEtapaEAvancar(triagemId: string, vagaEtapaId: string) {
+export async function concluirEtapaEAvancar(empresaId: string, triagemId: string, vagaEtapaId: string) {
   const agora = new Date();
 
   await prisma.triagemEtapa.updateMany({
     where: {
       triagemId,
       vagaEtapaId,
+      triagem: { empresaId },
+      vagaEtapa: { vaga: { empresaId } },
       status: { not: "CONCLUIDO" },
     },
     data: {
@@ -38,6 +40,7 @@ export async function concluirEtapaEAvancar(triagemId: string, vagaEtapaId: stri
   const proximaPendente = await prisma.triagemEtapa.findFirst({
     where: {
       triagemId,
+      triagem: { empresaId },
       status: "PENDENTE",
     },
     include: {
@@ -63,9 +66,9 @@ export async function concluirEtapaEAvancar(triagemId: string, vagaEtapaId: stri
   });
 }
 
-export async function reprovarEtapaTriagem(triagemId: string, vagaEtapaId: string) {
+export async function reprovarEtapaTriagem(empresaId: string, triagemId: string, vagaEtapaId: string) {
   await prisma.triagemEtapa.updateMany({
-    where: { triagemId, vagaEtapaId },
+    where: { triagemId, vagaEtapaId, triagem: { empresaId }, vagaEtapa: { vaga: { empresaId } } },
     data: {
       status: "REPROVADO",
       concluidaEm: new Date(),
@@ -73,10 +76,10 @@ export async function reprovarEtapaTriagem(triagemId: string, vagaEtapaId: strin
   });
 }
 
-export async function reprovarEtapaAtualTriagem(triagemId: string) {
+export async function reprovarEtapaAtualTriagem(empresaId: string, triagemId: string) {
   const agora = new Date();
   const etapas = await prisma.triagemEtapa.findMany({
-    where: { triagemId },
+    where: { triagemId, triagem: { empresaId } },
     include: { vagaEtapa: true },
     orderBy: {
       vagaEtapa: {
@@ -118,10 +121,10 @@ export async function reprovarEtapaAtualTriagem(triagemId: string) {
   });
 }
 
-export async function voltarParaEtapaAnteriorTriagem(triagemId: string) {
+export async function voltarParaEtapaAnteriorTriagem(empresaId: string, triagemId: string) {
   const agora = new Date();
   const etapas = await prisma.triagemEtapa.findMany({
-    where: { triagemId },
+    where: { triagemId, triagem: { empresaId } },
     include: { vagaEtapa: true },
     orderBy: {
       vagaEtapa: {
@@ -173,10 +176,10 @@ export async function voltarParaEtapaAnteriorTriagem(triagemId: string) {
   });
 }
 
-export async function reabrirEtapaTriagem(triagemId: string, vagaEtapaId: string) {
+export async function reabrirEtapaTriagem(empresaId: string, triagemId: string, vagaEtapaId: string) {
   const agora = new Date();
   const etapas = await prisma.triagemEtapa.findMany({
-    where: { triagemId },
+    where: { triagemId, triagem: { empresaId } },
     include: { vagaEtapa: true },
     orderBy: {
       vagaEtapa: {
@@ -236,11 +239,11 @@ export async function reabrirEtapaTriagem(triagemId: string, vagaEtapaId: string
   });
 }
 
-export async function pularParaEtapaTriagem(triagemId: string, vagaEtapaDestinoId: string) {
+export async function pularParaEtapaTriagem(empresaId: string, triagemId: string, vagaEtapaDestinoId: string) {
   const agora = new Date();
 
   const etapas = await prisma.triagemEtapa.findMany({
-    where: { triagemId },
+    where: { triagemId, triagem: { empresaId } },
     include: { vagaEtapa: true },
     orderBy: {
       vagaEtapa: {

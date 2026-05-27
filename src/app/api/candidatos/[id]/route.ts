@@ -175,8 +175,8 @@ export async function PUT(
       return Response.json({ error: "Candidato nao encontrado" }, { status: 404 });
     }
 
-    const candidato = await prisma.candidato.update({
-      where: { id },
+    await prisma.candidato.updateMany({
+      where: { id, empresaId: empresa.id },
       data: {
         ...(nome !== undefined && { nome }),
         ...(email !== undefined && { email }),
@@ -192,11 +192,10 @@ export async function PUT(
         ...(observacao !== undefined && { observacao: observacao || null }),
         ...(statusEmprego !== undefined && { statusEmprego }),
       },
-      include: { areas: true, skills: true, experiencias: true, formacoes: true, restricoes: true },
     });
 
     if (areas) {
-      await prisma.candidatoArea.deleteMany({ where: { candidatoId: id } });
+      await prisma.candidatoArea.deleteMany({ where: { candidatoId: id, candidato: { empresaId: empresa.id } } });
       if (areas.length > 0) {
         await prisma.candidatoArea.createMany({
           data: areas.map((a: string) => ({ candidatoId: id, nome: a })),
@@ -205,14 +204,14 @@ export async function PUT(
     }
 
     if (skills) {
-      await prisma.candidatoSkill.deleteMany({ where: { candidatoId: id } });
+      await prisma.candidatoSkill.deleteMany({ where: { candidatoId: id, candidato: { empresaId: empresa.id } } });
       await prisma.candidatoSkill.createMany({
         data: skills.map((s: string) => ({ candidatoId: id, nome: s })),
       });
     }
 
     if (experiencias) {
-      await prisma.experiencia.deleteMany({ where: { candidatoId: id } });
+      await prisma.experiencia.deleteMany({ where: { candidatoId: id, candidato: { empresaId: empresa.id } } });
       const expValidas = experiencias.filter((e: { dataInicio: string }) => e.dataInicio);
       if (expValidas.length > 0) {
         await prisma.experiencia.createMany({
@@ -233,7 +232,7 @@ export async function PUT(
     }
 
     if (formacoes) {
-      await prisma.formacao.deleteMany({ where: { candidatoId: id } });
+      await prisma.formacao.deleteMany({ where: { candidatoId: id, candidato: { empresaId: empresa.id } } });
       const formValidas = formacoes.filter((f: { dataInicio: string }) => f.dataInicio);
       if (formValidas.length > 0) {
         await prisma.formacao.createMany({
@@ -254,7 +253,7 @@ export async function PUT(
     }
 
     if (restricoes) {
-      await prisma.restricao.deleteMany({ where: { candidatoId: id } });
+      await prisma.restricao.deleteMany({ where: { candidatoId: id, candidato: { empresaId: empresa.id } } });
       if (restricoes.length > 0) {
         await prisma.restricao.createMany({
           data: restricoes.map((r: string) => ({ candidatoId: id, descricao: r })),
@@ -267,7 +266,12 @@ export async function PUT(
       data: { desatualizado: true },
     });
 
-    return Response.json(candidato);
+    const candidatoAtualizado = await prisma.candidato.findFirst({
+      where: { id, empresaId: empresa.id },
+      include: { areas: true, skills: true, experiencias: true, formacoes: true, restricoes: true },
+    });
+
+    return Response.json(candidatoAtualizado);
   } catch (err) {
     console.error("Erro ao atualizar candidato:", err);
     return Response.json({ error: "Erro interno ao atualizar candidato" }, { status: 500 });
@@ -287,6 +291,6 @@ export async function DELETE(
   const candidato = await prisma.candidato.findFirst({ where: { id, empresaId: empresa.id }, select: { id: true } });
   if (!candidato) return Response.json({ error: "Candidato nao encontrado" }, { status: 404 });
 
-  await prisma.candidato.delete({ where: { id } });
+  await prisma.candidato.deleteMany({ where: { id, empresaId: empresa.id } });
   return Response.json({ ok: true });
 }

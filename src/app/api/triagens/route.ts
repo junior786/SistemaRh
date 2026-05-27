@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     include: { candidato: true, vaga: true },
   });
 
-  await inicializarEtapasTriagem(triagem.id, vagaId);
+  await inicializarEtapasTriagem(empresa.id, triagem.id, vagaId);
 
   await registrarEventoTriagem({
     triagemId: triagem.id,

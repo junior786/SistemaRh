@@ -9,6 +9,11 @@ import { Bell, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+type HeaderEmpresa = {
+  nome: string;
+  slug: string;
+};
+
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/vagas": "Vagas",
@@ -25,13 +30,23 @@ function getPageTitle(pathname: string): string {
   return "RH Selector";
 }
 
-export function Header() {
+export function Header({ empresa }: { empresa: HeaderEmpresa | null }) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card px-6">
-      <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+      <div className="flex min-w-0 items-center gap-3">
+        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+        {empresa && (
+          <div className="hidden min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 md:flex">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            <span className="max-w-[240px] truncate text-sm font-semibold text-foreground">
+              {empresa.nome}
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center gap-3">
         <div className="relative">

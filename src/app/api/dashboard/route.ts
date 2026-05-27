@@ -98,9 +98,14 @@ export async function GET() {
     prisma.vaga.findMany({
       where: { empresaId: empresa.id },
       include: {
-        _count: { select: { triagens: true, empregados: true } },
+        _count: {
+          select: {
+            triagens: { where: { empresaId: empresa.id } },
+            empregados: { where: { empresaId: empresa.id } },
+          },
+        },
         triagens: {
-          where: { status: "CONCLUIDO" },
+          where: { empresaId: empresa.id, status: "CONCLUIDO" },
           orderBy: { score: "desc" },
           take: 1,
           select: { score: true },
