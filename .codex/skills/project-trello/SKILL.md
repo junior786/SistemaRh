@@ -19,20 +19,22 @@ Read [references/trello-config.md](references/trello-config.md) before making Tr
 4. Apply the correct label:
    - `Multi-Tenant` for tenantization work in this app
    - `Motor WhatsApp` for the standalone WhatsApp motor backlog
-5. When starting implementation from an existing card, move the card to the `Dev` list.
-6. When implementation is finished and ready for validation, move the card to the `QA` list.
-7. Keep descriptions compact and execution-oriented:
+5. When starting implementation from an existing card, create a dedicated git branch before changing code.
+6. When starting implementation from an existing card, move the card to the `Dev` list.
+7. When implementation is finished and ready for validation, move the card to the `QA` list.
+8. Keep descriptions compact and execution-oriented:
    - objective
    - scope
    - constraints or dependencies
    - reference docs when relevant
-8. When the request changes many cards at once, summarize the intended grouping first in a short commentary update, then apply the changes.
+9. When the request changes many cards at once, summarize the intended grouping first in a short commentary update, then apply the changes.
 
 ## Operating Rules
 
 - Prefer `Trello MCP` when it is healthy.
 - If `Trello MCP` fails due to auth, connection, or server errors, fall back to the direct Trello API using `PowerShell` + `Invoke-RestMethod`.
 - Prefer the existing Trello API flow already used in this project via PowerShell and `Invoke-RestMethod`.
+- Use a dedicated branch per card under development.
 - Do not write API keys or tokens into repository files.
 - Treat board/list IDs and labels as configuration; if they change, update `references/trello-config.md`.
 - When adding a new backlog category, create a new label only if an existing one is not a good fit.

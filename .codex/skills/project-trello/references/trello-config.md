@@ -50,4 +50,5 @@ Operational rule:
 - Keep new cards in the same list unless the user explicitly asks for another list.
 - Prefer concise Portuguese card titles and descriptions, matching the existing board style.
 - Prefer `Trello MCP` first; if it fails, use the direct Trello REST API via `PowerShell` + `Invoke-RestMethod`.
+- Create a dedicated git branch when a card moves into active development.
 - Do not persist Trello secrets in the repository.

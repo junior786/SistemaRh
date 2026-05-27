@@ -35,10 +35,11 @@ Apply these conventions when creating, updating, labeling, or reorganizing cards
 4. Use concise Portuguese in titles and descriptions to match the current board style.
 5. Apply the correct label after creating or updating the card.
 6. Keep all new cards in the current active list unless the user asks for a different list.
-7. When starting development from an existing card, move it to `Dev`.
-8. When implementation is finished and ready for validation, move it to `QA`.
-9. Prefer `Trello MCP` when available.
-10. If `Trello MCP` fails because of auth, connection, or server issues, fall back to the direct Trello API via `PowerShell` + `Invoke-RestMethod`.
+7. When starting development from an existing card, create a dedicated git branch before changing code.
+8. When starting development from an existing card, move it to `Dev`.
+9. When implementation is finished and ready for validation, move it to `QA`.
+10. Prefer `Trello MCP` when available.
+11. If `Trello MCP` fails because of auth, connection, or server issues, fall back to the direct Trello API via `PowerShell` + `Invoke-RestMethod`.
 
 ## Card description standard
 
@@ -65,3 +66,4 @@ Use this structure for implementation cards:
 - Avoid destructive bulk moves or deletions unless explicitly requested.
 - If board IDs, list IDs, or labels change, update this file and the Codex skill reference together.
 - If `Trello MCP` is down, do not block the task when direct API access is available.
+- Use a dedicated branch per card under active development.
